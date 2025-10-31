@@ -465,3 +465,9 @@ checkOrderBtn && checkOrderBtn.addEventListener('click', () => {
     orderResult.textContent = '❌ No orders found for this phone number.';
   }
 });
+// ===== MOBILE NAV TOGGLE =====
+if (navToggle && navLinks) {
+  navToggle.addEventListener('click', () => {
+    navLinks.classList.toggle('show');
+  });
+}
