@@ -25,10 +25,13 @@
     </div>
 
     <div class="nav-right">
-      <form id="nav-search-form" class="nav-search" role="search" onsubmit="return false">
-        <input id="nav-search" placeholder="Search medicines or company" aria-label="Search products">
-        <button id="nav-search-btn" title="Search">🔍</button>
-      </form>
+     <form id="nav-search-form" class="nav-search" role="search" onsubmit="return false">
+  <input id="nav-search" placeholder="Search medicines or company" aria-label="Search products">
+  <button id="nav-search-btn" title="Search">🔍</button>
+</form>
+<!-- Search Suggestions Dropdown -->
+<div id="search-suggestions" class="search-suggestions" aria-live="polite"></div>
+
 
       <ul class="nav-links">
         <li><a href="#home" data-scroll>Home</a></li>
@@ -192,7 +195,7 @@
             <a href="tel:+917387478089" class="call-link">+91 7387478089</a> •
             <a href="https://wa.me/918003929804" target="_blank" rel="noopener">Chat on WhatsApp</a>
           </p>
-          <p><strong>Opening Hours</strong><br>Mon–Sat: 9 AM – 9 PM<br>Sun: 10 AM – 2 PM</p>
+          <p><strong>Opening Hours</strong><br>8:00AM<br>11:30PM</p>
 
           <div class="contact-actions">
             <a href="tel:+918003929804" class="btn icon">📞 Call Now</a>
@@ -253,10 +256,11 @@
           <option value="Cash on Delivery">Cash on Delivery</option>
         </select>
 
-        <div id="qr-card" class="qr-card hidden" aria-hidden="true">
-          <img id="qr-image" src="gpqr.jpeg" alt="QR code" />
-          <div class="qr-note">📱 Scan this QR to pay securely, then enter your UPI Transaction ID below.</div>
-        </div>
+       <div id="qr-card" class="hidden">
+  <h4>Scan & Pay</h4>
+  <img id="qr-image" src="img/gpqr.jpeg" alt="QR Code" style="max-width:200px; border-radius:10px;">
+</div>
+
 
         <label>Transaction / UPI ID</label>
         <input id="transaction-id" placeholder="Txn or UPI reference (if paid)" />
@@ -285,6 +289,40 @@
 
   <!-- FLOATING WHATSAPP -->
   <a id="wa-float" class="wa-float" href="https://wa.me/918003929804" target="_blank" title="Chat on WhatsApp">💬</a>
+<!-- Floating Cart Button -->
+<button id="floating-cart-btn" aria-label="View cart">
+  🛒 <span id="floating-cart-count">0</span>
+</button>
+<!-- ========== Mobile Floating Cart + Cart Bottom Sheet (green glass) ========== -->
+<button id="mobile-cart-btn" class="floating-cart-btn" aria-label="Open cart" title="Cart">
+  🛒
+  <span id="mobile-cart-badge" class="cart-badge-mobile" aria-hidden="true">0</span>
+</button>
+
+<div id="mobile-cart-sheet" class="mobile-sheet" aria-hidden="true">
+  <div id="mobile-sheet-overlay" class="sheet-overlay" tabindex="-1"></div>
+
+  <div class="sheet-content" role="dialog" aria-modal="true" aria-label="Cart">
+    <div class="sheet-header">
+      <h3>My Cart</h3>
+      <button id="mobile-close-sheet" class="close-sheet-btn" aria-label="Close cart">×</button>
+    </div>
+
+    <div id="mobile-cart-contents" class="mobile-products">
+      <!-- Rendered dynamically: cart items will appear here -->
+      <div class="mobile-empty small">Your cart is empty</div>
+    </div>
+
+    <div class="sheet-footer">
+      <div class="sheet-total">
+        <div class="small">Total</div>
+        <div id="mobile-sheet-total" class="sheet-total-amount">₹0</div>
+      </div>
+      <button id="mobile-sheet-next" class="btn full mobile-next-btn">NEXT</button>
+    </div>
+  </div>
+</div>
+<!-- ========== End Mobile Cart Sheet ========== -->
 
   <script src="script.js"></script>
 </body>
