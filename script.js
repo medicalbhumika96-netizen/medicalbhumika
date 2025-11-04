@@ -352,8 +352,8 @@ if (prescriptionInput) {
     formData.append("phone", phone);
 
     try {
-      const res = await fetch("https://medicalbhumika.onrender.com/upload-prescription", {
-        method: "POST",
+      const res = await fetch("https://bhumikamedical.in/upload-prescription", {
+        
         body: formData,
       });
 

@@ -1,3 +1,4 @@
+// ====== server.js (Simple working version) ======
 const express = require("express");
 const multer = require("multer");
 const cors = require("cors");
@@ -5,6 +6,9 @@ const path = require("path");
 const fs = require("fs");
 
 const app = express();
+const PORT = 5000;
+
+// Middleware
 app.use(cors());
 app.use(express.json());
 app.use("/uploads", express.static("uploads"));
