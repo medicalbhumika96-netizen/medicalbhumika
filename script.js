@@ -205,10 +205,6 @@ function renderCart() {
 
   // Subtotal after discount
   const afterDiscount = subtotal - discount;
-
-  // NOTE: You previously asked about tax — currently we're not applying tax here.
-  // If you later want tax added, we can compute it from afterDiscount and add to finalTotal.
-
   const finalTotal = Math.round(afterDiscount); // integer rupees
   window.LAST_FINAL_TOTAL = finalTotal;
 
@@ -222,7 +218,12 @@ function renderCart() {
     offerEl.style.marginTop = '6px';
     offerEl.style.color = 'var(--accent-dark)';
     offerEl.style.fontWeight = '600';
-    offerEl.textContent = offerMsg;
+    offerEl.style.cursor = 'pointer';
+    offerEl.textContent = offerMsg + ' (Tap to view savings)';
+    offerEl.addEventListener('click', () => {
+      const saved = discount.toFixed(2);
+      alert(`💰 You saved ₹${saved} on this order!`);
+    });
     totalDisplay.parentElement.insertAdjacentElement('afterend', offerEl);
   }
 
@@ -252,7 +253,7 @@ function renderMobileCart(subtotal = 0, discount = 0, offerMsg = '') {
   if (keys.length === 0) {
     productContainer.innerHTML = '<div class="mobile-empty small">Your cart is empty</div>';
     totalEl.textContent = '₹0.00';
-    document.querySelector('.cart-offer-mobile')?.remove();
+    document.querySelectorAll('.cart-offer-mobile').forEach(el => el.remove());
     return;
   }
 
@@ -271,7 +272,7 @@ function renderMobileCart(subtotal = 0, discount = 0, offerMsg = '') {
           <div class="q">${it.qty}</div>
           <button onclick="changeQty(${id}, 1)">+</button>
         </div>
-      </div>
+      </div>  
     `;
     productContainer.appendChild(item);
   });
@@ -279,16 +280,26 @@ function renderMobileCart(subtotal = 0, discount = 0, offerMsg = '') {
   const total = Math.round(subtotal - discount);
   totalEl.textContent = '₹' + total.toFixed(2);
 
-  // Show offer message above footer in mobile sheet
+  // ===== Remove old offers first =====
+  document.querySelectorAll('.cart-offer-mobile').forEach(el => el.remove());
+
+  // ===== Add clickable offer with savings =====
   const footer = document.querySelector('.sheet-footer');
-  footer && footer.querySelector('.cart-offer-mobile')?.remove();
   if (offerMsg && footer) {
     const offer = document.createElement('div');
     offer.className = 'cart-offer-mobile small';
     offer.style.color = 'var(--accent-dark)';
     offer.style.fontWeight = '600';
     offer.style.margin = '8px 12px 0 12px';
-    offer.textContent = offerMsg;
+    offer.style.cursor = 'pointer';
+    offer.textContent = offerMsg + ' (Tap to view savings)';
+    
+    // On click, show how much was saved
+    offer.addEventListener('click', () => {
+      const saved = discount.toFixed(2);
+      alert(`💰 You saved ₹${saved} on this order!`);
+    });
+
     footer.insertAdjacentElement('beforebegin', offer);
   }
 }
@@ -312,27 +323,64 @@ navSearchInput && navSearchInput.addEventListener('input', e => {
 // clear button
 document.getElementById('clear')?.addEventListener('click', () => { cart = {}; renderCart(); });
 
-// ===== PRESCRIPTION PREVIEW =====
-const presInput = document.getElementById('prescription-file');
-const presPreview = document.getElementById('prescription-preview');
-presInput && presInput.addEventListener('change', ev => {
-  const f = ev.target.files[0];
-  if (!f) return;
-  prescriptionData = { name: f.name, type: f.type };
-  const url = URL.createObjectURL(f);
-  prescriptionData.blobUrl = url;
-  presPreview.innerHTML = `
-    <div style="display:flex;gap:10px;align-items:center">
-      <div style="flex:1">
-        <div style="font-weight:700">${f.name}</div>
-        <div class="small">${(f.size / 1024).toFixed(1)} KB</div>
-      </div>
-      <a href="${url}" download="${f.name}">
-        <button>Download</button>
-      </a>
-    </div>
-  `;
-});
+// ===== PRESCRIPTION UPLOAD (WITH CUSTOMER DETAILS) =====
+const prescriptionInput = document.getElementById("prescription-file");
+const prescriptionPreview = document.getElementById("prescription-preview");
+const nameInput = document.getElementById("prescription-name");
+const phoneInput = document.getElementById("prescription-phone");
+
+if (prescriptionInput) {
+  prescriptionInput.addEventListener("change", async function (e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Preview the uploaded image
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      prescriptionPreview.innerHTML = `<img src="${ev.target.result}" alt="Prescription Preview" style="max-width:100%;margin-top:10px;border-radius:8px;">`;
+    };
+    reader.readAsDataURL(file);
+
+    // Collect customer info
+    const name = nameInput.value.trim() || "Unknown";
+    const phone = phoneInput.value.trim() || "Not Provided";
+
+    // Prepare data to send
+    const formData = new FormData();
+    formData.append("prescription", file);
+    formData.append("name", name);
+    formData.append("phone", phone);
+
+    try {
+      const res = await fetch("https://bhumikamedical.in/upload-prescription", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        alert("✅ Prescription uploaded successfully!");
+        console.log("📸 File URL:", data.fileUrl);
+
+        // Send message to WhatsApp
+        const message = encodeURIComponent(
+          `📄 New Prescription Uploaded!\n👤 Name: ${name}\n📱 Phone: ${phone}\n🕒 ${new Date().toLocaleString()}\n🔗 View: ${data.fileUrl}`
+        );
+        const waUrl = `https://wa.me/918003929804?text=${message}`;
+        window.open(waUrl, "_blank");
+      } else {
+        alert("❌ Upload failed.");
+        console.error(data);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("⚠️ There was an error uploading the file.");
+    }
+  });
+}
+
+
+
 
 // ===== MODAL FLOW =====
 document.getElementById('checkout')?.addEventListener('click', () => {
@@ -366,6 +414,21 @@ function setStepIndicator(n) {
 }
 cancel1Btn?.addEventListener('click', () => closeModal());
 backToStep1Btn?.addEventListener('click', () => openModalStep(1));
+
+// ===== STEP 1 ➜ STEP 2 =====
+// (This is the listener that was missing earlier — validates inputs then opens step 2)
+toStep2Btn?.addEventListener('click', () => {
+  const name = custNameInput.value.trim();
+  const address = custAddressInput.value.trim();
+  const pin = custPinInput.value.trim();
+  const phone = custPhoneInput.value.trim();
+
+  if (!name) return alert('Please enter full name');
+  if (!address) return alert('Please enter delivery address');
+  if (!/^\d{4,6}$/.test(pin)) return alert('Please enter valid PIN');
+  if (!/^\d{6,15}$/.test(phone)) return alert('Please enter valid phone');
+  openModalStep(2);
+});
 
 // ===== PAYMENT METHOD TOGGLE & DYNAMIC QR =====
 function updateQRForTotal(totalAmt) {
@@ -433,20 +496,6 @@ if (paymentMethodInput) {
 }
 
 // ===== VALIDATION & SEND ORDER =====
-toStep2Btn?.addEventListener('click', () => {
-  const name = custNameInput.value.trim();
-  const address = custAddressInput.value.trim();
-  const pin = custPinInput.value.trim();
-  const phone = custPhoneInput.value.trim();
-
-  if (!name) return alert('Please enter full name');
-  if (!address) return alert('Please enter delivery address');
-  if (!/^\d{4,6}$/.test(pin)) return alert('Please enter valid PIN');
-  if (!/^\d{6,15}$/.test(phone)) return alert('Please enter valid phone');
-  openModalStep(2);
-});
-
-// When sending order, compute final discounted total and include that in WhatsApp message
 sendOrderBtn?.addEventListener('click', () => {
   const method = paymentMethodInput.value || 'N/A';
   const txn = txnInput.value.trim();
@@ -463,8 +512,6 @@ sendOrderBtn?.addEventListener('click', () => {
   else if (subtotal > 550) discount = subtotal * 0.10;
 
   const finalTotal = Math.round(subtotal - discount);
-  // ensure payment validation uses discounted total
-  let success = method === 'Cash on Delivery' || (txn && !Number.isNaN(amt) && amt >= finalTotal);
 
   const custName = custNameInput.value.trim();
   const custAddress = custAddressInput.value.trim();
@@ -476,24 +523,49 @@ sendOrderBtn?.addEventListener('click', () => {
     return;
   }
 
+  // ✅ Create unique EID tied to phone + timestamp
+  const timestamp = Date.now();
+  const uniqueEID = `EID-${custPhone}-${timestamp}`;
+
+  // ===== SAVE ORDER LOCALLY =====
+  const orderData = {
+    EID: uniqueEID,
+    phone: custPhone,
+    name: custName,
+    address: custAddress,
+    pin: custPin,
+    items: items,
+    total: finalTotal,
+    discount,
+    status: 'Placed',
+    date: new Date().toLocaleString(),
+    payment: { method, txn, amount: amtRaw }
+  };
+  const existing = JSON.parse(localStorage.getItem('orders') || '[]');
+  existing.push(orderData);
+  localStorage.setItem('orders', JSON.stringify(existing));
+
+  // ===== WHATSAPP MESSAGE =====
   const lines = [];
   lines.push(`🛒 Shop: ${SHOP_NAME}`);
+  lines.push(`🧾 Order ID: ${uniqueEID}`);
   lines.push('');
-  lines.push('🧾 Order:');
+  lines.push('📦 Order Details:');
   items.forEach(it => lines.push(`${it.qty} x ${it.name} — ₹${(it.price * it.qty).toFixed(2)}`));
-  lines.push(`Total: ₹${finalTotal}`); // send discounted final total
+  lines.push(`Total (after discount): ₹${finalTotal}`);
+  if (discount > 0) lines.push(`💰 You saved ₹${discount.toFixed(2)}`);
   if (prescriptionData) {
     lines.push('');
     lines.push(`📎 Prescription: ${prescriptionData.name} (uploaded)`);
   }
   lines.push('');
-  lines.push('🧍 Customer details:');
+  lines.push('🧍 Customer Details:');
   lines.push(`Name: ${custName}`);
   lines.push(`Address: ${custAddress}`);
   lines.push(`PIN: ${custPin}`);
   lines.push(`Phone: ${custPhone}`);
   lines.push('');
-  lines.push('💳 Payment details:');
+  lines.push('💳 Payment:');
   lines.push(`Method: ${method}`);
   lines.push(`Txn ID: ${txn || 'N/A'}`);
   lines.push(`Amount Paid: ₹${amtRaw || 'N/A'}`);
@@ -504,7 +576,9 @@ sendOrderBtn?.addEventListener('click', () => {
   window.open(waUrl, '_blank');
 
   closeModal();
-  showResult(success, finalTotal);
+  showResult(true, `✅ Your Order ID: ${uniqueEID}`);
+  cart = {};
+  renderCart();
 });
 
 // ===== RESULT SCREEN =====
@@ -689,12 +763,12 @@ function animateAddToCart(ev, imgEl) {
   }
 
   // open sheet (public)
-  window.openMobileCartSheet = function openMobileCartSheet() {
-    // renderMobileCart uses values set by renderCart()
-    renderMobileCart();
-    mobileSheet.style.display = 'block';
-    setTimeout(showSheetVisual, 1);
-  };
+window.openMobileCartSheet = function openMobileCartSheet() {
+  // FIX: ensure total updates instantly when cart opens
+  renderCart(); // this recalculates subtotal and updates total
+  mobileSheet.style.display = 'block';
+  setTimeout(showSheetVisual, 1);
+};
 
   // close sheet (public)
   window.closeMobileCartSheet = function closeMobileCartSheet() {
@@ -762,37 +836,53 @@ if (floatingCartBtn) {
   });
 }
 
-// ===== ORDER STATUS MOCKUP =====
+// ===== ORDER CHECK FEATURE =====
+// Replaces the old mock ORDER_HISTORY with real lookup in localStorage
 const checkOrderBtn = document.getElementById('check-order-btn');
 const orderPhoneInput = document.getElementById('order-phone');
 const orderResult = document.getElementById('order-status-result');
 
-let ORDER_HISTORY = [
-  { phone: '8003929804', orderId: 'ORD-12345', status: 'Delivered', date: '2025-10-30', total: '₹520' },
-  { phone: '9822334455', orderId: 'ORD-56789', status: 'Out for Delivery', date: '2025-10-31', total: '₹230' },
-];
-
-checkOrderBtn && checkOrderBtn.addEventListener('click', () => {
-  const phone = orderPhoneInput.value.trim();
-  if (!phone) {
-    orderResult.textContent = '⚠️ Please enter your phone number.';
+checkOrderBtn?.addEventListener('click', () => {
+  const q = (orderPhoneInput.value || '').trim();
+  if (!q) {
+    orderResult.textContent = '⚠️ Enter your Order ID (EID) or phone number.';
     return;
   }
 
-  const order = ORDER_HISTORY.find(o => o.phone === phone);
-  if (order) {
-    orderResult.innerHTML = `
-      <strong>Order ID:</strong> ${order.orderId}<br>
-      <strong>Date:</strong> ${order.date}<br>
-      <strong>Status:</strong> ${order.status}<br>
-      <strong>Total:</strong> ${order.total}
-    `;
-  } else {
-    orderResult.textContent = '❌ No orders found for this phone number.';
+  const allOrders = JSON.parse(localStorage.getItem('orders') || '[]');
+  if (!allOrders.length) {
+    orderResult.textContent = '❌ No orders found.';
+    return;
   }
+
+  // find by EID or phone
+  const found = allOrders.find(o => (o.EID && o.EID === q) || (o.phone && o.phone === q));
+  if (!found) {
+    orderResult.textContent = '❌ No order found for that EID or phone number.';
+    return;
+  }
+
+  // build readable result (show success badge)
+  let html = `<div style="margin-bottom:8px;font-weight:700;color:var(--accent-dark)">✅ Order found!</div>`;
+  html += `
+    <strong>Order ID:</strong> ${found.EID}<br>
+    <strong>Date:</strong> ${found.date}<br>
+    <strong>Name:</strong> ${escapeHtml(found.name)}<br>
+    <strong>Phone:</strong> ${escapeHtml(found.phone)}<br>
+    <strong>Address:</strong> ${escapeHtml(found.address)}<br>
+    <strong>PIN:</strong> ${escapeHtml(found.pin)}<br>
+    <strong>Status:</strong> ${escapeHtml(found.status)}<br>
+    <strong>Total:</strong> ₹${found.total}<br>
+    ${found.discount ? `<strong>Saved:</strong> ₹${Number(found.discount).toFixed(2)}<br>` : ''}
+    <br><strong>Items:</strong><br>
+  `;
+  found.items.forEach(it => {
+    html += `${it.qty} × ${escapeHtml(it.name)} — ₹${(it.price * it.qty).toFixed(2)}<br>`;
+  });
+
+  orderResult.innerHTML = html;
 });
 
 // ===== Initialize =====
 loadProducts();
 renderCart();
-

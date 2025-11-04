@@ -108,21 +108,27 @@
           <div id="product-list" class="products" aria-live="polite"></div>
         </div>
 
-        <div class="card">
-          <strong>Upload Prescription</strong>
-          <p class="small">If you have a prescription, upload it here.</p>
-          <input type="file" id="prescription-file" accept="image/*,.pdf">
-          <div id="prescription-preview"></div>
-        </div>
+      <div class="card">
+  <strong>Upload Prescription</strong>
+  <p class="small">If you have a prescription, upload it here.</p>
+
+  <!-- New Customer Fields -->
+  <input type="text" id="prescription-name" placeholder="Your Name" required>
+  <input type="tel" id="prescription-phone" placeholder="Your Phone Number" required>
+
+  <input type="file" id="prescription-file" accept="image/*,.pdf">
+  <div id="prescription-preview"></div>
+</div>
+
         <!-- My Orders -->
 <section id="orders" class="card orders">
   <h3>My Orders</h3>
   <p>Enter your phone number to check your order status.</p>
-  <div class="order-check">
-    <input id="order-phone" type="tel" placeholder="Enter your phone number">
-    <button id="check-order-btn" class="btn">Check Status</button>
-  </div>
-  <div id="order-status-result" class="order-result small"></div>
+ 
+ <input id="order-phone" placeholder="Enter Order ID or Phone Number">
+<button id="check-order-btn">Check Order</button>
+<div id="order-status-result"></div>
+
 </section>
 <li><a href="#orders" data-scroll>My Orders</a></li>
 
@@ -322,6 +328,9 @@
     </div>
   </div>
 </div>
+ <div id="celebration" aria-hidden="true"></div>
+  <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
 <!-- ========== End Mobile Cart Sheet ========== -->
 
   <script src="script.js"></script>
