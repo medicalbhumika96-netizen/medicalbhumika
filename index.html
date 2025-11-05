@@ -9,6 +9,8 @@
   <!-- Google font -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+
 </head>
 
 <body>
@@ -113,11 +115,10 @@
   <p class="small">If you have a prescription, upload it here.</p>
 
   <!-- New Customer Fields -->
-  <input type="text" id="prescription-name" placeholder="Your Name" required>
-  <input type="tel" id="prescription-phone" placeholder="Your Phone Number" required>
+ <input type="file" id="prescription-file" name="prescription" accept="image/*">
+<div id="prescription-preview"></div>
+<button id="send-prescription" style="display:none;">📩 Send to Bhumika Medical</button>
 
-  <input type="file" id="prescription-file" accept="image/*,.pdf">
-  <div id="prescription-preview"></div>
 </div>
 
         <!-- My Orders -->

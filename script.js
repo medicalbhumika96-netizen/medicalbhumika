@@ -323,59 +323,63 @@ navSearchInput && navSearchInput.addEventListener('input', e => {
 // clear button
 document.getElementById('clear')?.addEventListener('click', () => { cart = {}; renderCart(); });
 
-// ===== PRESCRIPTION UPLOAD (WITH CUSTOMER DETAILS) =====
-const prescriptionInput = document.getElementById("prescription-file");
-const prescriptionPreview = document.getElementById("prescription-preview");
-const nameInput = document.getElementById("prescription-name");
-const phoneInput = document.getElementById("prescription-phone");
+const prescriptionInput = document.getElementById('prescription-file');
+const prescriptionPreview = document.getElementById('prescription-preview');
+const sendButton = document.getElementById('send-prescription'); // new send button
+
+let uploadedPrescriptionURL = null; // save uploaded file URL
 
 if (prescriptionInput) {
-  prescriptionInput.addEventListener("change", async function (e) {
+  prescriptionInput.addEventListener('change', async function (e) {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Preview the uploaded image
+    // Show preview
     const reader = new FileReader();
-    reader.onload = (ev) => {
-      prescriptionPreview.innerHTML = `<img src="${ev.target.result}" alt="Prescription Preview" style="max-width:100%;margin-top:10px;border-radius:8px;">`;
+    reader.onload = function (ev) {
+      const img = document.createElement('img');
+      img.src = ev.target.result;
+      img.alt = "Prescription Preview";
+      img.style.maxWidth = "100%";
+      prescriptionPreview.innerHTML = '';
+      prescriptionPreview.appendChild(img);
     };
     reader.readAsDataURL(file);
 
-    // Collect customer info
-    const name = nameInput.value.trim() || "Unknown";
-    const phone = phoneInput.value.trim() || "Not Provided";
-
-    // Prepare data to send
+    // Upload file to your backend
     const formData = new FormData();
-    formData.append("prescription", file);
-    formData.append("name", name);
-    formData.append("phone", phone);
+    formData.append('prescription', file);
 
-    try {
-      const res = await fetch("https://bhumikamedical.in/upload-prescription", {
-        
-        body: formData,
-      });
+   try {
+  const response = await fetch('https://medicalbhumika.onrender.com/upload-prescription', {
+    method: 'POST',
+    body: formData
+  });
 
-      const data = await res.json();
-      if (res.ok) {
-        alert("✅ Prescription uploaded successfully!");
-        console.log("📸 File URL:", data.fileUrl);
+  const data = await response.json();
+  if (data.success) {
+    alert("✅ Prescription uploaded successfully!");
+    console.log("Uploaded file URL:", data.fileUrl);
+  } else {
+    alert("❌ Upload failed: " + (data.error || "Unknown error"));
+  }
+} catch (error) {
+  console.error(error);
+  alert("There was an error uploading the file.");
+}
 
-        // Send message to WhatsApp
-        const message = encodeURIComponent(
-          `📄 New Prescription Uploaded!\n👤 Name: ${name}\n📱 Phone: ${phone}\n🕒 ${new Date().toLocaleString()}\n🔗 View: ${data.fileUrl}`
-        );
-        const waUrl = `https://wa.me/918003929804?text=${message}`;
-        window.open(waUrl, "_blank");
-      } else {
-        alert("❌ Upload failed.");
-        console.error(data);
-      }
-    } catch (err) {
-      console.error(err);
-      alert("⚠️ There was an error uploading the file.");
+  });
+}
+
+// ✅ Send to WhatsApp
+if (sendButton) {
+  sendButton.addEventListener('click', () => {
+    if (!uploadedPrescriptionURL) {
+      alert("Please upload a prescription first.");
+      return;
     }
+    const message = encodeURIComponent(`📄 New Prescription Uploaded!\n${uploadedPrescriptionURL}\nShop: Bhumika Medical`);
+    window.open(`https://wa.me/918003929804?text=${message}`, '_blank');
   });
 }
 
