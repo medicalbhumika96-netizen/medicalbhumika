@@ -320,70 +320,51 @@ navSearchInput && navSearchInput.addEventListener('input', e => {
   renderProducts(v);
 });
 
-// clear button
-document.getElementById('clear')?.addEventListener('click', () => { cart = {}; renderCart(); });
+// Prescription upload handler
+document.getElementById("prescription-input").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return alert("Select a file first.");
 
-const prescriptionInput = document.getElementById('prescription-file');
-const prescriptionPreview = document.getElementById('prescription-preview');
-const sendButton = document.getElementById('send-prescription'); // new send button
+  const formData = new FormData();
+  formData.append("prescription", file);
+  formData.append("name", document.getElementById("cust-name").value);
+  formData.append("phone", document.getElementById("cust-phone").value);
+  formData.append("address", document.getElementById("cust-address").value);
 
-let uploadedPrescriptionURL = null; // save uploaded file URL
-
-if (prescriptionInput) {
-  prescriptionInput.addEventListener('change', async function (e) {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    // Show preview
-    const reader = new FileReader();
-    reader.onload = function (ev) {
-      const img = document.createElement('img');
-      img.src = ev.target.result;
-      img.alt = "Prescription Preview";
-      img.style.maxWidth = "100%";
-      prescriptionPreview.innerHTML = '';
-      prescriptionPreview.appendChild(img);
-    };
-    reader.readAsDataURL(file);
-
-    // Upload file to your backend
-    const formData = new FormData();
-    formData.append('prescription', file);
-
-   try {
-  const response = await fetch('https://medicalbhumika.onrender.com/upload-prescription', {
-    method: 'POST',
-    body: formData
-  });
-
-  const data = await response.json();
-  if (data.success) {
-    alert("✅ Prescription uploaded successfully!");
-    console.log("Uploaded file URL:", data.fileUrl);
-  } else {
-    alert("❌ Upload failed: " + (data.error || "Unknown error"));
+  try {
+    const response = await fetch("https://medicalbhumika-2.onrender.com/upload-prescription", {
+      method: "POST",
+      body: formData,
+    });
+    const data = await response.json();
+    if (data.success) {
+      alert("✅ Uploaded successfully!");
+      document.getElementById("uploaded-url").value = data.fileUrl;
+      document.getElementById("send-prescription-btn").style.display = "block";
+    } else alert("❌ Upload failed");
+  } catch (err) {
+    console.error(err);
+    alert("⚠️ Upload error.");
   }
-} catch (error) {
-  console.error(error);
-  alert("There was an error uploading the file.");
-}
+});
 
-  });
-}
+document.getElementById("send-prescription-btn").addEventListener("click", () => {
+  const url = document.getElementById("uploaded-url").value;
+  const name = document.getElementById("cust-name").value;
+  const phone = document.getElementById("cust-phone").value;
+  const address = document.getElementById("cust-address").value;
 
-// ✅ Send to WhatsApp
-if (sendButton) {
-  sendButton.addEventListener('click', () => {
-    if (!uploadedPrescriptionURL) {
-      alert("Please upload a prescription first.");
-      return;
-    }
-    const message = encodeURIComponent(`📄 New Prescription Uploaded!\n${uploadedPrescriptionURL}\nShop: Bhumika Medical`);
-    window.open(`https://wa.me/918003929804?text=${message}`, '_blank');
-  });
-}
-
-
+  const message =
+    `Hello Bhumika Medical,\n\n` +
+    `Customer Name: ${name}\n` +
+    `Phone: ${phone}\n` +
+    `Address: ${address}\n` +
+    `Prescription: ${url}`;
+  window.open(
+    `https://wa.me/918003929804?text=${encodeURIComponent(message)}`,
+    "_blank"
+  );
+});
 
 
 // ===== MODAL FLOW =====

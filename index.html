@@ -115,9 +115,12 @@
   <p class="small">If you have a prescription, upload it here.</p>
 
   <!-- New Customer Fields -->
- <input type="file" id="prescription-file" name="prescription" accept="image/*">
-<div id="prescription-preview"></div>
-<button id="send-prescription" style="display:none;">📩 Send to Bhumika Medical</button>
+<input type="text" id="cust-name" placeholder="Customer Name" required>
+<input type="text" id="cust-phone" placeholder="Mobile Number" required>
+<input type="text" id="cust-address" placeholder="Address" required>
+<input type="file" id="prescription-input" accept="image/*">
+<input type="hidden" id="uploaded-url">
+<button id="send-prescription-btn" style="display:none;">Send to WhatsApp</button>
 
 </div>
 
