@@ -18,7 +18,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // Log every submission
-app.post("/upload-prescription", upload.single("prescription"), (req, res) => {
+app.post("https://medicalbhumika-2.onrender.com/upload-prescription", upload.single("prescription"), (req, res) => {
   try {
     const { name, phone, address } = req.body;
     if (!req.file) return res.status(400).json({ success: false, error: "No file uploaded" });

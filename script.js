@@ -34,10 +34,11 @@ const retryButton = document.getElementById('retry-button');
 const cartCountEl = document.getElementById('cart-count');
 
 // customer fields
-const custNameInput = document.getElementById('cust-name');
+const custNameInput = document.getElementById('cust-name'); 
 const custAddressInput = document.getElementById('cust-address');
 const custPinInput = document.getElementById('cust-pin');
 const custPhoneInput = document.getElementById('cust-phone');
+
 
 // payment fields
 const paymentMethodInput = document.getElementById('payment-method');
@@ -89,20 +90,22 @@ async function loadProducts() {
   renderProducts();
 }
 
-// ===== RENDER PRODUCTS =====
 function renderProducts(filter = '') {
   if (!productList) return;
   productList.innerHTML = '';
 
   const q = (filter || '').trim().toLowerCase();
 
+  // Filter products based on name/company
   let filtered = PRODUCTS.filter(p =>
     !q || p.name.toLowerCase().includes(q) || p.company.toLowerCase().includes(q)
   );
 
-  if (!q) filtered = filtered.slice(0, 20);
+  // Show only first 30 results
+  const displayLimit = 30;
+  const limitedResults = filtered.slice(0, displayLimit);
 
-  filtered.forEach(p => {
+  limitedResults.forEach(p => {
     const el = document.createElement('div');
     el.className = 'product';
     el.innerHTML = `
@@ -110,20 +113,42 @@ function renderProducts(filter = '') {
       <div style="flex:1">
         <div style="font-weight:700">${escapeHtml(p.name)}</div>
         <div class="small" style="margin-top:6px">${escapeHtml(p.company)}</div>
-        <div class="meta">
-          <div class="price">₹${p.price}</div>
-          <button class="add" data-id="${p.id}">Add</button>
-        </div>
+        <div class="price">₹${p.price.toFixed(2)}</div>
       </div>
+      <button class="btn add-to-cart" data-id="${p.id}">Add</button>
     `;
     productList.appendChild(el);
+  });
+
+  // Show message if more results exist
+  if (filtered.length > displayLimit) {
+    const msg = document.createElement('div');
+    msg.className = 'muted small';
+    msg.style.margin = '10px 0';
+    msg.textContent = `Showing top ${displayLimit} of ${filtered.length} results — refine your search to see more.`;
+    productList.appendChild(msg);
+  }
+
+  // Handle no results
+  if (limitedResults.length === 0) {
+    productList.innerHTML = '<div class="muted small">No products found.</div>';
+  }
+
+  // ✅ Reattach Add button event listeners
+  document.querySelectorAll('.add-to-cart').forEach(btn => {
+    btn.addEventListener('click', e => {
+      const id = e.target.dataset.id;
+      const product = PRODUCTS.find(p => p.id == id);
+      if (!product) return;
+      addToCart(product); // this function already exists
+    });
   });
 }
 
 // Use event delegation for Add buttons so they always work
 if (productList) {
   productList.addEventListener('click', function (e) {
-    const btn = e.target.closest('.add');
+    const btn = e.target.closest('.add, .add-to-cart'); // <— updated
     if (!btn) return;
     const id = Number(btn.dataset.id);
     if (!id) return console.warn('Add button missing data-id');
@@ -134,6 +159,7 @@ if (productList) {
     if (isMobileViewport()) openMobileCartSheet();
   });
 }
+
 
 // ===== CART =====
 function addToCart(id) {
@@ -350,9 +376,28 @@ document.getElementById("prescription-input").addEventListener("change", async (
 
 document.getElementById("send-prescription-btn").addEventListener("click", () => {
   const url = document.getElementById("uploaded-url").value;
-  const name = document.getElementById("cust-name").value;
-  const phone = document.getElementById("cust-phone").value;
-  const address = document.getElementById("cust-address").value;
+   const name = document.getElementById("presc-name").value;
+const phone = document.getElementById("presc-phone").value;
+const address = document.getElementById("presc-address").value;
+
+  const message =
+    `Hello Bhumika Medical,\n\n` +
+    `Customer Name: ${name}\n` +
+    `Phone: ${phone}\n` +
+    `Address: ${address}\n` +
+    `Prescription: ${url}`;
+  window.open(
+    `https://wa.me/918003929804?text=${encodeURIComponent(message)}`,
+    "_blank"
+  );
+});
+
+
+document.getElementById("send-prescription-btn").addEventListener("click", () => {
+  const url = document.getElementById("uploaded-url").value;
+ const name = document.getElementById("presc-name").value;
+const phone = document.getElementById("presc-phone").value;
+const address = document.getElementById("presc-address").value;
 
   const message =
     `Hello Bhumika Medical,\n\n` +
