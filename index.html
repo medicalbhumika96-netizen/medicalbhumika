@@ -304,11 +304,13 @@
           <option value="Paytm">Paytm</option>
           <option value="Bank Transfer">Bank Transfer</option>
           <option value="Cash on Delivery">Cash on Delivery</option>
+         
         </select>
 
-       <div id="qr-card" class="hidden">
+        <div id="qr-card" class="hidden">
   <h4>Scan & Pay</h4>
-  <img id="qr-image" src="img/gpqr.jpeg" alt="QR Code" style="max-width:200px; border-radius:10px;">
+ <img src="img/gpqr.jpeg" alt="Scan to Pay" style="max-width:200px;border-radius:10px;">
+
   <p><strong>Bhumika Medical</strong><br>UPI: <span id="upi-id">bhumikamedical@oksbi</span></p>
 </div>
 
@@ -320,7 +322,10 @@
         <input id="amount-paid" type="number" placeholder="e.g. 500" />
         <div class="modal-buttons">
           <button id="back-to-step-1" class="clear">← Back</button>
-          <button id="send-order" class="btn">Send Order</button>
+         <button id="pay-with-gpay" class="btn full" type="button">
+  💳 Pay with Google Pay
+</button>
+
         </div>
       </div>
     </div>

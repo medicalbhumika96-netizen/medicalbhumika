@@ -236,6 +236,36 @@ function renderCart() {
 
   totalDisplay.textContent = '₹' + finalTotal.toFixed(2);
 
+  function startGPayPayment() {
+  const totalAmount =
+    window.LAST_FINAL_TOTAL ||
+    Number(document.getElementById("amount-paid").value || 0);
+
+  const SHOP_UPI = "9892570250@okbizaxis"; // ← your GPay Business UPI ID
+
+  if (totalAmount <= 0) {
+    alert("Please add products to your cart first.");
+    return;
+  }
+
+  // Create the UPI deep link (works on mobile browsers)
+  const upiURL = `upi://pay?pa=${SHOP_UPI}&pn=Bhumika%20Medical&am=${totalAmount}&cu=INR`;
+
+  // Open the UPI app
+  window.location.href = upiURL;
+
+  // Optional helper message
+  setTimeout(() => {
+    alert("If Google Pay didn’t open automatically, please open it manually and pay to our UPI ID: " + SHOP_UPI);
+  }, 1500);
+}
+
+// connect the button
+document
+  .getElementById("pay-with-gpay")
+  .addEventListener("click", startGPayPayment);
+
+
   // Show offer message under total (desktop)
   document.querySelector('.cart-offer')?.remove();
   if (offerMsg) {
