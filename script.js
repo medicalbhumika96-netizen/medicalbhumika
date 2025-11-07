@@ -229,42 +229,41 @@ function renderCart() {
     offerMsg = '🎉 Special offer applied!';
   }
 
-  // Subtotal after discount
-  const afterDiscount = subtotal - discount;
-  const finalTotal = Math.round(afterDiscount); // integer rupees
-  window.LAST_FINAL_TOTAL = finalTotal;
-
-  totalDisplay.textContent = '₹' + finalTotal.toFixed(2);
-
   function startGPayPayment() {
-  const totalAmount =
-    window.LAST_FINAL_TOTAL ||
-    Number(document.getElementById("amount-paid").value || 0);
-
-  const SHOP_UPI = "9892570250@okbizaxis"; // ← your GPay Business UPI ID
+  const totalAmount = window.LAST_FINAL_TOTAL || 0;
+  const SHOP_UPI = "bhumikamedical@oksbi"; // your GPay business UPI ID
 
   if (totalAmount <= 0) {
     alert("Please add products to your cart first.");
     return;
   }
 
-  // Create the UPI deep link (works on mobile browsers)
+  // Generate the payment URL
   const upiURL = `upi://pay?pa=${SHOP_UPI}&pn=Bhumika%20Medical&am=${totalAmount}&cu=INR`;
 
-  // Open the UPI app
-  window.location.href = upiURL;
+  try {
+    // Create an invisible link element and click it (works better on mobile)
+    const link = document.createElement('a');
+    link.href = upiURL;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } catch (error) {
+    console.error("UPI open failed:", error);
+    alert("Please open your UPI app manually and pay to " + SHOP_UPI);
+  }
 
-  // Optional helper message
+  // Fallback alert for unsupported browsers
   setTimeout(() => {
-    alert("If Google Pay didn’t open automatically, please open it manually and pay to our UPI ID: " + SHOP_UPI);
-  }, 1500);
+    alert(`If Google Pay didn't open automatically, pay manually to: ${SHOP_UPI}`);
+  }, 2000);
 }
 
-// connect the button
+
 document
   .getElementById("pay-with-gpay")
   .addEventListener("click", startGPayPayment);
-
 
   // Show offer message under total (desktop)
   document.querySelector('.cart-offer')?.remove();
