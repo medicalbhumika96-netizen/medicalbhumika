@@ -77,7 +77,7 @@ async function loadProducts() {
       name: item.Product || `Product ${index+1}`,
       company: item.Company || 'Unknown',
       price: Number(item.MRP) || 0,
-      image: item.Image || 'https://placehold.co/160x120?text=No+Image'
+      image: item.Image || 'https://via.placeholder.com/160x120?text=No+Image'
     }));
   } catch (err) {
     console.warn('Could not load products_with_images.json — using fallback sample products.', err);
@@ -229,72 +229,16 @@ function renderCart() {
     offerMsg = '🎉 Special offer applied!';
   }
 
-  // ===== CALCULATE FINAL TOTAL =====
-  let finalTotal = subtotal - discount; // 👈 This line fixes your error!
-
-  // Update total display
-  totalDisplay.textContent = '₹' + finalTotal.toFixed(2);
-
-  // Store globally for payment integrations
+  // Subtotal after discount
+  const afterDiscount = subtotal - discount;
+  const finalTotal = Math.round(afterDiscount); // integer rupees
   window.LAST_FINAL_TOTAL = finalTotal;
 
-  // Update offer message (optional)
-  const offerEl = document.querySelector('.cart-offer');
-  if (offerMsg) {
-    if (offerEl) offerEl.textContent = offerMsg;
-    else {
-      const newOffer = document.createElement('div');
-      newOffer.className = 'cart-offer';
-      newOffer.textContent = offerMsg;
-      cartList.parentNode.insertBefore(newOffer, cartList.nextSibling);
-    }
-  } else {
-    offerEl?.remove();
-  }
-
-  // Update mobile cart and QR
-  updateMobileCartBadge();
-  updateFloatingCartCount();
-  renderMobileCart(subtotal, discount, offerMsg);
-  updateQRForTotal(finalTotal);
+  totalDisplay.textContent = '₹' + finalTotal.toFixed(2);
 
 
-  function startGPayPayment() {
-  const totalAmount = window.LAST_FINAL_TOTAL || 0;
-  const SHOP_UPI = "bhumikamedical@oksbi"; // your GPay business UPI ID
 
-  if (totalAmount <= 0) {
-    alert("Please add products to your cart first.");
-    return;
-  }
-
-  // Generate the payment URL
-  const upiURL = `upi://pay?pa=${SHOP_UPI}&pn=Bhumika%20Medical&am=${totalAmount}&cu=INR`;
-
-  try {
-    // Create an invisible link element and click it (works better on mobile)
-    const link = document.createElement('a');
-    link.href = upiURL;
-    link.style.display = 'none';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  } catch (error) {
-    console.error("UPI open failed:", error);
-    alert("Please open your UPI app manually and pay to " + SHOP_UPI);
-  }
-
-  // Fallback alert for unsupported browsers
-  setTimeout(() => {
-    alert(`If Google Pay didn't open automatically, pay manually to: ${SHOP_UPI}`);
-  }, 2000);
-}
-
-
-document
-  .getElementById("pay-with-gpay")
-  .addEventListener("click", startGPayPayment);
-
+  
   // Show offer message under total (desktop)
   document.querySelector('.cart-offer')?.remove();
   if (offerMsg) {

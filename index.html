@@ -10,8 +10,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
   <link rel="icon" type="image/x-icon" href="favicon.ico">
-  <meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
-
 
 </head>
 
@@ -300,17 +298,19 @@
       <div id="step-2" class="modal-step hidden">
         <h3>Payment details</h3>
         <label>Payment method</label>
-        <select id="payment-method">`
+        <select id="payment-method">
           <option value="UPI">UPI</option>
           <option value="GPay">GPay</option>
           <option value="Paytm">Paytm</option>
           <option value="Bank Transfer">Bank Transfer</option>
           <option value="Cash on Delivery">Cash on Delivery</option>
-         
         </select>
-<div style="text-align:center;margin-top:10px;">
-  <img src="img/gpqr.jpg" alt="Scan & Pay with GPay" style="width:220px;border-radius:12px;">
-  <p>UPI ID: <b>bhumikamedical@oksbi</b></p>
+
+        <div id="qr-card" class="hidden">
+  <h4>Scan & Pay</h4>
+ <img src="img/gpay.jp" alt="Scan to Pay" style="max-width:200px;border-radius:10px;">
+
+  <p><strong>Bhumika Medical</strong><br>UPI: <span id="upi-id">bhumikamedical@oksbi</span></p>
 </div>
 
 
@@ -321,10 +321,7 @@
         <input id="amount-paid" type="number" placeholder="e.g. 500" />
         <div class="modal-buttons">
           <button id="back-to-step-1" class="clear">← Back</button>
-         <button id="pay-with-gpay" class="btn full" type="button">
-  💳 Pay with Google Pay
-</button>
-
+          <button id="send-order" class="btn">Send Order</button>
         </div>
       </div>
     </div>
