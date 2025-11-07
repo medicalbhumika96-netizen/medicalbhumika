@@ -120,7 +120,8 @@ function renderProducts(filter = '') {
     productList.appendChild(el);
   });
 
-  // Show message if more results exist
+  // Show message i
+  //    f more results exist
   if (filtered.length > displayLimit) {
     const msg = document.createElement('div');
     msg.className = 'muted small';
@@ -260,36 +261,69 @@ function renderCart() {
 
 
   function startGPayPayment() {
-  const totalAmount = window.LAST_FINAL_TOTAL || 0;
-  const SHOP_UPI = "9892570250@okbizaxis"; // your GPay business UPI ID
+  const totalAmount = Number(window.LAST_FINAL_TOTAL || 0);
+  const SHOP_UPI = "9892570250@okbizaxis"; // keep this updated
 
   if (totalAmount <= 0) {
     alert("Please add products to your cart first.");
     return;
   }
 
-  // Generate the payment URL
-  const upiURL = `upi://pay?pa=${SHOP_UPI}&pn=Bhumika%20Medical&am=${totalAmount}&cu=INR`;
+  // use two decimals
+  const amtStr = Number(totalAmount).toFixed(2);
 
+  // Basic UPI URI
+  const upiUri = `upi://pay?pa=${encodeURIComponent(SHOP_UPI)}&pn=${encodeURIComponent('Bhumika Medical')}&am=${encodeURIComponent(amtStr)}&cu=INR`;
+
+  // Android Chrome intent fallback (will attempt to open GPay directly if installed)
+  const intentUri = `intent://upi/pay?pa=${encodeURIComponent(SHOP_UPI)}&pn=${encodeURIComponent('Bhumika Medical')}&am=${encodeURIComponent(amtStr)}&cu=INR#Intent;scheme=upi;package=com.google.android.apps.nbu.paisa.user;end`;
+
+  let opened = false;
+
+  // Try: set location (works on many mobile browsers)
   try {
-    // Create an invisible link element and click it (works better on mobile)
-    const link = document.createElement('a');
-    link.href = upiURL;
-    link.style.display = 'none';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  } catch (error) {
-    console.error("UPI open failed:", error);
-    alert("Please open your UPI app manually and pay to " + SHOP_UPI);
+    window.location.href = upiUri;
+    opened = true;
+  } catch (e) {
+    console.warn('window.location.href failed', e);
   }
 
-  // Fallback alert for unsupported browsers
-  setTimeout(() => {
-    alert(`If Google Pay didn't open automatically, pay manually to: ${SHOP_UPI}`);
-  }, 2000);
-}
+  // Also create and click an anchor (some browsers respond better to a user-like click)
+  try {
+    const a = document.createElement('a');
+    a.href = upiUri;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    opened = true;
+  } catch (e) {
+    console.warn('anchor click failed', e);
+  }
 
+  // As a more forceful fallback for Chrome Android, try the intent URI
+  // Only do this if user agent is Android + Chrome
+  const ua = navigator.userAgent || '';
+  if (/Android/i.test(ua) && /Chrome\/\d+/i.test(ua)) {
+    try {
+      // small delay so earlier attempts can take effect
+      setTimeout(() => {
+        window.location.href = intentUri;
+      }, 300);
+    } catch (e) {
+      console.warn('intent fallback failed', e);
+    }
+  }
+
+  // If none of the above works, show a friendly fallback after giving time to open
+  setTimeout(() => {
+    // Check visibility change: if page is hidden, app probably opened
+    if (document.hidden) return; // app likely opened, no fallback needed
+
+    // Final fallback: open a simple alert with the UPI ID + amount so user can copy
+    alert(`If Google Pay didn't open automatically, please pay manually to:\n\n${SHOP_UPI}\n\nAmount: ₹${amtStr}`);
+  }, 1800); // give the device ~1.8s to respond before showing fallback
+}
 
 document
   .getElementById("pay-with-gpay")
