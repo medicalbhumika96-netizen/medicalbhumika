@@ -21,8 +21,8 @@ const cancel1Btn = document.getElementById('cancel-1');
 const backToStep1Btn = document.getElementById('back-to-step-1');
 const sendOrderBtn = document.getElementById('send-order');
 
-const qrCard = document.getElementById('qr-card');
-const qrImage = document.getElementById('qr-image');
+const qrCard = document.getElementById('qrCard');
+const qrImage = document.getElementById('qrImage');
 
 const resultScreen = document.getElementById('result-screen');
 const resultTitle = document.getElementById('result-title');
@@ -42,8 +42,8 @@ const custPhoneInput = document.getElementById('cust-phone');
 
 // payment fields
 const paymentMethodInput = document.getElementById('payment-method');
-const txnInput = document.getElementById('transaction-id');
-const amountInput = document.getElementById('amount-paid');
+const txnInput = document.getElementById('txnId');
+const amountInput = document.getElementById('amount');
 
 // nav toggler & slider
 const navToggle = document.getElementById('nav-toggle');
@@ -556,56 +556,70 @@ toStep2Btn?.addEventListener('click', () => {
 // ===== PAYMENT METHOD TOGGLE & DYNAMIC QR =====
 function updateQRForTotal(totalAmt) {
   // totalAmt expected integer or number (in rupees)
-  // If payment method is online and totalAmt > 0, generate QR URL
   const method = paymentMethodInput ? (paymentMethodInput.value || '').toLowerCase() : '';
   const isCOD = method.includes('cash');
   const isOnline = method.includes('upi') || method.includes('gpay') || method.includes('paytm') || method.includes('phonepe') || method.includes('bank');
 
   if (isCOD) {
+    // hide QR + inputs for Cash on Delivery
     qrCard && qrCard.classList.add('hidden');
     txnInput && (txnInput.style.display = 'none');
     amountInput && (amountInput.style.display = 'none');
     return;
   }
 
-  // if online
   if (isOnline && totalAmt > 0) {
-    // construct upi://pay link with amount
-    // amount in UPI typically supports decimal, use two decimals
+    const SHOP_NAME = "Bhumika Medical";
     const amtStr = Number(totalAmt).toFixed(2);
-    const upiLink = `upi://pay?pa=${encodeURIComponent(UPI_ID)}&am=${encodeURIComponent(amtStr)}&cu=INR`;
-    // use a public QR generator service (no API key)
+
+    // ✅ Full UPI link (auto-fills amount when scanned)
+    const upiLink = `upi://pay?pa=${encodeURIComponent(UPI_ID)}&pn=${encodeURIComponent(SHOP_NAME)}&am=${encodeURIComponent(amtStr)}&cu=INR`;
+
+    // ✅ Generate QR image (you can use API or QRious)
     const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(upiLink)}`;
+
     if (qrImage) {
       qrImage.src = qrSrc;
       qrImage.alt = `Scan to pay ₹${amtStr}`;
     }
+
+    // show QR + transaction inputs
     qrCard && qrCard.classList.remove('hidden');
     txnInput && (txnInput.style.display = 'block');
     amountInput && (amountInput.style.display = 'block');
+
+    // Optional: also display textual info
+    const qrLabel = document.getElementById('qrLabel');
+    if (qrLabel) {
+      qrLabel.innerHTML = `
+        <h3>Scan & Pay ₹${amtStr}</h3>
+        <p>UPI ID: <b>${UPI_ID}</b></p>
+        <p><small>Use any UPI app (GPay, PhonePe, Paytm, etc.)</small></p>
+      `;
+    }
+
   } else {
-    // default hide
+    // hide if not online or total 0
     qrCard && qrCard.classList.add('hidden');
     txnInput && (txnInput.style.display = 'none');
     amountInput && (amountInput.style.display = 'none');
   }
 }
 
-// attach listener for payment method changes
+// === AUTO-UPDATING QR ON PAYMENT METHOD CHANGE ===
 if (paymentMethodInput) {
   const togglePaymentUI = () => {
     const method = (paymentMethodInput.value || '').toLowerCase();
     const isCOD = method.includes('cash');
     const isOnline = method.includes('upi') || method.includes('gpay') || method.includes('paytm') || method.includes('phonepe') || method.includes('bank');
+
     if (isCOD) {
       qrCard && qrCard.classList.add('hidden');
       txnInput && (txnInput.style.display = 'none');
       amountInput && (amountInput.style.display = 'none');
     } else if (isOnline) {
-      // show fields and update QR for latest total
       txnInput && (txnInput.style.display = 'block');
       amountInput && (amountInput.style.display = 'block');
-      // update QR using last final total (renderCart updates window.LAST_FINAL_TOTAL)
       updateQRForTotal(window.LAST_FINAL_TOTAL || 0);
     } else {
       qrCard && qrCard.classList.add('hidden');
@@ -613,10 +627,11 @@ if (paymentMethodInput) {
       amountInput && (amountInput.style.display = 'none');
     }
   };
+
   paymentMethodInput.addEventListener('change', togglePaymentUI);
-  // initialize
-  togglePaymentUI();
+  togglePaymentUI(); // initialize on load
 }
+
 
 // ===== VALIDATION & SEND ORDER =====
 sendOrderBtn?.addEventListener('click', () => {

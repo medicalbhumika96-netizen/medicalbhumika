@@ -308,10 +308,14 @@
           <option value="Cash on Delivery">Cash on Delivery</option>
          
         </select>
-<div style="text-align:center;margin-top:10px;">
-  <img src="img/gpqr.jpg" alt="Scan & Pay with GPay" style="width:220px;border-radius:12px;">
-  <p>UPI ID: <b>bhumikamedical@oksbi</b></p>
+        <div id="upiQrContainer" style="text-align:center; margin-top:20px;"></div>
+
+<!-- Your total amount should appear somewhere above -->
+<div id="qrCard" class="hidden" style="text-align:center; margin-top:15px;">
+  <div id="qrLabel"></div>
+  <img id="qrImage" src="" alt="UPI QR Code" style="width:280px;height:280px;">
 </div>
+
 
 
 
@@ -379,7 +383,8 @@
   <div id="celebration" aria-hidden="true"></div>
   <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 
-  <!-- ========== End Mobile Cart Sheet ========== -->
+  
+
 
   <script src="script.js"></script>
 </body>
