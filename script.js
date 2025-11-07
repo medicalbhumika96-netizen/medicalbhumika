@@ -77,7 +77,7 @@ async function loadProducts() {
       name: item.Product || `Product ${index+1}`,
       company: item.Company || 'Unknown',
       price: Number(item.MRP) || 0,
-      image: item.Image || 'https://via.placeholder.com/160x120?text=No+Image'
+      image: item.Image || 'https://placehold.co/160x120?text=No+Image'
     }));
   } catch (err) {
     console.warn('Could not load products_with_images.json — using fallback sample products.', err);
@@ -228,6 +228,36 @@ function renderCart() {
     discount = subtotal * 0.10;
     offerMsg = '🎉 Special offer applied!';
   }
+
+  // ===== CALCULATE FINAL TOTAL =====
+  let finalTotal = subtotal - discount; // 👈 This line fixes your error!
+
+  // Update total display
+  totalDisplay.textContent = '₹' + finalTotal.toFixed(2);
+
+  // Store globally for payment integrations
+  window.LAST_FINAL_TOTAL = finalTotal;
+
+  // Update offer message (optional)
+  const offerEl = document.querySelector('.cart-offer');
+  if (offerMsg) {
+    if (offerEl) offerEl.textContent = offerMsg;
+    else {
+      const newOffer = document.createElement('div');
+      newOffer.className = 'cart-offer';
+      newOffer.textContent = offerMsg;
+      cartList.parentNode.insertBefore(newOffer, cartList.nextSibling);
+    }
+  } else {
+    offerEl?.remove();
+  }
+
+  // Update mobile cart and QR
+  updateMobileCartBadge();
+  updateFloatingCartCount();
+  renderMobileCart(subtotal, discount, offerMsg);
+  updateQRForTotal(finalTotal);
+
 
   function startGPayPayment() {
   const totalAmount = window.LAST_FINAL_TOTAL || 0;
