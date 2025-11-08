@@ -297,50 +297,55 @@
         </div>
       </div>
 
-      <div id="step-2" class="modal-step hidden">
-        <h3>Payment details</h3>
-        <label>Payment method</label>
-        <select id="payment-method">`
-          <option value="UPI">UPI</option>
-          <option value="GPay">GPay</option>
-          <option value="Paytm">Paytm</option>
-          <option value="Bank Transfer">Bank Transfer</option>
-          <option value="Cash on Delivery">Cash on Delivery</option>
-         
-        </select>
-        <div id="upiQrContainer" style="text-align:center; margin-top:20px;"></div>
+<!-- ======= STEP 2: PAYMENT DETAILS ======= -->
+<div id="step-2" class="modal-step hidden">
+  <h3>Payment Details</h3>
 
-<!-- Your total amount should appear somewhere above -->
-<div id="qrCard" class="hidden" style="text-align:center; margin-top:15px;">
-  <div id="qrLabel"></div>
-  <img id="qrImage" src="" alt="UPI QR Code" style="width:150px;height:150px;">
+  <!-- Payment method selection -->
+  <label for="payment-method"><b>Payment Method</b></label>
+  <select id="payment-method" required>
+    <option value="UPI">UPI</option>
+    <option value="GPay">GPay</option>
+    <option value="Paytm">Paytm</option>
+    <option value="Bank Transfer">Bank Transfer</option>
+    <option value="COD">Cash on Delivery</option>
+  </select>
+
+  <!-- Dynamic QR section (for UPI, GPay, Paytm) -->
+  <div id="qrCard" style="text-align:center; margin-top:15px;">
+    <div id="qrLabel"></div>
+    <img id="qrImage" src="" alt="UPI QR Code"
+      style="width:150px;height:150px;display:none;">
+  </div>
+
+  <!-- Transaction ID (shown for online methods only) -->
+  <div class="field floating" id="txn-wrapper" style="margin-top:15px;">
+    <input id="txnIdInput" placeholder=" ">
+    <label for="txnIdInput">Transaction ID (optional)</label>
+  </div>
+
+  <!-- Screenshot Upload -->
+  <div class="field floating" style="margin-top:15px;">
+    <label for="paymentProof"><b>Upload Screenshot (optional)</b></label><br>
+    <input type="file" id="paymentProof" accept="image/*" style="margin-top:5px;">
+  </div>
+
+  <!-- Payment Submit -->
+  <div style="text-align:center; margin-top:20px;">
+    <button id="send-order"
+      style="background:#0d6efd;color:#fff;border:none;
+             padding:10px 25px;border-radius:6px;cursor:pointer;">
+      Submit Payment & Send to WhatsApp
+    </button>
+  </div>
+
+  <p id="proofMsg" style="margin-top:10px;text-align:center;"></p>
 </div>
-<div id="paymentConfirm" style="text-align:center; margin-top:15px;">
-  <label for="txnIdInput"><b>Enter UPI Transaction ID:</b></label><br>
-  <input type="text" id="txnIdInput" placeholder="Example: 2314567890AB" 
-         style="padding:8px; width:250px; margin:5px;"><br>
-
-  <label for="screenshotUpload"><b>Upload Screenshot (optional):</b></label><br>
-  <input type="file" id="screenshotUpload" accept="image/*" style="margin:5px;"><br>
-
-  <button id="submitProofBtn" 
-          style="background:#0d6efd;color:#fff;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;">
-    Submit Payment Proof
-  </button>
-
-  <div id="proofMsg" style="margin-top:10px;font-size:14px;"></div>
-</div>
 
 
 
 
-        <label>Transaction / UPI ID</label>
-        <input id="transaction-id" placeholder="Txn or UPI reference (if paid)" />
-        <div class="modal-buttons">
-          <button id="back-to-step-1" class="clear">← Back</button>
-         <button id="pay-with-gpay" class="btn full" type="button">
-  💳 Pay with Google Pay
-</button>
+     
 
         </div>
       </div>

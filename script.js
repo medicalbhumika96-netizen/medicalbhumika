@@ -330,69 +330,81 @@ document
   .addEventListener("click", startGPayPayment);
 
 
-  // ===== MANUAL PAYMENT PROOF HANDLER =====
-// ===== PAYMENT PROOF UPLOAD + WHATSAPP =====
-const proofBtn = document.getElementById('submitProofBtn');
-const txnIdInput = document.getElementById('txnIdInput');
-const screenshotUpload = document.getElementById('screenshotUpload');
-const proofMsg = document.getElementById('proofMsg');
+// ---- Payment proof upload & send to WhatsApp ----
+const sendOrderBtnEl = document.getElementById("send-order");
+const paymentProofInput = document.getElementById("paymentProof");
+const txnIdInputEl = document.getElementById("txnIdInput");
+const paymentMethodEl = document.getElementById("payment-method");
 
-if (proofBtn) {
-  proofBtn.addEventListener('click', async () => {
-    const txnId = txnIdInput.value.trim();
-    const file = screenshotUpload.files[0];
-
-    if (!txnId) {
-      proofMsg.textContent = "⚠️ Please enter your UPI Transaction ID.";
-      proofMsg.style.color = "red";
-      return;
-    }
-
-    proofMsg.textContent = "⏳ Uploading, please wait...";
-    proofMsg.style.color = "black";
-
-    let fileUrl = "No screenshot uploaded";
-
-    // If user uploaded a screenshot, send it to your Render server
-    if (file) {
-      try {
-        const formData = new FormData();
-        formData.append("prescription", file); // same field name as your server
-        const res = await fetch("https://medicalbhumika-2.onrender.com/upload-prescription", {
-          method: "POST",
-          body: formData,
-        });
-        const data = await res.json();
-        if (data.success) fileUrl = data.fileUrl;
-      } catch (err) {
-        console.error("Upload failed:", err);
-        proofMsg.textContent = "❌ Upload failed. Try again.";
-        proofMsg.style.color = "red";
-        return;
-      }
-    }
-
-    // Create WhatsApp message
-    const waMessage =
-      `Payment Proof Submission:\n\n` +
-      `Transaction ID: ${txnId}\n` +
-      `Screenshot: ${fileUrl}\n\n` +
-      `Please verify and confirm my order.`;
-
-    // Open WhatsApp chat with the message
-    window.open(
-      `https://wa.me/918003929804?text=${encodeURIComponent(waMessage)}`,
-      "_blank"
-    );
-
-    proofMsg.textContent = "✅ Proof submitted! Check WhatsApp for confirmation.";
-    proofMsg.style.color = "green";
-
-    // Optional: clear form
-    txnIdInput.value = "";
-    screenshotUpload.value = "";
-  });
+function toggleTxnField() {
+  const method = paymentMethodEl.value;
+  const txnWrapper = document.getElementById("txn-wrapper");
+  if (method === "COD") {
+    txnWrapper.style.display = "none";
+  } else {
+    txnWrapper.style.display = "block";
+  }
 }
+paymentMethodEl?.addEventListener("change", toggleTxnField);
+toggleTxnField();
+
+sendOrderBtnEl?.addEventListener("click", async (e) => {
+  e.preventDefault();
+
+  const name = (document.getElementById("cust-name")?.value || "").trim();
+  const phone = (document.getElementById("cust-phone")?.value || "").trim();
+  const method = paymentMethodEl?.value || "N/A";
+  const txnId = (txnIdInputEl?.value || "").trim();
+  const amount = Number(window.LAST_FINAL_TOTAL || 0).toFixed(2);
+
+  if (!name) return alert("Please enter your name");
+  if (!phone || !/^\d{6,15}$/.test(phone)) return alert("Please enter a valid phone number");
+  if (method !== "COD" && amount <= 0) return alert("Cart is empty or invalid amount");
+
+  const file = paymentProofInput?.files?.[0];
+  const form = new FormData();
+  form.append("name", name);
+  form.append("phone", phone);
+  form.append("amount", amount);
+  form.append("method", method);
+  form.append("txnId", txnId);
+  if (file) form.append("paymentProof", file);
+
+  try {
+    const res = await fetch("/upload-payment-proof", {
+      method: "POST",
+      body: form,
+    });
+    const data = await res.json();
+
+    if (!data.success) {
+      console.error("Upload failed:", data);
+      return alert("Upload failed. Try again.");
+    }
+
+    // Compose WhatsApp message containing uploaded screenshot URL
+    const message =
+      `💳 *Payment Submitted*\n\n` +
+      `*Name:* ${name}\n` +
+      `*Phone:* ${phone}\n` +
+      `*Amount:* ₹${amount}\n` +
+      `*Method:* ${method}\n` +
+      `*Txn ID:* ${txnId || "N/A"}\n` +
+      `*Screenshot:* ${data.fileUrl}\n\n` +
+      `Please confirm payment and mark order as confirmed.`;
+
+    const waNumber = "918003929804"; // your WhatsApp number
+    window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`, "_blank");
+
+    alert("✅ Payment proof uploaded — WhatsApp message opened. You’ll also get an email alert.");
+    paymentProofInput.value = "";
+    txnIdInputEl.value = "";
+    if (typeof closeModal === "function") closeModal();
+  } catch (err) {
+    console.error(err);
+    alert("⚠️ Error uploading payment proof.");
+  }
+});
 
   // Show offer message under total (desktop)
   document.querySelector('.cart-offer')?.remove();
