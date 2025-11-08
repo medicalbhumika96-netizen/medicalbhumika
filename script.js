@@ -329,6 +329,71 @@ document
   .getElementById("pay-with-gpay")
   .addEventListener("click", startGPayPayment);
 
+
+  // ===== MANUAL PAYMENT PROOF HANDLER =====
+// ===== PAYMENT PROOF UPLOAD + WHATSAPP =====
+const proofBtn = document.getElementById('submitProofBtn');
+const txnIdInput = document.getElementById('txnIdInput');
+const screenshotUpload = document.getElementById('screenshotUpload');
+const proofMsg = document.getElementById('proofMsg');
+
+if (proofBtn) {
+  proofBtn.addEventListener('click', async () => {
+    const txnId = txnIdInput.value.trim();
+    const file = screenshotUpload.files[0];
+
+    if (!txnId) {
+      proofMsg.textContent = "⚠️ Please enter your UPI Transaction ID.";
+      proofMsg.style.color = "red";
+      return;
+    }
+
+    proofMsg.textContent = "⏳ Uploading, please wait...";
+    proofMsg.style.color = "black";
+
+    let fileUrl = "No screenshot uploaded";
+
+    // If user uploaded a screenshot, send it to your Render server
+    if (file) {
+      try {
+        const formData = new FormData();
+        formData.append("prescription", file); // same field name as your server
+        const res = await fetch("https://medicalbhumika-2.onrender.com/upload-prescription", {
+          method: "POST",
+          body: formData,
+        });
+        const data = await res.json();
+        if (data.success) fileUrl = data.fileUrl;
+      } catch (err) {
+        console.error("Upload failed:", err);
+        proofMsg.textContent = "❌ Upload failed. Try again.";
+        proofMsg.style.color = "red";
+        return;
+      }
+    }
+
+    // Create WhatsApp message
+    const waMessage =
+      `Payment Proof Submission:\n\n` +
+      `Transaction ID: ${txnId}\n` +
+      `Screenshot: ${fileUrl}\n\n` +
+      `Please verify and confirm my order.`;
+
+    // Open WhatsApp chat with the message
+    window.open(
+      `https://wa.me/918003929804?text=${encodeURIComponent(waMessage)}`,
+      "_blank"
+    );
+
+    proofMsg.textContent = "✅ Proof submitted! Check WhatsApp for confirmation.";
+    proofMsg.style.color = "green";
+
+    // Optional: clear form
+    txnIdInput.value = "";
+    screenshotUpload.value = "";
+  });
+}
+
   // Show offer message under total (desktop)
   document.querySelector('.cart-offer')?.remove();
   if (offerMsg) {
