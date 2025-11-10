@@ -3,13 +3,16 @@ import path from "path";
 import multer from "multer";
 import express from "express";
 import cors from "cors";
+import nodemailer from "nodemailer";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 app.use("/uploads", express.static("uploads"));
 
-// Ensure upload folder exists
 if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
 
 // ========== Multer Storage ==========
@@ -19,8 +22,57 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
+// ======================================================
+// STEP 1 — Confirm environment variables are loaded
+// ======================================================
+console.log("🔍 Checking environment variables...");
+console.log({
+  SMTP_HOST: process.env.SMTP_HOST,
+  SMTP_PORT: process.env.SMTP_PORT,
+  SMTP_USER: process.env.SMTP_USER,
+  SMTP_FROM: process.env.SMTP_FROM,
+  MERCHANT_EMAIL: process.env.MERCHANT_EMAIL,
+  PORT: process.env.PORT,
+});
+console.log("----------------------------------------------------");
 
-// ================= EXISTING ROUTE (Prescriptions) =================
+// ======================================================
+// STEP 2 — Setup mail transporter with verification
+// ======================================================
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: process.env.SMTP_PORT,
+  secure: false,
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
+
+transporter.verify(function (error, success) {
+  if (error) {
+    console.error("❌ SMTP connection failed:", error.message);
+  } else {
+    console.log("✅ SMTP connection ready to send emails.");
+  }
+});
+
+// ======================================================
+// STEP 3 — Debug route to confirm ENV on Render
+// ======================================================
+app.get("/debug-env", (req, res) => {
+  res.json({
+    host: process.env.SMTP_HOST,
+    user: process.env.SMTP_USER,
+    from: process.env.SMTP_FROM,
+    email: process.env.MERCHANT_EMAIL,
+    port: process.env.SMTP_PORT,
+  });
+});
+
+// ======================================================
+// ROUTE: Upload Prescription
+// ======================================================
 app.post("/upload-prescription", upload.single("prescription"), (req, res) => {
   try {
     const { name, phone, address } = req.body;
@@ -38,9 +90,10 @@ app.post("/upload-prescription", upload.single("prescription"), (req, res) => {
   }
 });
 
-
-// ================= NEW ROUTE: PLACE ORDER =================
-app.post("/api/orders", (req, res) => {
+// ======================================================
+// ROUTE: Place Order (with email)
+// ======================================================
+app.post("/api/orders", async (req, res) => {
   try {
     const order = req.body;
     if (!order || !order.phone)
@@ -51,7 +104,6 @@ app.post("/api/orders", (req, res) => {
     order.status = "Pending";
     order.createdAt = new Date().toISOString();
 
-    // Save in /data/orders.json
     if (!fs.existsSync("data")) fs.mkdirSync("data");
     const ordersFile = path.join("data", "orders.json");
     const orders = fs.existsSync(ordersFile)
@@ -61,6 +113,27 @@ app.post("/api/orders", (req, res) => {
     fs.writeFileSync(ordersFile, JSON.stringify(orders, null, 2));
 
     console.log("✅ Order saved:", orderId);
+
+    // Try to send order email
+    try {
+      await transporter.sendMail({
+        from: process.env.SMTP_FROM,
+        to: process.env.MERCHANT_EMAIL,
+        subject: `🛒 New Order Received — ${orderId}`,
+        html: `
+          <h2>New Order Received</h2>
+          <p><strong>Order ID:</strong> ${orderId}</p>
+          <p><strong>Customer:</strong> ${order.name}</p>
+          <p><strong>Phone:</strong> ${order.phone}</p>
+          <p><strong>Address:</strong> ${order.address}</p>
+          <pre>${JSON.stringify(order.items || [], null, 2)}</pre>
+        `,
+      });
+      console.log("📧 Order email sent successfully to:", process.env.MERCHANT_EMAIL);
+    } catch (emailErr) {
+      console.error("❌ Order email send failed:", emailErr.message);
+    }
+
     res.json({ success: true, orderId });
   } catch (err) {
     console.error("Order save error:", err);
@@ -68,9 +141,10 @@ app.post("/api/orders", (req, res) => {
   }
 });
 
-
-// ================= NEW ROUTE: PAYMENT PROOF UPLOAD =================
-app.post("/api/payment-proof", upload.single("screenshot"), (req, res) => {
+// ======================================================
+// ROUTE: Payment Proof Upload (with email)
+// ======================================================
+app.post("/api/payment-proof", upload.single("screenshot"), async (req, res) => {
   try {
     const { txnId = "", orderId = "" } = req.body;
     const file = req.file;
@@ -94,6 +168,26 @@ app.post("/api/payment-proof", upload.single("screenshot"), (req, res) => {
     fs.writeFileSync(proofsFile, JSON.stringify(proofs, null, 2));
 
     console.log(`💰 Payment proof received for ${orderId}`);
+
+    // Try to send proof email
+    try {
+      await transporter.sendMail({
+        from: process.env.SMTP_FROM,
+        to: process.env.MERCHANT_EMAIL,
+        subject: `🧾 Payment Proof Received for Order ${orderId}`,
+        html: `
+          <h2>Payment Proof Received</h2>
+          <p><strong>Order ID:</strong> ${orderId}</p>
+          <p><strong>Transaction ID:</strong> ${txnId || "N/A"}</p>
+          <p><strong>Time:</strong> ${new Date().toLocaleString()}</p>
+          ${fileUrl ? `<p><img src="${fileUrl}" width="200"/></p>` : ""}
+        `,
+      });
+      console.log("📧 Payment proof email sent successfully to:", process.env.MERCHANT_EMAIL);
+    } catch (emailErr) {
+      console.error("❌ Payment proof email send failed:", emailErr.message);
+    }
+
     res.json({ success: true, fileUrl });
   } catch (err) {
     console.error("Proof upload error:", err);
@@ -101,6 +195,7 @@ app.post("/api/payment-proof", upload.single("screenshot"), (req, res) => {
   }
 });
 
-
-// ================= SERVER START =================
+// ======================================================
+// SERVER START
+// ======================================================
 app.listen(process.env.PORT || 5000, () => console.log("🚀 Server running"));
