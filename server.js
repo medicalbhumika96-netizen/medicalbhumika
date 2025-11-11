@@ -3,7 +3,7 @@ import path from "path";
 import multer from "multer";
 import express from "express";
 import cors from "cors";
-import nodemailer from "nodemailer";
+import sgMail from "@sendgrid/mail";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -13,7 +13,9 @@ app.use(cors());
 app.use(express.json());
 app.use("/uploads", express.static("uploads"));
 
+// Ensure uploads and data folders exist
 if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
+if (!fs.existsSync("data")) fs.mkdirSync("data");
 
 // ========== Multer Storage ==========
 const storage = multer.diskStorage({
@@ -35,23 +37,29 @@ console.log({
 console.log("----------------------------------------------------");
 
 // ======================================================
-// STEP 2 — Setup SendGrid transporter
+// STEP 2 — Setup SendGrid API
 // ======================================================
-const transporter = nodemailer.createTransport({
-  service: "SendGrid",
-  auth: {
-    user: "apikey", // literally the word "apikey"
-    pass: process.env.SENDGRID_API_KEY,
-  },
-});
+try {
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+  console.log("✅ SendGrid API key set successfully.");
+} catch (err) {
+  console.error("❌ Failed to initialize SendGrid:", err.message);
+}
 
-transporter.verify(function (error, success) {
-  if (error) {
-    console.error("❌ SendGrid connection failed:", error.message);
-  } else {
-    console.log("✅ SendGrid connection ready to send emails.");
+// Reusable email sender
+async function sendEmail({ to, subject, html }) {
+  try {
+    await sgMail.send({
+      to,
+      from: process.env.SMTP_FROM,
+      subject,
+      html,
+    });
+    console.log("📧 Email sent successfully to:", to);
+  } catch (error) {
+    console.error("❌ Email send failed:", error.response?.body || error.message);
   }
-});
+}
 
 // ======================================================
 // STEP 3 — Debug route to confirm ENV on Render
@@ -98,7 +106,6 @@ app.post("/api/orders", async (req, res) => {
     order.status = "Pending";
     order.createdAt = new Date().toISOString();
 
-    if (!fs.existsSync("data")) fs.mkdirSync("data");
     const ordersFile = path.join("data", "orders.json");
     const orders = fs.existsSync(ordersFile)
       ? JSON.parse(fs.readFileSync(ordersFile, "utf8") || "[]")
@@ -108,25 +115,26 @@ app.post("/api/orders", async (req, res) => {
 
     console.log("✅ Order saved:", orderId);
 
-    // Try to send order email
-    try {
-      await transporter.sendMail({
-        from: process.env.SMTP_FROM,
-        to: process.env.MERCHANT_EMAIL,
-        subject: `🛒 New Order Received — ${orderId}`,
-        html: `
-          <h2>New Order Received</h2>
-          <p><strong>Order ID:</strong> ${orderId}</p>
-          <p><strong>Customer:</strong> ${order.name}</p>
-          <p><strong>Phone:</strong> ${order.phone}</p>
-          <p><strong>Address:</strong> ${order.address}</p>
-          <pre>${JSON.stringify(order.items || [], null, 2)}</pre>
-        `,
-      });
-      console.log("📧 Order email sent successfully to:", process.env.MERCHANT_EMAIL);
-    } catch (emailErr) {
-      console.error("❌ Order email send failed:", emailErr.message);
-    }
+    // Send email with order details
+    await sendEmail({
+      to: process.env.MERCHANT_EMAIL,
+      subject: `🛒 New Order Received — ${orderId}`,
+      html: `
+        <h2 style="color:#2b7a78">🛒 New Order from Bhumika Medical</h2>
+        <p><strong>Order ID:</strong> ${orderId}</p>
+        <p><strong>Customer:</strong> ${order.name}</p>
+        <p><strong>Phone:</strong> ${order.phone}</p>
+        <p><strong>Address:</strong> ${order.address}</p>
+        <h3>Items Ordered:</h3>
+        <ul>
+          ${(order.items || [])
+            .map(i => `<li>${i.qty} × ${i.name} — ₹${i.price}</li>`)
+            .join("")}
+        </ul>
+        <p><strong>Total:</strong> ₹${order.total}</p>
+        <p><strong>Status:</strong> ${order.status}</p>
+      `,
+    });
 
     res.json({ success: true, orderId });
   } catch (err) {
@@ -153,7 +161,6 @@ app.post("/api/payment-proof", upload.single("screenshot"), async (req, res) => 
       fileUrl,
     };
 
-    if (!fs.existsSync("data")) fs.mkdirSync("data");
     const proofsFile = path.join("data", "payment-proofs.json");
     const proofs = fs.existsSync(proofsFile)
       ? JSON.parse(fs.readFileSync(proofsFile, "utf8") || "[]")
@@ -163,29 +170,39 @@ app.post("/api/payment-proof", upload.single("screenshot"), async (req, res) => 
 
     console.log(`💰 Payment proof received for ${orderId}`);
 
-    // Try to send proof email
-    try {
-      await transporter.sendMail({
-        from: process.env.SMTP_FROM,
-        to: process.env.MERCHANT_EMAIL,
-        subject: `🧾 Payment Proof Received for Order ${orderId}`,
-        html: `
-          <h2>Payment Proof Received</h2>
-          <p><strong>Order ID:</strong> ${orderId}</p>
-          <p><strong>Transaction ID:</strong> ${txnId || "N/A"}</p>
-          <p><strong>Time:</strong> ${new Date().toLocaleString()}</p>
-          ${fileUrl ? `<p><img src="${fileUrl}" width="200"/></p>` : ""}
-        `,
-      });
-      console.log("📧 Payment proof email sent successfully to:", process.env.MERCHANT_EMAIL);
-    } catch (emailErr) {
-      console.error("❌ Payment proof email send failed:", emailErr.message);
-    }
+    // Send email notification with proof
+    await sendEmail({
+      to: process.env.MERCHANT_EMAIL,
+      subject: `🧾 Payment Proof Received for Order ${orderId}`,
+      html: `
+        <h2>Payment Proof Received</h2>
+        <p><strong>Order ID:</strong> ${orderId}</p>
+        <p><strong>Transaction ID:</strong> ${txnId || "N/A"}</p>
+        <p><strong>Time:</strong> ${new Date().toLocaleString()}</p>
+        ${fileUrl ? `<p><img src="${fileUrl}" width="250"/></p>` : ""}
+      `,
+    });
 
     res.json({ success: true, fileUrl });
   } catch (err) {
     console.error("Proof upload error:", err);
     res.status(500).json({ error: "Server error" });
+  }
+});
+
+// ======================================================
+// TEST ROUTE: SendGrid test email
+// ======================================================
+app.get("/send-test-email", async (req, res) => {
+  try {
+    await sendEmail({
+      to: process.env.MERCHANT_EMAIL,
+      subject: "✅ Test Email — SendGrid API Working",
+      html: "<h2>Your Render backend can now send emails successfully!</h2>",
+    });
+    res.json({ success: true, message: "Test email sent successfully!" });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
