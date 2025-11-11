@@ -27,9 +27,7 @@ const upload = multer({ storage });
 // ======================================================
 console.log("🔍 Checking environment variables...");
 console.log({
-  SMTP_HOST: process.env.SMTP_HOST,
-  SMTP_PORT: process.env.SMTP_PORT,
-  SMTP_USER: process.env.SMTP_USER,
+  SENDGRID_API_KEY: process.env.SENDGRID_API_KEY ? "✅ Loaded" : "❌ Missing",
   SMTP_FROM: process.env.SMTP_FROM,
   MERCHANT_EMAIL: process.env.MERCHANT_EMAIL,
   PORT: process.env.PORT,
@@ -37,23 +35,21 @@ console.log({
 console.log("----------------------------------------------------");
 
 // ======================================================
-// STEP 2 — Setup mail transporter with verification
+// STEP 2 — Setup SendGrid transporter
 // ======================================================
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: process.env.SMTP_PORT,
-  secure: false,
+  service: "SendGrid",
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
+    user: "apikey", // literally the word "apikey"
+    pass: process.env.SENDGRID_API_KEY,
   },
 });
 
 transporter.verify(function (error, success) {
   if (error) {
-    console.error("❌ SMTP connection failed:", error.message);
+    console.error("❌ SendGrid connection failed:", error.message);
   } else {
-    console.log("✅ SMTP connection ready to send emails.");
+    console.log("✅ SendGrid connection ready to send emails.");
   }
 });
 
@@ -62,11 +58,9 @@ transporter.verify(function (error, success) {
 // ======================================================
 app.get("/debug-env", (req, res) => {
   res.json({
-    host: process.env.SMTP_HOST,
-    user: process.env.SMTP_USER,
     from: process.env.SMTP_FROM,
     email: process.env.MERCHANT_EMAIL,
-    port: process.env.SMTP_PORT,
+    sendgrid: !!process.env.SENDGRID_API_KEY,
   });
 });
 
@@ -198,4 +192,5 @@ app.post("/api/payment-proof", upload.single("screenshot"), async (req, res) => 
 // ======================================================
 // SERVER START
 // ======================================================
-app.listen(process.env.PORT || 5000, () => console.log("🚀 Server running"));
+const port = process.env.PORT || 5000;
+app.listen(port, () => console.log(`🚀 Server running on port ${port}`));
