@@ -174,6 +174,11 @@ app.post(
   }
 );
 
+// ===== Root route for Render health check =====
+app.get("/", (req, res) => {
+  res.send("Bhumika Medical Backend Running Successfully");
+});
+
 // ===== Start Server on Render PORT =====
 const port = process.env.PORT || 7000;
 app.listen(port, () =>
