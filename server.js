@@ -131,7 +131,6 @@ app.post("/api/payment-proof", upload.single("screenshot"), async (req, res) => 
 // ------------------------------------------------------
 // START SERVER
 // ------------------------------------------------------
-const port = 7000;
-app.listen(port, () =>
-  console.log(`🚀 Server running on http://localhost:${port}`)
-);
+const port = process.env.PORT || 7000;
+app.listen(port, () => console.log(`🚀 Server running on port ${port}`));
+
