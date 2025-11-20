@@ -1,0 +1,333 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Admin Dashboard — Bhumika Medical</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    :root{--bg:#f4f6fb;--card:#fff;--accent:#0b66ff}
+    body{font-family:Poppins,system-ui,Segoe UI,Roboto,Arial; margin:0;background:var(--bg);color:#0b1220}
+    .wrap{max-width:1100px;margin:30px auto;padding:18px}
+    .card{background:var(--card);border-radius:10px;padding:16px;box-shadow:0 6px 24px rgba(12,14,20,.06);margin-bottom:14px}
+    h1{margin:0;font-size:20px}
+    .top{display:flex;justify-content:space-between;align-items:center;gap:12px}
+    .controls{display:flex;gap:8px}
+    button{background:var(--accent);color:#fff;border:none;padding:8px 12px;border-radius:8px;cursor:pointer}
+    .btn-dark{background:#222}
+    input,select{padding:8px;border-radius:8px;border:1px solid #e6e9ef}
+    table{width:100%;border-collapse:collapse;margin-top:10px}
+    th,td{padding:10px;border-bottom:1px solid #eee;text-align:left;font-size:14px}
+    .muted{color:#6b7280;font-size:13px}
+    .status-pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#eef7ff;color:var(--accent);font-weight:600}
+    .actions button{margin-right:6px}
+    .grid{display:grid;grid-template-columns:1fr 380px;gap:12px;align-items:start}
+    /* detail panel */
+    .detail h3{margin:0 0 8px 0}
+    .detail .field{margin-bottom:8px}
+    .thumb{width:100%;max-width:320px;border-radius:8px;border:1px solid #ddd;object-fit:cover}
+    /* login */
+    .login-centre{min-height:80vh;display:flex;align-items:center;justify-content:center}
+    .login-box{width:360px;padding:20px;border-radius:10px;background:var(--card);box-shadow:0 8px 30px rgba(0,0,0,.06)}
+    .small{font-size:13px;color:#6b7280}
+    /* modal */
+    .modal{position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:999}
+    .modal .card{max-width:860px;width:95%}
+    .row{display:flex;gap:8px}
+    @media(max-width:900px){ .grid{grid-template-columns:1fr} .detail{order:2} }
+  </style>
+</head>
+<body>
+
+<div class="wrap" id="app" style="display:none;">
+  <div class="card top">
+    <div>
+      <h1>Admin Dashboard — Bhumika Medical</h1>
+      <div class="muted">Manage orders — view full details, payment proofs & export CSV</div>
+    </div>
+    <div class="controls">
+      <input id="q" placeholder="Search order id / phone / name" />
+      <select id="filter-status"><option value="">All status</option><option>Pending</option><option>Confirmed</option><option>Out for Delivery</option><option>Delivered</option></select>
+      <button id="btn-search">Search</button>
+      <button id="btn-refresh">Refresh</button>
+      <button id="btn-logout" class="btn-dark">Logout</button>
+      <a id="btn-export" class="btn" href="#" target="_blank" rel="noopener">Export CSV</a>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card" id="ordersCard">
+      <div id="ordersList"><div class="muted">Loading orders…</div></div>
+    </div>
+
+    <div class="card detail" id="detailPanel">
+      <h3>Order details</h3>
+      <div id="detailContent" class="muted">Select an order to view details</div>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen" class="login-centre">
+  <div class="login-box card" style="width:360px">
+    <h2>Admin Login</h2>
+    <p class="small muted">Enter admin email & password (uses simple token auth)</p>
+    <input id="email" placeholder="Email" />
+    <input id="password" type="password" placeholder="Password" />
+    <div style="height:8px"></div>
+    <button id="btn-login">Login</button>
+    <div id="loginErr" class="small" style="color:#b33;margin-top:8px;display:none;"></div>
+  </div>
+</div>
+
+<!-- ORDER DETAILS MODAL -->
+<div id="modal" style="display:none;" class="modal">
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h3 id="modalTitle">Order</h3>
+      <div><button id="closeModal" class="btn btn-dark">Close</button></div>
+    </div>
+
+    <div style="display:flex;gap:12px;margin-top:12px;flex-wrap:wrap">
+      <div style="flex:1;min-width:260px">
+        <div id="modalCustomer"></div>
+        <hr>
+        <div id="modalItems"></div>
+        <hr>
+        <div id="modalPayment"></div>
+      </div>
+      <div style="width:320px">
+        <div id="modalProofWrap"></div>
+        <div style="margin-top:8px" id="modalMeta" class="small muted"></div>
+      </div>
+    </div>
+
+    <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+      <button id="modalNext" class="btn">Next status</button>
+      <button id="modalDelete" class="btn btn-dark">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== CONFIG - change BACKEND if needed ===== */
+const BACKEND = "http://localhost:7000";   // update if your server runs elsewhere
+const API_LOGIN = BACKEND + "/api/admin/login";
+const API_ORDERS = BACKEND + "/api/admin/orders";
+
+/* ===== UI refs ===== */
+const app = document.getElementById('app');
+const loginScreen = document.getElementById('loginScreen');
+const btnLogin = document.getElementById('btn-login');
+const loginErr = document.getElementById('loginErr');
+const btnLogout = document.getElementById('btn-logout');
+const qInput = document.getElementById('q');
+const filterStatus = document.getElementById('filter-status');
+const ordersList = document.getElementById('ordersList');
+const btnRefresh = document.getElementById('btn-refresh');
+const btnSearch = document.getElementById('btn-search');
+const btnExport = document.getElementById('btn-export');
+
+const modal = document.getElementById('modal');
+const closeModal = document.getElementById('closeModal');
+const modalTitle = document.getElementById('modalTitle');
+const modalCustomer = document.getElementById('modalCustomer');
+const modalItems = document.getElementById('modalItems');
+const modalPayment = document.getElementById('modalPayment');
+const modalProofWrap = document.getElementById('modalProofWrap');
+const modalMeta = document.getElementById('modalMeta');
+const modalNext = document.getElementById('modalNext');
+const modalDelete = document.getElementById('modalDelete');
+
+let ORDERS = [];
+
+/* ===== helper for token header ===== */
+function getAuthHeader() {
+  return { "x-admin-token": localStorage.getItem("admin_token") || "" };
+}
+
+/* ===== show/hide screens ===== */
+function showApp() { loginScreen.style.display = 'none'; app.style.display = ''; }
+function showLogin() { app.style.display = 'none'; loginScreen.style.display = ''; }
+
+/* ===== login flow (Option A) ===== */
+btnLogin.addEventListener('click', async () => {
+  loginErr.style.display = 'none';
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value.trim();
+  if (!email || !password) { loginErr.textContent = 'Enter email & password'; loginErr.style.display = 'block'; return; }
+
+  try {
+    const r = await fetch(API_LOGIN, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    if (!r.ok) {
+      const t = await r.json().catch(()=>({})); throw new Error(t.error || 'Login failed');
+    }
+    const data = await r.json();
+    // token expected e.g. { token: "ADMIN_OK" }
+    localStorage.setItem('admin_token', data.token);
+    showApp();
+    await loadOrders();
+  } catch (err) {
+    loginErr.textContent = err.message; loginErr.style.display = 'block';
+  }
+});
+
+/* ===== logout ===== */
+btnLogout.addEventListener('click', ()=>{ localStorage.removeItem('admin_token'); location.reload(); });
+
+/* ===== fetch orders (protected) ===== */
+async function fetchOrders(q='') {
+  const url = new URL(API_ORDERS);
+  if (q) url.searchParams.set('q', q);
+  url.searchParams.set('t', Date.now());
+  const r = await fetch(url.toString(), { headers: getAuthHeader() });
+  if (!r.ok) {
+    if (r.status === 401) { localStorage.removeItem('admin_token'); showLogin(); }
+    throw new Error('Failed to fetch orders');
+  }
+  const data = await r.json();
+  return data.orders || [];
+}
+
+/* ===== render orders table (compact) ===== */
+function renderOrders(orders) {
+  ORDERS = orders;
+  if (!orders.length) { ordersList.innerHTML = '<div class="muted">No orders yet.</div>'; return; }
+  let html = '<table><thead><tr><th>Order</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th><th>Date</th></tr></thead><tbody>';
+  orders.forEach(o=>{
+    const itemsText = (o.items||[]).map(i=>`${i.qty}× ${i.name}`).slice(0,3).join(', ');
+    const total = (typeof o.total === 'number' || !isNaN(Number(o.total))) ? Number(o.total).toFixed(2) : calcTotal(o).toFixed(2);
+    html += `<tr data-id="${o.orderId}" class="order-row" style="cursor:pointer">
+      <td><b>${escapeHtml(o.orderId||'')}</b><div class="muted small">${escapeHtml(o.phone||'')}</div></td>
+      <td>${escapeHtml(o.name||'')}<div class="small muted">${escapeHtml(o.address||'')}</div></td>
+      <td>${escapeHtml(itemsText||'')}</td>
+      <td>₹${total}</td>
+      <td><span class="status-pill">${escapeHtml(o.status||'Pending')}</span></td>
+      <td class="muted">${escapeHtml(o.createdAt||'')}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  ordersList.innerHTML = html;
+
+  // attach click handlers to rows
+  document.querySelectorAll('.order-row').forEach(r=>{
+    r.addEventListener('click', (e)=>{
+      const id = r.dataset.id;
+      const order = ORDERS.find(x=>x.orderId === id);
+      openOrderModal(order);
+    });
+  });
+
+  // update export link
+  btnExport.href = `${BACKEND}/api/admin/export`;
+}
+
+/* ===== utility escapeHtml ===== */
+function escapeHtml(s=''){ return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]); }
+
+/* ===== calculate total if missing ===== */
+function calcTotal(o){
+  if (o.total && !isNaN(Number(o.total))) return Number(o.total);
+  const total = (o.items||[]).reduce((s,i)=>s + (Number(i.price||0) * Number(i.qty||0)), 0);
+  return total;
+}
+
+/* ===== open modal to show full details ===== */
+function openOrderModal(o) {
+  if(!o) return;
+  modalTitle.textContent = `Order — ${o.orderId}`;
+  modalCustomer.innerHTML = `
+    <div class="field"><strong>${escapeHtml(o.name||'')}</strong></div>
+    <div class="small muted">${escapeHtml(o.phone||'')}</div>
+    <div class="field">${escapeHtml(o.address||'')}</div>
+  `;
+  // items table
+  const itemsHtml = (o.items||[]).map(it=>`<div style="margin-bottom:8px"><strong>${escapeHtml(it.name)}</strong><div class="muted small">${it.qty} × ₹${(Number(it.price)||0).toFixed(2)} = ₹${(Number(it.price||0)*Number(it.qty||0)).toFixed(2)}</div></div>`).join('');
+  modalItems.innerHTML = `<h4>Items</h4>${itemsHtml}<div style="margin-top:8px"><strong>Total:</strong> ₹${calcTotal(o).toFixed(2)}</div>`;
+
+  // payment
+  const payMethod = o.payment?.method || o.paymentMethod || o.paymentMethodName || o.payMethod || 'COD';
+  const txn = o.payment?.txn || o.txnId || o.txn || o.transactionId || '';
+  modalPayment.innerHTML = `<h4>Payment</h4><div class="field"><strong>Method:</strong> ${escapeHtml(payMethod)}</div><div class="field"><strong>Txn:</strong> ${escapeHtml(txn)}</div>`;
+
+  // proof image
+  const proofUrl = o.payment?.proof || o.paymentProof || o.paymentScreenshot || o.payment_image || o.paymentImage || o.screenshot || o.fileUrl || o.paymentProofUrl || '';
+  if (proofUrl) {
+    modalProofWrap.innerHTML = `<div><img src="${proofUrl}" alt="proof" class="thumb" onclick="window.open('${proofUrl}','_blank')"></div>`;
+  } else {
+    modalProofWrap.innerHTML = `<div class="small muted">No payment screenshot provided</div>`;
+  }
+
+  // metadata
+  modalMeta.innerHTML = `<div>Placed: ${escapeHtml(o.createdAt||'')}</div><div>Source page: ${escapeHtml(o.source || o.page || o.origin || o.referer || '')}</div><div class="muted">Order notes: ${escapeHtml(o.notes||o.comment||'')}</div>`;
+
+  // wire modal buttons
+  modalNext.onclick = async ()=>{
+    const steps = ['Pending','Confirmed','Out for Delivery','Delivered'];
+    const cur = o.status || 'Pending';
+    const idx = steps.indexOf(cur);
+    const next = steps[Math.min(3, idx+1)];
+    if (!confirm(`Move status to ${next}?`)) return;
+    try {
+      await fetch(`${BACKEND}/api/admin/orders/${encodeURIComponent(o.orderId)}/status`, {
+        method:'POST',
+        headers: Object.assign({'content-type':'application/json'}, getAuthHeader()),
+        body: JSON.stringify({ status: next })
+      });
+      await reloadOrdersAndClose(o.orderId);
+    } catch(err){ alert('Failed to update status'); }
+  };
+
+  modalDelete.onclick = async ()=>{
+    if(!confirm('Delete this order?')) return;
+    try {
+      await fetch(`${BACKEND}/api/admin/orders/${encodeURIComponent(o.orderId)}`, {
+        method:'DELETE',
+        headers: getAuthHeader()
+      });
+      await reloadOrdersAndClose();
+    } catch(e){ alert('Delete failed'); }
+  };
+
+  modal.style.display = 'flex';
+}
+
+/* ===== reload orders and optionally re-open order ===== */
+async function reloadOrdersAndClose(reopenId){
+  try {
+    const orders = await fetchOrders(qInput.value.trim());
+    renderOrders(orders);
+    modal.style.display = 'none';
+  } catch(e) {
+    alert('Refresh failed');
+  }
+}
+
+/* ===== event handlers for search / refresh ===== */
+btnRefresh.addEventListener('click', async ()=>{ try{ const o = await fetchOrders(qInput.value.trim()); renderOrders(o);}catch(e){alert('Refresh failed')}});
+btnSearch.addEventListener('click', async ()=>{ try{ const o = await fetchOrders(qInput.value.trim()); renderOrders(o);}catch(e){alert('Search failed')}});
+qInput.addEventListener('keydown',(e)=>{ if(e.key==='Enter') btnSearch.click(); });
+closeModal.addEventListener('click', ()=> modal.style.display='none');
+
+/* ===== initial boot ===== */
+(async function init(){
+  // check token
+  if (localStorage.getItem('admin_token') !== 'ADMIN_OK') { showLogin(); return; }
+  try {
+    showApp();
+    const orders = await fetchOrders();
+    renderOrders(orders);
+    // set export link
+    btnExport.href = `${BACKEND}/api/admin/export`;
+  } catch (err) {
+    console.error(err);
+    localStorage.removeItem('admin_token');
+    showLogin();
+  }
+})();
+</script>
+</body>
+</html>
