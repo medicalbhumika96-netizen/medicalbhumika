@@ -1410,10 +1410,3 @@ a {
   top: 12px;
   color: var(--accent-dark);
 }
-/* Fly-to-cart animation helper */
-.flying {
-  border-radius: 6px;
-  box-shadow: 0 12px 30px rgba(0,0,0,0.12);
-  pointer-events: none;
-  transition: transform 700ms cubic-bezier(.2,.8,.2,1), opacity 600ms;
-}
