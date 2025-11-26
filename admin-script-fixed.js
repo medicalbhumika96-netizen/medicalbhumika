@@ -1,5 +1,6 @@
 // admin-client.js - minimal admin UI JS
-const BACKEND = location.origin; // assume same origin or set to your backend URL
+const BACKEND = "https://medicalbhumika-2.onrender.com";
+// assume same origin or set to your backend URL
 const API_LOGIN = BACKEND + "/api/admin/login";
 const API_ORDERS = BACKEND + "/api/admin/orders";
 
