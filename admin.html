@@ -1,31 +1,139 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Admin — Bhumika Medical</title>
   <style>
-    :root{--bg:#f4f6fb;--card:#fff;--accent:#0b66ff}
-    body{font-family:Poppins,Segoe UI,Roboto,Arial;margin:0;background:var(--bg);color:#0b1220}
-    .wrap{max-width:1100px;margin:24px auto;padding:18px}
-    .card{background:var(--card);padding:14px;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.06);margin-bottom:12px}
-    .top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
-    input,select{padding:8px;border-radius:8px;border:1px solid #e6e9ef}
-    button{background:var(--accent);color:#fff;border:0;padding:8px 12px;border-radius:8px;cursor:pointer}
-    .btn-dark{background:#222}
-    table{width:100%;border-collapse:collapse;margin-top:10px}
-    th,td{padding:10px;border-bottom:1px solid #eee;text-align:left;font-size:14px}
-    .muted{color:#6b7280;font-size:13px}
-    .status-pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#eef7ff;color:var(--accent);font-weight:600}
-    .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);align-items:center;justify-content:center;z-index:999}
-    .modal .card{max-width:860px;width:95%}
-    .thumb{max-width:320px;border-radius:8px;border:1px solid #ddd;object-fit:cover}
-    .small{font-size:13px;color:#6b7280}
-    .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
-    .danger{background:#c33}
-    .muted-block{color:#6b7280;margin-top:6px}
+    :root {
+      --bg: #f4f6fb;
+      --card: #fff;
+      --accent: #0b66ff
+    }
+
+    body {
+      font-family: Poppins, Segoe UI, Roboto, Arial;
+      margin: 0;
+      background: var(--bg);
+      color: #0b1220
+    }
+
+    .wrap {
+      max-width: 1100px;
+      margin: 24px auto;
+      padding: 18px
+    }
+
+    .card {
+      background: var(--card);
+      padding: 14px;
+      border-radius: 10px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, .06);
+      margin-bottom: 12px
+    }
+
+    .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap
+    }
+
+    input,
+    select {
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #e6e9ef
+    }
+
+    button {
+      background: var(--accent);
+      color: #fff;
+      border: 0;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer
+    }
+
+    .btn-dark {
+      background: #222
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px
+    }
+
+    th,
+    td {
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+      text-align: left;
+      font-size: 14px
+    }
+
+    .muted {
+      color: #6b7280;
+      font-size: 13px
+    }
+
+    .status-pill {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #eef7ff;
+      color: var(--accent);
+      font-weight: 600
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .45);
+      align-items: center;
+      justify-content: center;
+      z-index: 999
+    }
+
+    .modal .card {
+      max-width: 860px;
+      width: 95%
+    }
+
+    .thumb {
+      max-width: 320px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      object-fit: cover
+    }
+
+    .small {
+      font-size: 13px;
+      color: #6b7280
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      margin-top: 12px
+    }
+
+    .danger {
+      background: #c33
+    }
+
+    .muted-block {
+      color: #6b7280;
+      margin-top: 6px
+    }
   </style>
 </head>
+
 <body>
   <div class="wrap" id="app" style="display:none">
     <div class="card top">
@@ -45,12 +153,15 @@
         <button id="btn-search">Search</button>
         <button id="btn-refresh">Refresh</button>
         <button id="btn-logout" class="btn-dark">Logout</button>
-        <a id="btn-export" class="btn" href="#" target="_blank" rel="noopener" style="text-decoration:none;margin-left:8px">Export CSV</a>
+        <a id="btn-export" class="btn" href="#" target="_blank" rel="noopener"
+          style="text-decoration:none;margin-left:8px">Export CSV</a>
       </div>
     </div>
 
     <div class="card">
-      <div id="ordersList"><div class="muted">Loading orders…</div></div>
+      <div id="ordersList">
+        <div class="muted">Loading orders…</div>
+      </div>
     </div>
   </div>
 
@@ -99,219 +210,220 @@
     </div>
   </div>
 
-<script>
-/* ===== CONFIG ===== */
-const BACKEND = "https://medicalbhumika-2.onrender.com";
-const API_LOGIN = BACKEND + "/api/admin/login";
-const API_ORDERS = BACKEND + "/api/admin/orders";
+  <script>
+    /* ===== CONFIG ===== */
+    const BACKEND = "https://medicalbhumika-2.onrender.com";
+    const API_LOGIN = BACKEND + "/api/admin/login";
+    const API_ORDERS = BACKEND + "/api/admin/orders";
 
-/* ===== REFS ===== */
-const app = document.getElementById('app');
-const loginScreen = document.getElementById('loginScreen');
-const btnLogin = document.getElementById('btn-login');
-const loginErr = document.getElementById('loginErr');
-const btnLogout = document.getElementById('btn-logout');
-const qInput = document.getElementById('q');
-const filterStatus = document.getElementById('filter-status');
-const ordersList = document.getElementById('ordersList');
-const btnRefresh = document.getElementById('btn-refresh');
-const btnSearch = document.getElementById('btn-search');
-const btnExport = document.getElementById('btn-export');
+    /* ===== REFS ===== */
+    const app = document.getElementById('app');
+    const loginScreen = document.getElementById('loginScreen');
+    const btnLogin = document.getElementById('btn-login');
+    const loginErr = document.getElementById('loginErr');
+    const btnLogout = document.getElementById('btn-logout');
+    const qInput = document.getElementById('q');
+    const filterStatus = document.getElementById('filter-status');
+    const ordersList = document.getElementById('ordersList');
+    const btnRefresh = document.getElementById('btn-refresh');
+    const btnSearch = document.getElementById('btn-search');
+    const btnExport = document.getElementById('btn-export');
 
-const modal = document.getElementById('modal');
-const closeModal = document.getElementById('closeModal');
-const modalTitle = document.getElementById('modalTitle');
-const modalCustomer = document.getElementById('modalCustomer');
-const modalItems = document.getElementById('modalItems');
-const modalPayment = document.getElementById('modalPayment');
-const modalProofWrap = document.getElementById('modalProofWrap');
-const modalMeta = document.getElementById('modalMeta');
-const modalNext = document.getElementById('modalNext');
-const modalDelete = document.getElementById('modalDelete');
+    const modal = document.getElementById('modal');
+    const closeModal = document.getElementById('closeModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalCustomer = document.getElementById('modalCustomer');
+    const modalItems = document.getElementById('modalItems');
+    const modalPayment = document.getElementById('modalPayment');
+    const modalProofWrap = document.getElementById('modalProofWrap');
+    const modalMeta = document.getElementById('modalMeta');
+    const modalNext = document.getElementById('modalNext');
+    const modalDelete = document.getElementById('modalDelete');
 
-let ORDERS = [];
+    let ORDERS = [];
 
-/* ===== helpers ===== */
-function showApp(){ loginScreen.style.display='none'; app.style.display=''; }
-function showLogin(){ app.style.display='none'; loginScreen.style.display=''; }
-function getAuthHeader(){ return { "x-admin-token": localStorage.getItem('admin_token') || "" }; }
-function esc(s=''){ return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]); }
+    /* ===== helpers ===== */
+    function showApp() { loginScreen.style.display = 'none'; app.style.display = ''; }
+    function showLogin() { app.style.display = 'none'; loginScreen.style.display = ''; }
+    function getAuthHeader() { return { "x-admin-token": localStorage.getItem('admin_token') || "" }; }
+    function esc(s = '') { return String(s || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m]); }
 
-/* ===== LOGIN ===== */
-btnLogin.addEventListener('click', async ()=>{
-  loginErr.style.display='none';
-  const email = document.getElementById('email').value.trim();
-  const password = document.getElementById('password').value.trim();
-  if(!email||!password){ loginErr.textContent='Enter email & password'; loginErr.style.display='block'; return; }
-  try{
-    const r = await fetch(API_LOGIN,{
-      method:'POST',
-      headers:{'content-type':'application/json'},
-      body: JSON.stringify({ email, password })
+    /* ===== LOGIN ===== */
+    btnLogin.addEventListener('click', async () => {
+      loginErr.style.display = 'none';
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value.trim();
+      if (!email || !password) { loginErr.textContent = 'Enter email & password'; loginErr.style.display = 'block'; return; }
+      try {
+        const r = await fetch(API_LOGIN, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        if (!r.ok) {
+          const t = await r.json().catch(() => ({}));
+          throw new Error(t.error || 'Login failed');
+        }
+        const data = await r.json();
+        // store token returned by backend
+        localStorage.setItem('admin_token', data.token);
+        showApp();
+        await loadOrders();
+      } catch (err) {
+        loginErr.textContent = err.message; loginErr.style.display = 'block';
+      }
     });
-    if(!r.ok){
-      const t = await r.json().catch(()=>({}));
-      throw new Error(t.error || 'Login failed');
+
+    /* ===== LOGOUT ===== */
+    btnLogout.addEventListener('click', () => { localStorage.removeItem('admin_token'); location.reload(); });
+
+    /* ===== FETCH ORDERS ===== */
+    async function fetchOrders(q = '') {
+      const url = new URL(API_ORDERS);
+      if (q) url.searchParams.set('q', q);
+      url.searchParams.set('t', Date.now());
+      const r = await fetch(url.toString(), { headers: getAuthHeader() });
+      if (!r.ok) {
+        if (r.status === 401) { localStorage.removeItem('admin_token'); showLogin(); }
+        throw new Error('Failed to fetch orders');
+      }
+      const data = await r.json();
+      return data.orders || [];
     }
-    const data = await r.json();
-    // store token returned by backend
-    localStorage.setItem('admin_token', data.token);
-    showApp();
-    await loadOrders();
-  }catch(err){
-    loginErr.textContent = err.message; loginErr.style.display='block';
-  }
-});
 
-/* ===== LOGOUT ===== */
-btnLogout.addEventListener('click', ()=>{ localStorage.removeItem('admin_token'); location.reload(); });
+    /* ===== RENDER ORDERS ===== */
+    function renderOrders(orders) {
+      ORDERS = orders;
+      if (!orders.length) { ordersList.innerHTML = '<div class="muted">No orders found.</div>'; return; }
 
-/* ===== FETCH ORDERS ===== */
-async function fetchOrders(q=''){
-  const url = new URL(API_ORDERS);
-  if(q) url.searchParams.set('q', q);
-  url.searchParams.set('t', Date.now());
-  const r = await fetch(url.toString(), { headers: getAuthHeader() });
-  if(!r.ok){
-    if(r.status === 401){ localStorage.removeItem('admin_token'); showLogin(); }
-    throw new Error('Failed to fetch orders');
-  }
-  const data = await r.json();
-  return data.orders || [];
-}
-
-/* ===== RENDER ORDERS ===== */
-function renderOrders(orders){
-  ORDERS = orders;
-  if(!orders.length){ ordersList.innerHTML = '<div class="muted">No orders found.</div>'; return; }
-
-  let html = '<table><thead><tr><th>Order</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th><th>Date</th></tr></thead><tbody>';
-  orders.forEach(o=>{
-    const itemsTxt = (o.items||[]).map(i=>`${i.qty}× ${i.name}`).slice(0,3).join(', ');
-    const total = (typeof o.total === 'number' || !isNaN(Number(o.total))) ? Number(o.total).toFixed(2) : ( (o.items||[]).reduce((s,i)=>s + (Number(i.price||0)*Number(i.qty||0)),0) ).toFixed(2);
-    html += `<tr data-id="${esc(o.orderId||'')}" style="cursor:pointer">
-      <td><b>${esc(o.orderId||'')}</b><div class="muted">${esc(o.phone||'')}</div></td>
-      <td>${esc(o.name||'')}<div class="muted small">${esc(o.address||'')}</div></td>
-      <td>${esc(itemsTxt||'')}</td>
+      let html = '<table><thead><tr><th>Order</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th><th>Date</th></tr></thead><tbody>';
+      orders.forEach(o => {
+        const itemsTxt = (o.items || []).map(i => `${i.qty}× ${i.name}`).slice(0, 3).join(', ');
+        const total = (typeof o.total === 'number' || !isNaN(Number(o.total))) ? Number(o.total).toFixed(2) : ((o.items || []).reduce((s, i) => s + (Number(i.price || 0) * Number(i.qty || 0)), 0)).toFixed(2);
+        html += `<tr data-id="${esc(o.orderId || '')}" style="cursor:pointer">
+      <td><b>${esc(o.orderId || '')}</b><div class="muted">${esc(o.phone || '')}</div></td>
+      <td>${esc(o.name || '')}<div class="muted small">${esc(o.address || '')}</div></td>
+      <td>${esc(itemsTxt || '')}</td>
       <td>₹${total}</td>
-      <td><span class="status-pill">${esc(o.status||'Pending')}</span></td>
-      <td class="muted">${esc(o.createdAt||'')}</td>
+      <td><span class="status-pill">${esc(o.status || 'Pending')}</span></td>
+      <td class="muted">${esc(o.createdAt || '')}</td>
     </tr>`;
-  });
-  html += '</tbody></table>';
-  ordersList.innerHTML = html;
-
-  // attach click to open modal
-  document.querySelectorAll('tr[data-id]').forEach(r=>{
-    r.addEventListener('click', ()=>{
-      const id = r.dataset.id;
-      const ord = ORDERS.find(x=>x.orderId === id);
-      openOrderModal(ord);
-    });
-  });
-
-  // export link
-  btnExport.href = `${BACKEND}/api/admin/export`;
-}
-
-/* ===== OPEN ORDER MODAL ===== */
-function openOrderModal(o){
-  if(!o) { alert('Order data missing'); return; }
-  modalTitle.textContent = `Order — ${o.orderId || ''}`;
-  modalCustomer.innerHTML = `<div><strong>${esc(o.name||'')}</strong></div><div class="small muted">${esc(o.phone||'')}</div><div>${esc(o.address||'')}</div>`;
-  // items
-  const itemsHtml = (o.items||[]).map(it=>`<div style="margin-bottom:8px"><strong>${esc(it.name)}</strong><div class="muted small">${esc(it.qty)} × ₹${Number(it.price||0).toFixed(2)} = ₹${(Number(it.price||0)*Number(it.qty||0)).toFixed(2)}</div></div>`).join('');
-  modalItems.innerHTML = `<h4>Items</h4>${itemsHtml}<div style="margin-top:8px"><strong>Total:</strong> ₹${(Number(o.total||0)).toFixed(2)}</div>`;
-
-  // payment
-  const payMethod = (o.payment && o.payment.method) || o.paymentMethod || o.payMethod || 'COD';
-  const txn = (o.payment && o.payment.txn) || o.txn || o.txnId || '';
-  modalPayment.innerHTML = `<h4>Payment</h4><div class="muted-block"><strong>Method:</strong> ${esc(payMethod)}</div><div class="muted-block"><strong>Txn:</strong> ${esc(txn)}</div>`;
-
-  // proof image attempts - check common fields
-  const proofUrl = (o.payment && o.payment.fileUrl) || o.paymentProof || o.payment_image || o.screenshot || o.fileUrl || '';
-  if(proofUrl){
-    modalProofWrap.innerHTML = `<div><img src="${proofUrl}" alt="proof" class="thumb" onclick="window.open('${proofUrl}','_blank')"></div>`;
-  } else {
-    modalProofWrap.innerHTML = `<div class="small muted">No payment screenshot provided</div>`;
-  }
-
-  // meta
-  modalMeta.innerHTML = `<div>Placed: ${esc(o.createdAt||o.date||'')}</div><div>Source: ${esc(o.source||o.page||o.origin||'')}</div><div class="muted">Notes: ${esc(o.notes||o.comment||'')}</div>`;
-
-  // wire next status button
-  modalNext.onclick = async ()=>{
-    const steps = ['Pending','Confirmed','Out for Delivery','Delivered'];
-    const cur = o.status || 'Pending';
-    const idx = steps.indexOf(cur);
-    const next = steps[Math.min(steps.length-1, idx+1)];
-    if(!confirm(`Move status to ${next}?`)) return;
-    try{
-      const req = await fetch(`${BACKEND}/api/admin/orders/${encodeURIComponent(o.orderId)}/status`, {
-        method:'POST',
-        headers: Object.assign({'content-type':'application/json'}, getAuthHeader()),
-        body: JSON.stringify({ status: next })
       });
-      if(!req.ok) throw new Error('Update failed');
-      await reloadOrdersAndClose();
-    }catch(e){
-      alert('Failed to update status');
-    }
-  };
+      html += '</tbody></table>';
+      ordersList.innerHTML = html;
 
-  // delete
-  modalDelete.onclick = async ()=>{
-    if(!confirm('Delete this order?')) return;
-    try{
-      const req = await fetch(`${BACKEND}/api/admin/orders/${encodeURIComponent(o.orderId)}`, {
-        method:'DELETE',
-        headers: getAuthHeader()
+      // attach click to open modal
+      document.querySelectorAll('tr[data-id]').forEach(r => {
+        r.addEventListener('click', () => {
+          const id = r.dataset.id;
+          const ord = ORDERS.find(x => x.orderId === id);
+          openOrderModal(ord);
+        });
       });
-      if(!req.ok) throw new Error('Delete failed');
-      await reloadOrdersAndClose();
-    }catch(e){
-      alert('Delete failed');
+
+      // export link
+      btnExport.href = `${BACKEND}/api/admin/export`;
     }
-  };
 
-  modal.style.display = 'flex';
-  modal.setAttribute('aria-hidden','false');
-}
+    /* ===== OPEN ORDER MODAL ===== */
+    function openOrderModal(o) {
+      if (!o) { alert('Order data missing'); return; }
+      modalTitle.textContent = `Order — ${o.orderId || ''}`;
+      modalCustomer.innerHTML = `<div><strong>${esc(o.name || '')}</strong></div><div class="small muted">${esc(o.phone || '')}</div><div>${esc(o.address || '')}</div>`;
+      // items
+      const itemsHtml = (o.items || []).map(it => `<div style="margin-bottom:8px"><strong>${esc(it.name)}</strong><div class="muted small">${esc(it.qty)} × ₹${Number(it.price || 0).toFixed(2)} = ₹${(Number(it.price || 0) * Number(it.qty || 0)).toFixed(2)}</div></div>`).join('');
+      modalItems.innerHTML = `<h4>Items</h4>${itemsHtml}<div style="margin-top:8px"><strong>Total:</strong> ₹${(Number(o.total || 0)).toFixed(2)}</div>`;
 
-/* ===== reload and close modal ===== */
-async function reloadOrdersAndClose(){
-  try{
-    const r = await fetchOrders(qInput.value.trim());
-    renderOrders(r);
-    modal.style.display = 'none';
-    modal.setAttribute('aria-hidden','true');
-  }catch(e){
-    alert('Refresh failed');
-  }
-}
+      // payment
+      const payMethod = (o.payment && o.payment.method) || o.paymentMethod || o.payMethod || 'COD';
+      const txn = (o.payment && o.payment.txn) || o.txn || o.txnId || '';
+      modalPayment.innerHTML = `<h4>Payment</h4><div class="muted-block"><strong>Method:</strong> ${esc(payMethod)}</div><div class="muted-block"><strong>Txn:</strong> ${esc(txn)}</div>`;
 
-/* ===== search/refresh handlers ===== */
-btnRefresh.addEventListener('click', async ()=>{ try{ const o = await fetchOrders(qInput.value.trim()); renderOrders(o);}catch(e){alert('Refresh failed')}});
-btnSearch.addEventListener('click', async ()=>{ try{ const o = await fetchOrders(qInput.value.trim()); renderOrders(o);}catch(e){alert('Search failed')}});
-qInput.addEventListener('keydown',(e)=>{ if(e.key==='Enter') btnSearch.click(); });
-closeModal.addEventListener('click', ()=> { modal.style.display='none'; modal.setAttribute('aria-hidden','true'); });
+      // proof image attempts - check common fields
+      const proofUrl = (o.payment && o.payment.fileUrl) || o.paymentProof || o.payment_image || o.screenshot || o.fileUrl || '';
+      if (proofUrl) {
+        modalProofWrap.innerHTML = `<div><img src="${proofUrl}" alt="proof" class="thumb" onclick="window.open('${proofUrl}','_blank')"></div>`;
+      } else {
+        modalProofWrap.innerHTML = `<div class="small muted">No payment screenshot provided</div>`;
+      }
 
-/* ===== initial boot ===== */
-(async function init(){
-  try{
-    const token = localStorage.getItem('admin_token');
-    if(!token){ showLogin(); return; }
-    // token exists — try to load
-    showApp();
-    const orders = await fetchOrders();
-    renderOrders(orders);
-  }catch(err){
-    console.error('init error',err);
-    localStorage.removeItem('admin_token');
-    showLogin();
-  }
-})();
+      // meta
+      modalMeta.innerHTML = `<div>Placed: ${esc(o.createdAt || o.date || '')}</div><div>Source: ${esc(o.source || o.page || o.origin || '')}</div><div class="muted">Notes: ${esc(o.notes || o.comment || '')}</div>`;
 
-</script>
+      // wire next status button
+      modalNext.onclick = async () => {
+        const steps = ['Pending', 'Confirmed', 'Out for Delivery', 'Delivered'];
+        const cur = o.status || 'Pending';
+        const idx = steps.indexOf(cur);
+        const next = steps[Math.min(steps.length - 1, idx + 1)];
+        if (!confirm(`Move status to ${next}?`)) return;
+        try {
+          const req = await fetch(`${BACKEND}/api/admin/orders/${encodeURIComponent(o.orderId)}/status`, {
+            method: 'POST',
+            headers: Object.assign({ 'content-type': 'application/json' }, getAuthHeader()),
+            body: JSON.stringify({ status: next })
+          });
+          if (!req.ok) throw new Error('Update failed');
+          await reloadOrdersAndClose();
+        } catch (e) {
+          alert('Failed to update status');
+        }
+      };
+
+      // delete
+      modalDelete.onclick = async () => {
+        if (!confirm('Delete this order?')) return;
+        try {
+          const req = await fetch(`${BACKEND}/api/admin/orders/${encodeURIComponent(o.orderId)}`, {
+            method: 'DELETE',
+            headers: getAuthHeader()
+          });
+          if (!req.ok) throw new Error('Delete failed');
+          await reloadOrdersAndClose();
+        } catch (e) {
+          alert('Delete failed');
+        }
+      };
+
+      modal.style.display = 'flex';
+      modal.setAttribute('aria-hidden', 'false');
+    }
+
+    /* ===== reload and close modal ===== */
+    async function reloadOrdersAndClose() {
+      try {
+        const r = await fetchOrders(qInput.value.trim());
+        renderOrders(r);
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+      } catch (e) {
+        alert('Refresh failed');
+      }
+    }
+
+    /* ===== search/refresh handlers ===== */
+    btnRefresh.addEventListener('click', async () => { try { const o = await fetchOrders(qInput.value.trim()); renderOrders(o); } catch (e) { alert('Refresh failed') } });
+    btnSearch.addEventListener('click', async () => { try { const o = await fetchOrders(qInput.value.trim()); renderOrders(o); } catch (e) { alert('Search failed') } });
+    qInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') btnSearch.click(); });
+    closeModal.addEventListener('click', () => { modal.style.display = 'none'; modal.setAttribute('aria-hidden', 'true'); });
+
+    /* ===== initial boot ===== */
+    (async function init() {
+      try {
+        const token = localStorage.getItem('admin_token');
+        if (!token) { showLogin(); return; }
+        // token exists — try to load
+        showApp();
+        const orders = await fetchOrders();
+        renderOrders(orders);
+      } catch (err) {
+        console.error('init error', err);
+        localStorage.removeItem('admin_token');
+        showLogin();
+      }
+    })();
+
+  </script>
 </body>
+
 </html>
