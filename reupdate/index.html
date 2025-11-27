@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Bhumika Medical — Local Orders</title>
+
+  <!-- Google font -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
+
+
+</head>
+
+<body>
+  <!-- NAV -->
+  <nav class="topbar" role="navigation" aria-label="Main">
+    <div class="nav-left">
+      <img src="img/logo.png" alt="logo" class="nav-logo" />
+      <div class="brand">
+        <div class="brand-name">Bhumika Medical</div>
+
+      </div>
+    </div>
+
+    <div class="nav-right">
+      <form id="nav-search-form" class="nav-search" role="search" onsubmit="return false">
+        <input id="nav-search" placeholder="Search medicines or company" aria-label="Search products">
+        <button id="nav-search-btn" title="Search">🔍</button>
+      </form>
+      <!-- Search Suggestions Dropdown -->
+      <div id="search-suggestions" class="search-suggestions" aria-live="polite"></div>
+
+
+      <ul class="nav-links">
+        <li><a href="#home" data-scroll>Home</a></li>
+        <li><a href="#products" data-scroll>Products</a></li>
+        <li><a href="#about" data-scroll>About</a></li>
+        <li><a href="#contact" data-scroll>Contact</a></li>
+      </ul>
+
+      <a class="wa-btn" id="wa-cta" href="https://wa.me/918003929804" target="_blank" rel="noopener">Chat on
+        WhatsApp</a>
+
+      <button class="nav-toggle" id="nav-toggle" aria-label="Toggle menu">☰</button>
+    </div>
+  </nav>
+
+  <main class="container">
+    <!-- HERO / SLIDER -->
+    <section id="home" class="hero" aria-roledescription="carousel">
+      <div class="hero-slider" id="hero-slider">
+        <!-- Slider items use online images via Unsplash "source" queries -->
+        <div class="slide active" data-img="img/shop1.jpg">
+          <div class="slide-left">
+            <h2>Trusted Local Pharmacy</h2>
+            <p>Genuine medicines • Fast home delivery • Prescription-friendly</p>
+            <div class="hero-ctas">
+              <a href="#products" class="btn btn-ghost" data-scroll>Shop products</a>
+              <a href="https://wa.me/918003929804" class="btn" target="_blank">Order on WhatsApp</a>
+            </div>
+          </div>
+          <div class="slide-visual"></div>
+        </div>
+
+        <div class="slide" data-img="img/shop3.jpg">
+          <div class="slide-left">
+            <h2>Prescription Upload</h2>
+            <p>Upload your prescription and we'll process it quickly and safely.</p>
+            <div class="hero-ctas">
+              <a href="#products" class="btn btn-ghost" data-scroll>See offers</a>
+              <a href="#contact" class="btn" data-scroll>Contact us</a>
+            </div>
+          </div>
+          <div class="slide-visual"></div>
+        </div>
+
+        <div class="slide"
+          data-img="https://www.shutterstock.com/image-vector/white-truck-box-path-tracking-600nw-2490530993.jpg">
+          <div class="slide-left">
+            <h2>Fast & Secure Delivery</h2>
+            <p>Multiple payment options: UPI, GPay, Paytm or Cash on Delivery.</p>
+            <div class="hero-ctas">
+              <a href="#products" class="btn btn-ghost" data-scroll>Browse</a>
+              <a href="#contact" class="btn" data-scroll>Know more</a>
+            </div>
+          </div>
+          <div class="slide-visual"></div>
+        </div>
+
+        <div class="slider-controls">
+          <button id="prev-slide" aria-label="Previous">‹</button>
+          <div id="slider-dots" class="dots" aria-hidden="false"></div>
+          <button id="next-slide" aria-label="Next">›</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- GRID: PRODUCTS + CART -->
+    <div class="grid">
+      <main id="products">
+        <div class="card hero-card">
+          <div class="product-header">
+            <strong>Products</strong>
+
+          </div>
+          <div id="product-list" class="products" aria-live="polite"></div>
+        </div>
+
+         <div class="card glass upload-card section-anim" id="upload-card">
+          <div class="upload-head">
+            <strong>Upload Prescription</strong>
+            <span class="small muted">Secure & private — pharmacists will review</span>
+          </div>
+
+          <form id="prescription-form" class="prescription-form" onsubmit="return false">
+            <div class="field-row">
+              <div class="field floating">
+                <input id="presc-name" placeholder=" " required>
+                <label for="presc-name">Customer Name</label>
+                <span class="field-icon">👤</span>
+              </div>
+              <div class="field floating">
+                <input id="presc-phone" placeholder=" " required>
+                <label for="presc-phone">Mobile Number</label>
+                <span class="field-icon">📞</span>
+              </div>
+            </div>
+
+            <div class="field floating">
+              <input id="presc-address" placeholder=" " required>
+              <label for="presc-address">Address</label>
+              <span class="field-icon">📍</span>
+            </div>
+
+            <div id="dropzone" class="dropzone" aria-label="Drag and drop prescription here">
+              <div class="dz-inner">
+                <div class="dz-illustration">📎</div>
+                <div class="dz-instructions">
+                  <strong>Drag & drop prescription</strong>
+                  <div class="muted">or click to select an image (jpg, png)</div>
+                </div>
+              </div>
+              <input type="file" id="prescription-input" accept="image/*" class="dz-input" />
+            </div>
+
+            <div id="preview-wrap" class="preview-wrap hidden">
+              <div class="preview-thumb" id="preview-thumb"></div>
+              <div class="preview-meta">
+                <div id="preview-name" class="preview-name"></div>
+                <div class="progress-bar">
+                  <div id="upload-progress" class="progress-fill" style="width:0%"></div>
+                </div>
+              </div>
+              <button id="cancel-upload" class="clear small">Remove</button>
+            </div>
+
+            <input type="hidden" id="uploaded-url">
+            <div class="form-actions">
+              <button id="upload-now" class="btn" type="button">Upload & Validate</button>
+              <button id="send-prescription-btn" class="btn send-btn" style="display:none;" type="button">Send to WhatsApp</button>
+            </div>
+          </form>
+        </div>
+        <!-- My Orders -->
+        <section id="orders" class="card orders">
+          <h3>My Orders</h3>
+          <p>Enter your phone number to check your order status.</p>
+
+          <input id="order-phone" placeholder="Enter Order ID or Phone Number">
+          <button id="check-order-btn">Check Order</button>
+          <div id="order-status-result"></div>
+
+        </section>
+        <li><a href="#orders" data-scroll>My Orders</a></li>
+
+      </main>
+
+      <aside class="cart-side" id="cart-side">
+        <div class="card card-sticky">
+          <div class="cart-header">
+            <strong>Cart</strong>
+            <div class="cart-badge" id="cart-count">0</div>
+          </div>
+
+          <div id="cart-list" class="cart-list"></div>
+
+          <div class="cart-total">
+            <div class="small">Total</div>
+            <div id="total">₹0</div>
+          </div>
+
+          <div class="cart-buttons">
+            <button id="checkout" class="btn full">NEXT</button>
+            <button id="clear" class="clear full">Clear</button>
+          </div>
+
+
+        </div>
+      </aside>
+    </div>
+    <div id="result-screen">
+      <h2 id="result-title"></h2>
+      <p id="result-message"></p>
+      <div class="result-buttons">
+        <button id="home-button">Go Back</button>
+        <button id="retry-button">Try Again</button>
+      </div>
+    </div>
+
+    <!-- About -->
+    <section id="about" class="card about">
+      <div class="about-grid">
+        <div>
+          <h3>About Bhumika Medical</h3>
+          <p>
+            At Bhumika Medical, we’re committed to delivering genuine healthcare products
+            with honesty and care. Whether it’s daily medicines or prescription-based orders,
+            we ensure every product you receive is authentic and safe.
+          </p>
+          <p>
+            Our goal is to make trusted medicines easily accessible in your local area,
+            supported by quick delivery and friendly customer service. We believe that
+            your health deserves both quality and convenience.
+          </p>
+        </div>
+        <div class="trust">
+          <div class="badge">✓ Genuine Medicines</div>
+          <div class="badge">✓ Local Delivery</div>
+          <div class="badge">✓ Verified Pharmacists</div>
+          <div class="badge">✓ Prescription Friendly</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact -->
+    <section id="contact" class="card contact expanded-contact">
+      <h3>Contact & Location</h3>
+      <div class="contact-grid">
+        <div class="contact-left">
+          <p><strong>Address</strong><br>Shop No. 1,Sehajanal Corner,Nr.Podar International School
+            ,Vadgaon,Tal.Maval,Dist.Pune</p>
+          <p><strong>Phone / WhatsApp</strong><br>
+            <a href="tel:+917387478089" class="call-link">+91 7387478089</a> •
+            <a href="https://wa.me/918003929804" target="_blank" rel="noopener">Chat on WhatsApp</a>
+          </p>
+          <p><strong>Opening Hours</strong><br>8:00AM<br>11:30PM</p>
+
+          <div class="contact-actions">
+            <a href="tel:+918003929804" class="btn icon">📞 Call Now</a>
+            <a href="https://wa.me/918003929804" class="btn icon" target="_blank">💬 WhatsApp</a>
+          </div>
+        </div>
+
+        <div class="contact-right">
+          <!-- Map embed using Google Maps query (works without API key) -->
+          <iframe
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3778.426255316424!2d73.65312357424284!3d18.734487962606888!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bc2b1000fd8b7b3%3A0xdbad80febf89fd83!2sSahajanand%20Corner!5e0!3m2!1sen!2sin!4v1761845910548!5m2!1sen!2sin"
+            width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"></iframe>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Two-step Checkout Modal -->
+  <div id="checkout-modal" class="modal" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true">
+      <div class="steps">
+        <div class="step active" data-step="1">1</div>
+        <div class="step-line"></div>
+        <div class="step" data-step="2">2</div>
+      </div>
+
+      <div id="step-1" class="modal-step">
+        <h3>Customer details</h3>
+        <label>Full name</label>
+        <input id="cust-name" placeholder="e.g. Rahul Sharma" />
+        <label>Delivery address</label>
+        <textarea id="cust-address" rows="2" placeholder="Street, building, area"></textarea>
+        <div class="row">
+          <div style="flex:1">
+            <label>PIN code</label>
+            <input id="cust-pin" placeholder="e.g. 400001" />
+          </div>
+          <div style="flex:1;margin-left:10px">
+            <label>Contact number</label>
+            <input id="cust-phone" placeholder="e.g. 9876543210" />
+          </div>
+        </div>
+        <div class="modal-buttons">
+          <button id="to-step-2" class="btn">Next → Payment</button>
+          <button id="cancel-1" class="clear">Cancel</button>
+        </div>
+      </div>
+
+      <div id="step-2" class="modal-step hidden">
+        <h3>Payment details</h3>
+        <label>Payment method</label>
+        <select id="payment-method">`
+          <option value="UPI">UPI</option>
+          <option value="GPay">GPay</option>
+          <option value="Paytm">Paytm</option>
+          <option value="Bank Transfer">Bank Transfer</option>
+          <option value="Cash on Delivery">Cash on Delivery</option>
+         
+        </select>
+        <div id="upiQrContainer" style="text-align:center; margin-top:20px;"></div>
+
+<!-- Your total amount should appear somewhere above -->
+<div id="qrCard" class="hidden" style="text-align:center; margin-top:15px;">
+  <div id="qrLabel"></div>
+  <img id="qrImage" src="" alt="UPI QR Code" style="width:150px;height:150px;">
+</div>
+<div id="paymentConfirm" style="text-align:center; margin-top:15px;">
+  <label for="txnIdInput"><b>Enter UPI Transaction ID:</b></label><br>
+  <input type="text" id="txnIdInput" placeholder="Example: 2314567890AB" 
+         style="padding:8px; width:250px; margin:5px;"><br>
+
+  <label for="screenshotUpload"><b>Upload Screenshot (optional):</b></label><br>
+  <input type="file" id="screenshotUpload" accept="image/*" style="margin:5px;"><br>
+
+  <button id="submitProofBtn" 
+          style="background:#0d6efd;color:#fff;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;">
+    Submit Payment Proof
+  </button>
+
+  <p id="proofMsg" style="margin-top:10px;"></p>
+</div>
+
+
+
+
+      
+          <button id="back-to-step-1" class="clear">← Back</button>
+         <button id="pay-with-gpay" class="btn full" type="button">
+  💳 Pay with Google Pay
+</button>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Result -->
+  <div id="result-screen" class="result-screen hidden" aria-hidden="true">
+    <div class="result-card">
+      <div id="result-animation" class="animation-wrap"></div>
+      <h2 id="result-title"></h2>
+      <p id="result-message" class="small"></p>
+      <div style="margin-top:20px">
+        <button id="home-button" class="btn">Go to Home</button>
+        <button id="retry-button" class="clear hidden">Try Again</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FLOATING WHATSAPP -->
+  <a id="wa-float" class="wa-float" href="https://wa.me/918003929804" target="_blank" title="Chat on WhatsApp">💬</a>
+  <!-- Floating Cart Button -->
+  
+  <!-- ========== Mobile Floating Cart + Cart Bottom Sheet (green glass) ========== -->
+  <button id="mobile-cart-btn" class="floating-cart-btn" aria-label="Open cart" title="Cart">
+    🛒
+    <span id="mobile-cart-badge" class="cart-badge-mobile" aria-hidden="true">0</span>
+  </button>
+
+  <div id="mobile-cart-sheet" class="mobile-sheet" aria-hidden="true">
+    <div id="mobile-sheet-overlay" class="sheet-overlay" tabindex="-1"></div>
+
+    <div class="sheet-content" role="dialog" aria-modal="true" aria-label="Cart">
+      <div class="sheet-header">
+        <h3>My Cart</h3>
+        <button id="mobile-close-sheet" class="close-sheet-btn" aria-label="Close cart">×</button>
+      </div>
+
+      <div id="mobile-cart-contents" class="mobile-products">
+        <!-- Rendered dynamically: cart items will appear here -->
+        <div class="mobile-empty small">Your cart is empty</div>
+      </div>
+
+      <div class="sheet-footer">
+        <div class="sheet-total">
+          <div class="small">Total</div>
+          <div id="mobile-sheet-total" class="sheet-total-amount">₹0</div>
+        </div>
+        <button id="mobile-sheet-next" class="btn full mobile-next-btn">NEXT</button>
+      </div>
+    </div>
+  </div>
+  <div id="celebration" aria-hidden="true"></div>
+  <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  
+
+
+  <script src="script.js"></script>
+</body>
+
+</html>

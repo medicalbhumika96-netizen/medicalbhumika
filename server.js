@@ -13,217 +13,228 @@ app.use(cors());
 app.use(express.json());
 app.use("/uploads", express.static("uploads"));
 
+// Ensure uploads and data folders exist
 if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
 if (!fs.existsSync("data")) fs.mkdirSync("data");
 
-// MULTER
+// ========== Multer Storage ==========
 const storage = multer.diskStorage({
   destination: (_, __, cb) => cb(null, "uploads/"),
   filename: (_, file, cb) => cb(null, Date.now() + "-" + file.originalname),
 });
 const upload = multer({ storage });
 
-// SENDGRID
-if (process.env.SENDGRID_API_KEY) {
-  try {
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-    console.log("✅ SendGrid Ready");
-  } catch (e) {
-    console.log("⚠️ SendGrid error:", e.message);
-  }
+// ======================================================
+// STEP 1 — Confirm environment variables are loaded
+// ======================================================
+console.log("🔍 Checking environment variables...");
+console.log({
+  SENDGRID_API_KEY: process.env.SENDGRID_API_KEY ? "✅ Loaded" : "❌ Missing",
+  SMTP_FROM: process.env.SMTP_FROM,
+  MERCHANT_EMAIL: process.env.MERCHANT_EMAIL,
+  PORT: process.env.PORT,
+});
+console.log("----------------------------------------------------");
+
+// ======================================================
+// STEP 2 — Setup SendGrid API
+// ======================================================
+try {
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+  console.log("✅ SendGrid API key set successfully.");
+} catch (err) {
+  console.error("❌ Failed to initialize SendGrid:", err.message);
 }
 
+// Reusable email sender
 async function sendEmail({ to, subject, html }) {
   try {
-    if (!process.env.SENDGRID_API_KEY) return;
     await sgMail.send({
       to,
       from: process.env.SMTP_FROM,
       subject,
       html,
     });
-  } catch (e) {
-    console.log("Email error:", e.message);
+    console.log("📧 Email sent successfully to:", to);
+  } catch (error) {
+    console.error("❌ Email send failed:", error.response?.body || error.message);
   }
 }
 
-// UPLOAD PRESCRIPTION
+// ======================================================
+// STEP 3 — Debug route to confirm ENV on Render
+// ======================================================
+app.get("/debug-env", (req, res) => {
+  res.json({
+    from: process.env.SMTP_FROM,
+    email: process.env.MERCHANT_EMAIL,
+    sendgrid: !!process.env.SENDGRID_API_KEY,
+  });
+});
+
+// ======================================================
+// ROUTE: Upload Prescription
+// ======================================================
 app.post("/upload-prescription", upload.single("prescription"), (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ success: false });
+    const { name, phone, address } = req.body;
+    if (!req.file)
+      return res.status(400).json({ success: false, error: "No file uploaded" });
 
     const fileUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
-
-    fs.appendFileSync(
-      "uploads/prescriptions.log",
-      `${new Date().toISOString()} | ${fileUrl}\n`
-    );
+    const logLine = `${new Date().toISOString()} | ${name} | ${phone} | ${address} | ${fileUrl}\n`;
+    fs.appendFileSync("uploads/prescriptions.log", logLine);
 
     res.json({ success: true, fileUrl });
-  } catch {
-    res.status(500).json({ success: false });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: "Server error" });
   }
 });
 
-// PLACE ORDER
+// ======================================================
+// ROUTE: Place Order (with email)
+// ======================================================
 app.post("/api/orders", async (req, res) => {
   try {
     const order = req.body;
     if (!order || !order.phone)
-      return res.status(400).json({ error: "Invalid data" });
+      return res.status(400).json({ error: "Invalid order data" });
 
     const orderId = "ORD-" + Date.now();
     order.orderId = orderId;
     order.status = "Pending";
     order.createdAt = new Date().toISOString();
 
-    const file = "data/orders.json";
-    const old = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file)) : [];
-    old.push(order);
-    fs.writeFileSync(file, JSON.stringify(old, null, 2));
+    const ordersFile = path.join("data", "orders.json");
+    const orders = fs.existsSync(ordersFile)
+      ? JSON.parse(fs.readFileSync(ordersFile, "utf8") || "[]")
+      : [];
+    orders.push(order);
+    fs.writeFileSync(ordersFile, JSON.stringify(orders, null, 2));
 
+    console.log("✅ Order saved:", orderId);
+
+    // Send email with order details
     await sendEmail({
       to: process.env.MERCHANT_EMAIL,
-      subject: `🛒 New Order — ${orderId}`,
+      subject: `🛒 New Order Received — ${orderId}`,
       html: `
-        <h3>New Order Received</h3>
-        <p><b>Name:</b> ${order.name}</p>
-        <p><b>Phone:</b> ${order.phone}</p>
-        <p><b>Address:</b> ${order.address}</p>
-        <p><b>Total:</b> ₹${order.total}</p>
+        <h2 style="color:#2b7a78">🛒 New Order from Bhumika Medical</h2>
+        <p><strong>Order ID:</strong> ${orderId}</p>
+        <p><strong>Customer:</strong> ${order.name}</p>
+        <p><strong>Phone:</strong> ${order.phone}</p>
+        <p><strong>Address:</strong> ${order.address}</p>
+        <h3>Items Ordered:</h3>
+        <ul>
+          ${(order.items || [])
+            .map(i => `<li>${i.qty} × ${i.name} — ₹${i.price}</li>`)
+            .join("")}
+        </ul>
+        <p><strong>Total:</strong> ₹${order.total}</p>
+        <p><strong>Status:</strong> ${order.status}</p>
       `,
     });
 
     res.json({ success: true, orderId });
-  } catch {
+  } catch (err) {
+    console.error("Order save error:", err);
     res.status(500).json({ error: "Server error" });
   }
 });
 
-// PAYMENT PROOF
+// ======================================================
+// ROUTE: Payment Proof Upload (with email)
+// ======================================================
 app.post("/api/payment-proof", upload.single("screenshot"), async (req, res) => {
   try {
     const { txnId = "", orderId = "" } = req.body;
-    const fileUrl = req.file
-      ? `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`
+    const file = req.file;
+    const fileUrl = file
+      ? `${req.protocol}://${req.get("host")}/uploads/${file.filename}`
       : "";
 
-    const proofData = {
+    const proof = {
       time: new Date().toISOString(),
       orderId,
       txnId,
       fileUrl,
     };
 
-    const file = "data/payment-proofs.json";
-    const old = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file)) : [];
-    old.push(proofData);
-    fs.writeFileSync(file, JSON.stringify(old, null, 2));
-
-    res.json({ success: true, fileUrl });
-  } catch {
-    res.status(500).json({ error: "Server error" });
-  }
-});
-
-// ADMIN LOGIN
-const ADMIN_TOKEN = "ADMIN_OK";
-
-app.post("/api/admin/login", (req, res) => {
-  const { email, password } = req.body;
-
-  if (
-    email === process.env.ADMIN_EMAIL &&
-    password === process.env.ADMIN_PASSWORD
-  ) {
-    return res.json({ token: ADMIN_TOKEN });
-  }
-
-  return res.status(401).json({ error: "Invalid email or password" });
-});
-
-// ADMIN AUTH
-function requireAdmin(req, res, next) {
-  const token = req.headers["x-admin-token"];
-  if (token === ADMIN_TOKEN) return next();
-  return res.status(401).json({ error: "Unauthorized" });
-}
-
-// ADMIN — LIST ORDERS
-app.get("/api/admin/orders", requireAdmin, (req, res) => {
-  try {
-    const file = "data/orders.json";
-    const orders = fs.existsSync(file)
-      ? JSON.parse(fs.readFileSync(file))
+    const proofsFile = path.join("data", "payment-proofs.json");
+    const proofs = fs.existsSync(proofsFile)
+      ? JSON.parse(fs.readFileSync(proofsFile, "utf8") || "[]")
       : [];
-    res.json({ orders });
-  } catch {
-    res.status(500).json({ error: "Server error" });
-  }
-});
+    proofs.push(proof);
+    fs.writeFileSync(proofsFile, JSON.stringify(proofs, null, 2));
 
-// ADMIN — UPDATE ORDER STATUS
-app.post("/api/admin/orders/:id/status", requireAdmin, (req, res) => {
-  try {
-    const file = "data/orders.json";
-    const orders = JSON.parse(fs.readFileSync(file));
-    const index = orders.findIndex((o) => o.orderId === req.params.id);
+    console.log(`💰 Payment proof received for ${orderId}`);
 
-    if (index === -1) return res.status(404).json({ error: "Not found" });
-
-    orders[index].status = req.body.status;
-    fs.writeFileSync(file, JSON.stringify(orders, null, 2));
-
-    res.json({ success: true });
-  } catch {
-    res.status(500).json({ error: "Server error" });
-  }
-});
-
-// ADMIN — DELETE ORDER
-app.delete("/api/admin/orders/:id", requireAdmin, (req, res) => {
-  try {
-    const file = "data/orders.json";
-    const old = JSON.parse(fs.readFileSync(file));
-    const updated = old.filter((o) => o.orderId !== req.params.id);
-
-    fs.writeFileSync(file, JSON.stringify(updated, null, 2));
-
-    res.json({ success: true });
-  } catch {
-    res.status(500).json({ error: "Server error" });
-  }
-});
-
-// ADMIN — EXPORT CSV
-app.get("/api/admin/export", requireAdmin, (req, res) => {
-  try {
-    const file = "data/orders.json";
-    const orders = fs.existsSync(file)
-      ? JSON.parse(fs.readFileSync(file))
-      : [];
-
-    const rows = ["orderId,name,phone,address,total,status,createdAt"];
-
-    orders.forEach((o) => {
-      rows.push(
-        `${o.orderId},"${o.name}","${o.phone}","${o.address}",${o.total},${o.status},${o.createdAt}`
-      );
+    // Send email notification with proof
+    await sendEmail({
+      to: process.env.MERCHANT_EMAIL,
+      subject: `🧾 Payment Proof Received for Order ${orderId}`,
+      html: `
+        <h2>Payment Proof Received</h2>
+        <p><strong>Order ID:</strong> ${orderId}</p>
+        <p><strong>Transaction ID:</strong> ${txnId || "N/A"}</p>
+        <p><strong>Time:</strong> ${new Date().toLocaleString()}</p>
+        ${fileUrl ? `<p><img src="${fileUrl}" width="250"/></p>` : ""}
+      `,
     });
 
-    res.setHeader("Content-Type", "text/csv");
-    res.setHeader(
-      "Content-Disposition",
-      "attachment; filename=orders.csv"
-    );
-    res.send(rows.join("\n"));
-  } catch {
+    res.json({ success: true, fileUrl });
+  } catch (err) {
+    console.error("Proof upload error:", err);
     res.status(500).json({ error: "Server error" });
   }
 });
 
-// START
-const port = process.env.PORT || 10000;
-app.listen(port, () => {
-  console.log(`🚀 Server running on port ${port}`);
+// ======================================================
+// TEST ROUTE: SendGrid test email
+// ======================================================
+app.get("/send-test-email", async (req, res) => {
+  try {
+    await sendEmail({
+      to: process.env.MERCHANT_EMAIL,
+      subject: "✅ Test Email — SendGrid API Working",
+      html: "<h2>Your Render backend can now send emails successfully!</h2>",
+    });
+    res.json({ success: true, message: "Test email sent successfully!" });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ======================================================
+// SERVER START
+// ======================================================
+const port = process.env.PORT || 5000;
+app.listen(port, () => console.log(`🚀 Server running on port ${port}`));
+
+// === Added Admin & Orders API ===
+const ADMIN_PASS = process.env.ADMIN_PASS || "12345";
+
+app.post("/api/orders", (req,res)=>{
+  const order=req.body;
+  try{
+    const orders=JSON.parse(fs.readFileSync("orders.json","utf8"));
+    orders.push(order);
+    fs.writeFileSync("orders.json",JSON.stringify(orders,null,2));
+    res.json({success:true});
+  }catch(err){
+    res.status(500).json({success:false,error:err.message});
+  }
+});
+
+app.post("/api/admin/login",(req,res)=>{
+  if(req.body.password===ADMIN_PASS) return res.json({token:"ok"});
+  res.status(401).json({error:"wrong"});
+});
+
+app.get("/api/admin/orders",(req,res)=>{
+  const t=req.headers.authorization;
+  if(t!=="Bearer ok") return res.status(401).json({error:"unauth"});
+  const orders=JSON.parse(fs.readFileSync("orders.json","utf8"));
+  res.json({orders});
 });
