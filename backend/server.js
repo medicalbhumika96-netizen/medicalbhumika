@@ -10,11 +10,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// === SERVE FRONTEND FILES ===
-const __dirname = path.resolve();
-app.use(express.static(path.join(__dirname, "public")));
-app.use("/uploads", express.static("uploads"));
-
 // ensure folders
 if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
 if (!fs.existsSync("data")) fs.mkdirSync("data");
@@ -38,7 +33,9 @@ function writeOrders(list) {
   fs.writeFileSync(ordersFile, JSON.stringify(list, null, 2));
 }
 
-// CUSTOMER — PLACE ORDER (SAVE TO orders.json)
+/* ============================================================
+   CUSTOMER — PLACE ORDER
+============================================================ */
 app.post("/api/orders", (req, res) => {
   const order = req.body;
   if (!order || !order.phone)
@@ -56,9 +53,12 @@ app.post("/api/orders", (req, res) => {
   res.json({ success: true, orderId });
 });
 
-// CUSTOMER — PAYMENT PROOF UPLOAD
+/* ============================================================
+   CUSTOMER — PAYMENT PROOF UPLOAD
+============================================================ */
 app.post("/api/payment-proof", upload.single("screenshot"), (req, res) => {
   const { orderId, txnId = "" } = req.body;
+
   const fileUrl = req.file
     ? `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`
     : "";
@@ -77,7 +77,9 @@ app.post("/api/payment-proof", upload.single("screenshot"), (req, res) => {
   res.json({ success: true, fileUrl });
 });
 
-// ADMIN LOGIN
+/* ============================================================
+   ADMIN LOGIN
+============================================================ */
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@bhumika.com";
 const ADMIN_PASS = process.env.ADMIN_PASS || "123456";
 
@@ -89,14 +91,16 @@ app.post("/api/admin/login", (req, res) => {
   return res.status(401).json({ error: "Invalid credentials" });
 });
 
-// Middleware: verify admin token
+// ADMIN AUTH MIDDLEWARE
 function adminAuth(req, res, next) {
   if (req.headers["x-admin-token"] !== "MASTER_ADMIN_TOKEN_999")
     return res.status(401).json({ error: "Unauthorized" });
   next();
 }
 
-// ADMIN — FETCH ALL ORDERS (with search)
+/* ============================================================
+   ADMIN — FETCH ALL ORDERS (with search)
+============================================================ */
 app.get("/api/admin/orders", adminAuth, (req, res) => {
   const q = (req.query.q || "").toLowerCase().trim();
   const orders = readOrders();
@@ -115,7 +119,9 @@ app.get("/api/admin/orders", adminAuth, (req, res) => {
   res.json({ success: true, orders: filtered.reverse() });
 });
 
-// ADMIN — UPDATE ORDER STATUS
+/* ============================================================
+   ADMIN — UPDATE ORDER STATUS
+============================================================ */
 app.post("/api/admin/orders/:id/status", adminAuth, (req, res) => {
   const orderId = req.params.id;
   const { status } = req.body;
@@ -131,16 +137,21 @@ app.post("/api/admin/orders/:id/status", adminAuth, (req, res) => {
   res.json({ success: true });
 });
 
-// ADMIN — DELETE ORDER
+/* ============================================================
+   ADMIN — DELETE ORDER
+============================================================ */
 app.delete("/api/admin/orders/:id", adminAuth, (req, res) => {
   const orderId = req.params.id;
   const orders = readOrders();
   const newList = orders.filter((o) => o.orderId !== orderId);
+
   writeOrders(newList);
   res.json({ success: true });
 });
 
-// ADMIN — EXPORT ORDERS AS CSV
+/* ============================================================
+   ADMIN — EXPORT CSV
+============================================================ */
 app.get("/api/admin/export", adminAuth, (req, res) => {
   const orders = readOrders();
 
@@ -151,7 +162,7 @@ app.get("/api/admin/export", adminAuth, (req, res) => {
       .map((i) => `${i.qty}x ${i.name} (₹${i.price})`)
       .join(" | ");
 
-    csv += `"\"${o.orderId}\"", "\"${o.name}\", "\"${o.phone}\", "\"${o.address}\", "\"${items}\", "\"${o.total}\", "\"${o.status}\", "\"${o.createdAt}\"\n"`;
+    csv += `"${o.orderId}","${o.name}","${o.phone}","${o.address}","${items}","${o.total}","${o.status}","${o.createdAt}"\n`;
   });
 
   res.setHeader("Content-Type", "text/csv");
@@ -159,7 +170,9 @@ app.get("/api/admin/export", adminAuth, (req, res) => {
   res.send(csv);
 });
 
-// CUSTOMER — UPLOAD PRESCRIPTION (EXISTING)
+/* ============================================================
+   PRESCRIPTION UPLOAD
+============================================================ */
 app.post("/upload-prescription", upload.single("prescription"), (req, res) => {
   try {
     const { name, phone, address } = req.body;
@@ -178,12 +191,22 @@ app.post("/upload-prescription", upload.single("prescription"), (req, res) => {
   }
 });
 
-// ROOT TEST ROUTE
+/* ============================================================
+   SERVE FRONTEND — MUST BE AT THE END
+============================================================ */
+const __dirname = path.resolve();
+app.use(express.static(path.join(__dirname, "public")));
+
+/* ============================================================
+   ROOT TEST ROUTE
+============================================================ */
 app.get("/", (req, res) => {
   res.send("Bhumika Medical Backend Running ✔");
 });
 
-// START SERVER
+/* ============================================================
+   START SERVER
+============================================================ */
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () =>
   console.log(`🚀 Bhumika Medical Backend running on port ${PORT}`)
