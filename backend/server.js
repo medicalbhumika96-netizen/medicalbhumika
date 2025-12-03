@@ -16,14 +16,14 @@ if (!fs.existsSync("data")) fs.mkdirSync("data");
 
 const ordersFile = path.join("data", "orders.json");
 
-// =============== Multer =================
+// Multer configuration
 const storage = multer.diskStorage({
   destination: (_, __, cb) => cb(null, "uploads/"),
   filename: (_, file, cb) => cb(null, Date.now() + "-" + file.originalname),
 });
 const upload = multer({ storage });
 
-// =============== Helper ================
+// Helpers
 function readOrders() {
   return fs.existsSync(ordersFile)
     ? JSON.parse(fs.readFileSync(ordersFile, "utf8") || "[]")
@@ -91,7 +91,7 @@ app.post("/api/admin/login", (req, res) => {
   return res.status(401).json({ error: "Invalid credentials" });
 });
 
-// ADMIN AUTH MIDDLEWARE
+// Middleware for admin authentication
 function adminAuth(req, res, next) {
   if (req.headers["x-admin-token"] !== "MASTER_ADMIN_TOKEN_999")
     return res.status(401).json({ error: "Unauthorized" });
@@ -198,7 +198,7 @@ const __dirname = path.resolve();
 app.use(express.static(path.join(__dirname, "public")));
 
 /* ============================================================
-   ROOT TEST ROUTE
+   ROOT ROUTE
 ============================================================ */
 app.get("/", (req, res) => {
   res.send("Bhumika Medical Backend Running ✔");
