@@ -1,4 +1,4 @@
-import fs from "fs";
+// server.js placeholderimport fs from "fs";
 import path from "path";
 import express from "express";
 import cors from "cors";
