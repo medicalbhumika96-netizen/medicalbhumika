@@ -176,7 +176,8 @@ app.get("/api/admin/export", adminAuth, (req, res) => {
    STATIC FRONTEND (IMPORTANT → MUST BE LAST)
 ============================================================ */
 const __dirname = path.resolve();
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(path.join(__dirname, "../public")));
+
 
 /* Root Test Route */
 app.get("/", (req, res) => {
