@@ -6,9 +6,11 @@ import multer from "multer";
 import dotenv from "dotenv";
 dotenv.config();
 
-const app = express();
+const app = express(); // ✅ You missed this line earlier
+
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Ensure folders exist
 if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
@@ -175,7 +177,8 @@ app.get("/api/admin/export", adminAuth, (req, res) => {
 /* ============================================================
    STATIC FRONTEND (IMPORTANT → MUST BE LAST)
 ============================================================ */
-app.use(express.static("public"));
+app.use('/uploads', express.static('uploads')); // ✅ expose uploads folder
+app.use(express.static("public")); 
 
 /* Root Test Route */
 app.get("/", (req, res) => {
