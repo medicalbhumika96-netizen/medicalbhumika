@@ -1,4 +1,4 @@
-// server.js placeholderimport fs from "fs";
+import fs from "fs";
 import path from "path";
 import express from "express";
 import cors from "cors";
@@ -56,7 +56,7 @@ app.post("/api/orders", (req, res) => {
 });
 
 /* ============================================================
-   PAYMENT PROOF UPLOAD (THIS WAS CAUSING 404 EARLIER)
+   PAYMENT PROOF UPLOAD
 ============================================================ */
 app.post("/api/payment-proof", upload.single("screenshot"), (req, res) => {
   const { orderId, txnId = "" } = req.body;
@@ -177,7 +177,6 @@ app.get("/api/admin/export", adminAuth, (req, res) => {
 ============================================================ */
 const __dirname = path.resolve();
 app.use(express.static(path.join(__dirname, "../public")));
-
 
 /* Root Test Route */
 app.get("/", (req, res) => {
