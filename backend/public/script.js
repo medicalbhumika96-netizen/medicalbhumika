@@ -11,7 +11,8 @@ const SHOP_NAME = 'Bhumika Medical';
 const UPI_ID = '9892570250@okbizaxis'; // dynamic QR UPI id
 
 // backend base (Render host you already use for prescription upload)
-const BACKEND_BASE = '';
+const BACKEND_BASE = "https://medicalbhumika-2.onrender.com";
+
 
 // ===== DOM refs / safe guards =====
 const productList = document.getElementById('product-list');
