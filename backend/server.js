@@ -1,165 +1,178 @@
-import fs from "fs";
-import path from "path";
 import express from "express";
 import cors from "cors";
+import mongoose from "mongoose";
 import multer from "multer";
 import dotenv from "dotenv";
+import fs from "fs";
+import path from "path";
+import Order from "./models/Order.js";
+
 dotenv.config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
-
-// === SERVE FRONTEND FILES ===
-const __dirname = path.resolve();
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static("uploads"));
 
-// ensure folders
+// MongoDB connection
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("✅ MongoDB connected"))
+  .catch((err) => console.error("❌ MongoDB connection error:", err));
+
+// Ensure uploads folder exists
 if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
-if (!fs.existsSync("data")) fs.mkdirSync("data");
 
-const ordersFile = path.join("data", "orders.json");
-
-// =============== Multer =================
+// Multer setup
 const storage = multer.diskStorage({
   destination: (_, __, cb) => cb(null, "uploads/"),
   filename: (_, file, cb) => cb(null, Date.now() + "-" + file.originalname),
 });
 const upload = multer({ storage });
 
-// =============== Helper ================
-function readOrders() {
-  return fs.existsSync(ordersFile)
-    ? JSON.parse(fs.readFileSync(ordersFile, "utf8") || "[]")
-    : [];
-}
-function writeOrders(list) {
-  fs.writeFileSync(ordersFile, JSON.stringify(list, null, 2));
-}
-
-// CUSTOMER — PLACE ORDER (SAVE TO orders.json)
-app.post("/api/orders", (req, res) => {
-  const order = req.body;
-  if (!order || !order.phone)
+/* ============================================================
+   CUSTOMER — PLACE ORDER
+============================================================ */
+app.post("/api/orders", async (req, res) => {
+  const orderData = req.body;
+  if (!orderData || !orderData.phone) {
     return res.status(400).json({ error: "Invalid order data" });
+  }
 
   const orderId = "ORD-" + Date.now();
-  order.orderId = orderId;
-  order.status = "Pending";
-  order.createdAt = new Date().toISOString();
+  const newOrder = new Order({
+    ...orderData,
+    orderId,
+    status: "Pending",
+  });
 
-  const orders = readOrders();
-  orders.push(order);
-  writeOrders(orders);
-
-  res.json({ success: true, orderId });
+  try {
+    await newOrder.save();
+    res.json({ success: true, orderId });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to save order", details: err });
+  }
 });
 
-// CUSTOMER — PAYMENT PROOF UPLOAD
-app.post("/api/payment-proof", upload.single("screenshot"), (req, res) => {
+/* ============================================================
+   CUSTOMER — PAYMENT PROOF UPLOAD
+============================================================ */
+app.post("/api/payment-proof", upload.single("screenshot"), async (req, res) => {
   const { orderId, txnId = "" } = req.body;
   const fileUrl = req.file
     ? `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`
     : "";
 
-  const orders = readOrders();
-  const idx = orders.findIndex((o) => o.orderId === orderId);
-  if (idx === -1) return res.status(404).json({ error: "Order not found" });
+  try {
+    const order = await Order.findOne({ orderId });
+    if (!order) return res.status(404).json({ error: "Order not found" });
 
-  orders[idx].payment = {
-    method: orders[idx].paymentMethod || "UPI",
-    txn: txnId,
-    fileUrl,
-  };
-
-  writeOrders(orders);
-  res.json({ success: true, fileUrl });
-});
-
-// ADMIN LOGIN
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@bhumika.com";
-const ADMIN_PASS = process.env.ADMIN_PASS || "123456";
-
-app.post("/api/admin/login", (req, res) => {
-  const { email, password } = req.body;
-  if (email === ADMIN_EMAIL && password === ADMIN_PASS) {
-    return res.json({ success: true, token: "MASTER_ADMIN_TOKEN_999" });
+    order.payment = {
+      txn: txnId,
+      fileUrl,
+      method: order.paymentMethod || "UPI",
+    };
+    await order.save();
+    res.json({ success: true, fileUrl });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update payment", details: err });
   }
-  return res.status(401).json({ error: "Invalid credentials" });
 });
 
-// Middleware: verify admin token
+/* ============================================================
+   ADMIN LOGIN AUTH
+============================================================ */
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@bhumika.com";
+const ADMIN_PASS = process.env.ADMIN_PASSWORD || "123456";
+
 function adminAuth(req, res, next) {
-  if (req.headers["x-admin-token"] !== "MASTER_ADMIN_TOKEN_999")
+  const token = req.headers["x-admin-token"];
+  if (token !== "MASTER_ADMIN_TOKEN_999") {
     return res.status(401).json({ error: "Unauthorized" });
+  }
   next();
 }
 
-// ADMIN — FETCH ALL ORDERS (with search)
-app.get("/api/admin/orders", adminAuth, (req, res) => {
+/* ============================================================
+   ADMIN — FETCH ORDERS
+============================================================ */
+app.get("/api/admin/orders", adminAuth, async (req, res) => {
   const q = (req.query.q || "").toLowerCase().trim();
-  const orders = readOrders();
+  try {
+    let orders = await Order.find().sort({ createdAt: -1 });
 
-  let filtered = orders;
+    if (q) {
+      orders = orders.filter(
+        (o) =>
+          (o.orderId || "").toLowerCase().includes(q) ||
+          (o.phone || "").toLowerCase().includes(q) ||
+          (o.name || "").toLowerCase().includes(q)
+      );
+    }
 
-  if (q) {
-    filtered = orders.filter((o) =>
-      (o.orderId || "").toLowerCase().includes(q) ||
-      (o.phone || "").toLowerCase().includes(q) ||
-      (o.name || "").toLowerCase().includes(q) ||
-      (o.address || "").toLowerCase().includes(q)
-    );
+    res.json({ success: true, orders });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch orders" });
   }
-
-  res.json({ success: true, orders: filtered.reverse() });
 });
 
-// ADMIN — UPDATE ORDER STATUS
-app.post("/api/admin/orders/:id/status", adminAuth, (req, res) => {
+/* ============================================================
+   ADMIN — UPDATE STATUS
+============================================================ */
+app.post("/api/admin/orders/:id/status", adminAuth, async (req, res) => {
   const orderId = req.params.id;
   const { status } = req.body;
 
-  const orders = readOrders();
-  const idx = orders.findIndex((o) => o.orderId === orderId);
-  if (idx === -1)
-    return res.status(404).json({ error: "Order not found" });
+  try {
+    const order = await Order.findOne({ orderId });
+    if (!order) return res.status(404).json({ error: "Order not found" });
 
-  orders[idx].status = status;
-  writeOrders(orders);
-
-  res.json({ success: true });
+    order.status = status;
+    await order.save();
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update order" });
+  }
 });
 
-// ADMIN — DELETE ORDER
-app.delete("/api/admin/orders/:id", adminAuth, (req, res) => {
+/* ============================================================
+   ADMIN — DELETE ORDER
+============================================================ */
+app.delete("/api/admin/orders/:id", adminAuth, async (req, res) => {
   const orderId = req.params.id;
-  const orders = readOrders();
-  const newList = orders.filter((o) => o.orderId !== orderId);
-  writeOrders(newList);
-  res.json({ success: true });
+
+  try {
+    await Order.deleteOne({ orderId });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to delete order" });
+  }
 });
 
-// ADMIN — EXPORT ORDERS AS CSV
-app.get("/api/admin/export", adminAuth, (req, res) => {
-  const orders = readOrders();
+/* ============================================================
+   ADMIN — EXPORT ORDERS TO CSV
+============================================================ */
+app.get("/api/admin/export", adminAuth, async (req, res) => {
+  try {
+    const orders = await Order.find().sort({ createdAt: -1 });
 
-  let csv = "Order ID,Name,Phone,Address,Items,Total,Status,Created At\n";
+    let csv = "Order ID,Name,Phone,Address,Total,Status,Created At\n";
 
-  orders.forEach((o) => {
-    const items = (o.items || [])
-      .map((i) => `${i.qty}x ${i.name} (₹${i.price})`)
-      .join(" | ");
+    orders.forEach((o) => {
+      csv += `"${o.orderId}","${o.name}","${o.phone}","${o.address}","${o.total}","${o.status}","${o.createdAt}"\n`;
+    });
 
-    csv += `"\"${o.orderId}\"", "\"${o.name}\", "\"${o.phone}\", "\"${o.address}\", "\"${items}\", "\"${o.total}\", "\"${o.status}\", "\"${o.createdAt}\"\n"`;
-  });
-
-  res.setHeader("Content-Type", "text/csv");
-  res.setHeader("Content-Disposition", "attachment; filename=orders.csv");
-  res.send(csv);
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader("Content-Disposition", "attachment; filename=orders.csv");
+    res.send(csv);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to export orders" });
+  }
 });
 
-// CUSTOMER — UPLOAD PRESCRIPTION (EXISTING)
+/* ============================================================
+   PRESCRIPTION UPLOAD
+============================================================ */
 app.post("/upload-prescription", upload.single("prescription"), (req, res) => {
   try {
     const { name, phone, address } = req.body;
@@ -170,21 +183,23 @@ app.post("/upload-prescription", upload.single("prescription"), (req, res) => {
     const logLine = `${new Date().toISOString()} | ${name} | ${phone} | ${address} | ${fileUrl}\n`;
 
     fs.appendFileSync("uploads/prescriptions.log", logLine);
-
     res.json({ success: true, fileUrl });
   } catch (err) {
-    console.error("Prescription Error:", err);
     res.status(500).json({ success: false, error: "Server error" });
   }
 });
 
-// ROOT TEST ROUTE
+/* ============================================================
+   ROOT TEST ROUTE
+============================================================ */
 app.get("/", (req, res) => {
   res.send("Bhumika Medical Backend Running ✔");
 });
 
-// START SERVER
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () =>
-  console.log(`🚀 Bhumika Medical Backend running on port ${PORT}`)
-);
+/* ============================================================
+   START SERVER
+============================================================ */
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => {
+  console.log(`🚀 Bhumika Medical Backend running on port ${PORT}`);
+});
