@@ -1,19 +1,33 @@
 import mongoose from "mongoose";
 
-const orderSchema = new mongoose.Schema({
-  orderId: { type: String, required: true, unique: true },
-  name: String,
-  phone: String,
-  address: String,
-  products: Array,
-  total: Number,
-  status: { type: String, default: "Pending" },
-  payment: {
-    txn: String,
-    fileUrl: String,
-    method: String
-  },
-  createdAt: { type: Date, default: Date.now }
-});
+const OrderSchema = new mongoose.Schema(
+  {
+    orderId: String,
+    name: String,
+    phone: String,
+    address: String,
+    pin: String,
 
-export default mongoose.model("Order", orderSchema);
+    items: [
+      {
+        name: String,
+        price: Number,
+        qty: Number,
+      },
+    ],
+
+    total: Number,
+    discount: Number,
+    status: { type: String, default: "Pending" },
+
+    payment: {
+      method: String,
+      txn: String,
+      amount: String,
+      fileUrl: String,
+    },
+  },
+  { timestamps: true }
+);
+
+export default mongoose.model("Order", OrderSchema);

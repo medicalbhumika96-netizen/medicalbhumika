@@ -1,62 +1,90 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Order Admin Panel</title>
+  <title>Bhumika Medical – Admin Orders</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-    th { background: #f3f3f3; }
-    input { margin-top: 20px; padding: 5px; width: 300px; }
+    body { font-family: Arial; background:#f4f6f8; padding:15px; }
+    .order {
+      background:#fff; margin-bottom:12px; padding:12px;
+      border-radius:6px; box-shadow:0 2px 5px rgba(0,0,0,.1);
+    }
+    .status { font-weight:bold; }
+    button { margin-top:6px; }
   </style>
 </head>
 <body>
-  <h2>📦 Orders Dashboard</h2>
-  <input type="text" id="searchInput" placeholder="Search by name, phone or order ID..." oninput="loadOrders()">
 
-  <table id="ordersTable">
-    <thead>
-      <tr>
-        <th>Order ID</th><th>Name</th><th>Phone</th><th>Total</th>
-        <th>Status</th><th>Created At</th><th>Txn</th><th>Proof</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+<h2>🧾 Bhumika Medical – Orders</h2>
 
-  <script>
-    const ADMIN_TOKEN = "MASTER_ADMIN_TOKEN_999";
-    const BACKEND_BASE = ""; // same origin
-    const tableBody = document.querySelector("#ordersTable tbody");
+<input id="search" placeholder="Search phone / order ID" />
+<button onclick="loadOrders()">Search</button>
 
-    async function loadOrders() {
-      const q = document.getElementById("searchInput").value.trim();
-      const res = await fetch(`${BACKEND_BASE}/api/admin/orders?q=${encodeURIComponent(q)}`, {
-        headers: { "x-admin-token": ADMIN_TOKEN }
-      });
-      const data = await res.json();
+<div id="orders"></div>
 
-      tableBody.innerHTML = "";
-      if (data.success) {
-        data.orders.forEach(o => {
-          const row = document.createElement("tr");
-          row.innerHTML = `
-            <td>${o.orderId}</td>
-            <td>${o.name || ""}</td>
-            <td>${o.phone || ""}</td>
-            <td>${o.total || "-"}</td>
-            <td>${o.status || ""}</td>
-            <td>${o.createdAt ? new Date(o.createdAt).toLocaleString() : ""}</td>
-            <td>${o.payment?.txn || ""}</td>
-            <td>${o.payment?.fileUrl ? `<a href="${o.payment.fileUrl}" target="_blank">View</a>` : "-"}</td>
-          `;
-          tableBody.appendChild(row);
-        });
-      } else {
-        tableBody.innerHTML = `<tr><td colspan="8">Failed to fetch orders</td></tr>`;
-      }
-    }
+<script>
+const ADMIN_TOKEN = "bhumika-admin-2026";
 
-    loadOrders(); // Initial load
-  </script>
+async function loadOrders() {
+  const q = document.getElementById("search").value;
+  const res = await fetch(`/api/admin/orders?q=${encodeURIComponent(q)}`, {
+    headers: { "x-admin-token": ADMIN_TOKEN }
+  });
+  const data = await res.json();
+
+  const box = document.getElementById("orders");
+  box.innerHTML = "";
+
+  data.orders.forEach(o => {
+    box.innerHTML += `
+      <div class="order">
+        <b>${o.name}</b> (${o.phone})<br>
+        ${o.address}<br><br>
+
+        <b>Order ID:</b> ${o.orderId}<br>
+        <b>Total:</b> ₹${o.total}<br>
+        <b>Status:</b> <span class="status">${o.status}</span><br>
+
+        <b>Items:</b>
+        <ul>
+          ${o.items.map(i => `<li>${i.name} × ${i.qty}</li>`).join("")}
+        </ul>
+
+        ${o.payment?.fileUrl
+          ? `<a href="${o.payment.fileUrl}" target="_blank">View Payment Proof</a><br>`
+          : ""}
+
+        <button onclick="updateStatus('${o.orderId}','Confirmed')">Confirm</button>
+        <button onclick="updateStatus('${o.orderId}','Delivered')">Delivered</button>
+        <button onclick="deleteOrder('${o.orderId}')">Delete</button>
+      </div>
+    `;
+  });
+}
+
+async function updateStatus(id, status) {
+  await fetch(`/api/admin/orders/${id}/status`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-admin-token": ADMIN_TOKEN
+    },
+    body: JSON.stringify({ status })
+  });
+  loadOrders();
+}
+
+async function deleteOrder(id) {
+  if (!confirm("Delete order?")) return;
+  await fetch(`/api/admin/orders/${id}`, {
+    method: "DELETE",
+    headers: { "x-admin-token": ADMIN_TOKEN }
+  });
+  loadOrders();
+}
+
+loadOrders();
+</script>
+
 </body>
 </html>
