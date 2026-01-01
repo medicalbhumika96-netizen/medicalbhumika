@@ -4,30 +4,31 @@ import mongoose from "mongoose";
 import multer from "multer";
 import dotenv from "dotenv";
 import fs from "fs";
-import path from "path";
 import Order from "./models/Order.js";
 
 dotenv.config();
 
 const app = express();
+
+/* ================= MIDDLEWARE ================= */
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ================= STATIC =================
+/* ================= STATIC ================= */
 app.use("/uploads", express.static("uploads"));
 app.use(express.static("public"));
 
-// ================= DB =================
+/* ================= DATABASE ================= */
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB connected"))
   .catch((err) => console.error("❌ MongoDB error:", err));
 
-// ================= FILE SYSTEM =================
+/* ================= FILE SYSTEM ================= */
 if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
 
-// ================= MULTER =================
+/* ================= MULTER ================= */
 const storage = multer.diskStorage({
   destination: (_, __, cb) => cb(null, "uploads/"),
   filename: (_, file, cb) =>
@@ -35,9 +36,9 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// ==================================================
-// CUSTOMER — PLACE ORDER
-// ==================================================
+/* ==================================================
+   CUSTOMER — PLACE ORDER
+================================================== */
 app.post("/api/orders", async (req, res) => {
   try {
     const data = req.body;
@@ -56,38 +57,50 @@ app.post("/api/orders", async (req, res) => {
     await order.save();
     res.json({ success: true, orderId });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Order save failed" });
   }
 });
 
-// ==================================================
-// CUSTOMER — PAYMENT PROOF
-// ==================================================
-app.post("/api/payment-proof", upload.single("screenshot"), async (req, res) => {
-  try {
-    const { orderId, txnId = "" } = req.body;
+/* ==================================================
+   CUSTOMER — PAYMENT PROOF
+================================================== */
+app.post(
+  "/api/payment-proof",
+  upload.single("screenshot"),
+  async (req, res) => {
+    try {
+      const { orderId, txnId = "" } = req.body;
 
-    const order = await Order.findOne({ orderId });
-    if (!order) return res.status(404).json({ error: "Order not found" });
+      if (!orderId) {
+        return res.status(400).json({ error: "orderId missing" });
+      }
 
-    order.payment = {
-      txn: txnId,
-      fileUrl: req.file
-        ? `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`
-        : "",
-      method: order.payment?.method || "UPI",
-    };
+      const order = await Order.findOne({ orderId });
+      if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+      }
 
-    await order.save();
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: "Payment update failed" });
+      order.payment = {
+        txn: txnId,
+        fileUrl: req.file
+          ? `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`
+          : "",
+        method: "UPI",
+      };
+
+      await order.save();
+      res.json({ success: true });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Payment update failed" });
+    }
   }
-});
+);
 
-// ==================================================
-// ADMIN AUTH (SECURE)
-// ==================================================
+/* ==================================================
+   ADMIN AUTH
+================================================== */
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
 
 function adminAuth(req, res, next) {
@@ -98,83 +111,111 @@ function adminAuth(req, res, next) {
   next();
 }
 
-// ==================================================
-// ADMIN — FETCH ORDERS
-// ==================================================
+/* ==================================================
+   ADMIN — FETCH ORDERS
+================================================== */
 app.get("/api/admin/orders", adminAuth, async (req, res) => {
-  const q = (req.query.q || "").toLowerCase();
-  let orders = await Order.find().sort({ createdAt: -1 });
+  try {
+    const q = (req.query.q || "").toLowerCase();
+    let orders = await Order.find().sort({ createdAt: -1 });
 
-  if (q) {
-    orders = orders.filter(
-      (o) =>
-        o.orderId?.toLowerCase().includes(q) ||
-        o.phone?.includes(q) ||
-        o.name?.toLowerCase().includes(q)
-    );
+    if (q) {
+      orders = orders.filter(
+        (o) =>
+          o.orderId?.toLowerCase().includes(q) ||
+          o.phone?.includes(q) ||
+          o.name?.toLowerCase().includes(q)
+      );
+    }
+
+    res.json({ success: true, orders });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch orders" });
   }
-
-  res.json({ success: true, orders });
 });
 
-// ==================================================
-// ADMIN — UPDATE STATUS
-// ==================================================
-app.post("/api/admin/orders/:id/status", adminAuth, async (req, res) => {
-  const { status } = req.body;
-  const order = await Order.findOne({ orderId: req.params.id });
-  if (!order) return res.status(404).json({ error: "Order not found" });
+/* ==================================================
+   ADMIN — UPDATE STATUS
+================================================== */
+app.post(
+  "/api/admin/orders/:id/status",
+  adminAuth,
+  async (req, res) => {
+    try {
+      const { status } = req.body;
+      const order = await Order.findOne({ orderId: req.params.id });
 
-  order.status = status;
-  await order.save();
-  res.json({ success: true });
-});
+      if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+      }
 
-// ==================================================
-// ADMIN — DELETE ORDER
-// ==================================================
+      order.status = status;
+      await order.save();
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ error: "Failed to update order" });
+    }
+  }
+);
+
+/* ==================================================
+   ADMIN — DELETE ORDER
+================================================== */
 app.delete("/api/admin/orders/:id", adminAuth, async (req, res) => {
-  await Order.deleteOne({ orderId: req.params.id });
-  res.json({ success: true });
+  try {
+    await Order.deleteOne({ orderId: req.params.id });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to delete order" });
+  }
 });
 
-// ==================================================
-// ADMIN — EXPORT CSV
-// ==================================================
+/* ==================================================
+   ADMIN — EXPORT CSV
+================================================== */
 app.get("/api/admin/export", adminAuth, async (req, res) => {
-  const orders = await Order.find().sort({ createdAt: -1 });
-  let csv = "OrderID,Name,Phone,Address,Total,Status,Date\n";
+  try {
+    const orders = await Order.find().sort({ createdAt: -1 });
 
-  orders.forEach((o) => {
-    csv += `"${o.orderId}","${o.name}","${o.phone}","${o.address}","${o.total}","${o.status}","${o.createdAt}"\n`;
-  });
+    let csv = "OrderID,Name,Phone,Address,Total,Status,Date\n";
+    orders.forEach((o) => {
+      csv += `"${o.orderId}","${o.name}","${o.phone}","${o.address}","${o.total}","${o.status}","${o.createdAt}"\n`;
+    });
 
-  res.setHeader("Content-Type", "text/csv");
-  res.setHeader("Content-Disposition", "attachment; filename=orders.csv");
-  res.send(csv);
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=orders.csv"
+    );
+    res.send(csv);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to export orders" });
+  }
 });
 
-// ==================================================
-// PRESCRIPTION UPLOAD
-// ==================================================
+/* ==================================================
+   PRESCRIPTION UPLOAD
+================================================== */
 app.post("/upload-prescription", upload.single("prescription"), (req, res) => {
-  if (!req.file) return res.status(400).json({ success: false });
+  if (!req.file) {
+    return res.status(400).json({ success: false });
+  }
 
   const fileUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
   res.json({ success: true, fileUrl });
 });
 
-// ==================================================
-// ROOT
-// ==================================================
+/* ==================================================
+   ROOT
+================================================== */
 app.get("/", (_, res) => {
   res.send("✅ Bhumika Medical Backend Running");
 });
 
-// ==================================================
-// START
-// ==================================================
+/* ==================================================
+   START SERVER
+================================================== */
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
