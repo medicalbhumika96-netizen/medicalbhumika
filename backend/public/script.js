@@ -587,25 +587,25 @@ sendOrderBtn?.addEventListener('click', () => {
   const timestamp = Date.now();
   const uniqueEID = `EID-${custPhone}-${timestamp}`;
 
-  // SAVE ORDER LOCALLY (unchanged)
-  const orderData = {
-    EID: uniqueEID,
-    phone: custPhone,
-    name: custName,
-    address: custAddress,
-    pin: custPin,
-    items: items,
-    total: finalTotal,
-    discount,
-    status: 'Placed',
-    date: new Date().toLocaleString(),
-    payment: { method, txn, amount: amtRaw }
-  };
-  const existing = JSON.parse(localStorage.getItem('orders') || '[]');
-  existing.push(orderData);
-  localStorage.setItem('orders', JSON.stringify(existing));
+  // // SAVE ORDER LOCALLY (unchanged)
+  // const orderData = {
+  //   EID: uniqueEID,
+  //   phone: custPhone,
+  //   name: custName,
+  //   address: custAddress,
+  //   pin: custPin,
+  //   items: items,
+  //   total: finalTotal,
+  //   discount,
+  //   status: 'Placed',
+  //   date: new Date().toLocaleString(),
+  //   payment: { method, txn, amount: amtRaw }
+  // };
+  // const existing = JSON.parse(localStorage.getItem('orders') || '[]');
+  // existing.push(orderData);
+  // localStorage.setItem('orders', JSON.stringify(existing));
 
-  // WHATSAPP MESSAGE
+  // // WHATSAPP MESSAGE
   const lines = [];
   lines.push(`🛒 Shop: ${SHOP_NAME}`);
   lines.push(`🧾 Order ID: ${uniqueEID}`);
@@ -918,22 +918,22 @@ if (floatingCartBtn) {
 }
 
 // ===== ORDER CHECK FEATURE =====
-const checkOrderBtn = document.getElementById('check-order-btn');
-const orderPhoneInput = document.getElementById('order-phone');
-const orderResult = document.getElementById('order-status-result');
+// const checkOrderBtn = document.getElementById('check-order-btn');
+// const orderPhoneInput = document.getElementById('order-phone');
+// const orderResult = document.getElementById('order-status-result');
 
-checkOrderBtn?.addEventListener('click', () => {
-  const q = (orderPhoneInput.value || '').trim();
-  if (!q) {
-    orderResult.textContent = '⚠️ Enter your Order ID (EID) or phone number.';
-    return;
-  }
+// checkOrderBtn?.addEventListener('click', () => {
+//   const q = (orderPhoneInput.value || '').trim();
+//   if (!q) {
+//     orderResult.textContent = '⚠️ Enter your Order ID (EID) or phone number.';
+//     return;
+//   }
 
-  const allOrders = JSON.parse(localStorage.getItem('orders') || '[]');
-  if (!allOrders.length) {
-    orderResult.textContent = '❌ No orders found.';
-    return;
-  }
+//   const allOrders = JSON.parse(localStorage.getItem('orders') || '[]');
+//   if (!allOrders.length) {
+//     orderResult.textContent = '❌ No orders found.';
+//     return;
+//   }
 
   // find by EID or phone
   const found = allOrders.find(o => (o.EID && o.EID === q) || (o.phone && o.phone === q));
@@ -983,20 +983,12 @@ async function submitOrderToServer(orderData) {
       body: JSON.stringify(orderData),
     });
     const data = await res.json();
-    if (data && data.success) {
-      console.log("✅ Order saved on server:", data.orderId);
+    if (data?.success) {
       window.LAST_ORDER_ID = data.orderId;
-      // friendly pop-up for user (non-intrusive)
-      try {
-        // show a small toast if you have one; fallback to alert
-        if (typeof showToast === 'function') showToast('Order saved to server');
-        else console.info('Order saved to server');
-      } catch (e) {}
-    } else {
-      console.warn("❌ Order save failed on server:", data);
+      console.log("✅ Order saved on server:", data.orderId);
     }
   } catch (err) {
-    console.error("⚠️ Unable to connect to backend for order save:", err);
+    console.error("❌ Backend order save failed:", err);
   }
 }
 
