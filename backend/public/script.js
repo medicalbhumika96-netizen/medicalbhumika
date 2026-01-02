@@ -587,25 +587,25 @@ sendOrderBtn?.addEventListener('click', () => {
   const timestamp = Date.now();
   const uniqueEID = `EID-${custPhone}-${timestamp}`;
 
-  // // SAVE ORDER LOCALLY (unchanged)
-  // const orderData = {
-  //   EID: uniqueEID,
-  //   phone: custPhone,
-  //   name: custName,
-  //   address: custAddress,
-  //   pin: custPin,
-  //   items: items,
-  //   total: finalTotal,
-  //   discount,
-  //   status: 'Placed',
-  //   date: new Date().toLocaleString(),
-  //   payment: { method, txn, amount: amtRaw }
-  // };
-  // const existing = JSON.parse(localStorage.getItem('orders') || '[]');
-  // existing.push(orderData);
-  // localStorage.setItem('orders', JSON.stringify(existing));
+  // SAVE ORDER LOCALLY (unchanged)
+  const orderData = {
+    EID: uniqueEID,
+    phone: custPhone,
+    name: custName,
+    address: custAddress,
+    pin: custPin,
+    items: items,
+    total: finalTotal,
+    discount,
+    status: 'Placed',
+    date: new Date().toLocaleString(),
+    payment: { method, txn, amount: amtRaw }
+  };
+  const existing = JSON.parse(localStorage.getItem('orders') || '[]');
+  existing.push(orderData);
+  localStorage.setItem('orders', JSON.stringify(existing));
 
-  // // WHATSAPP MESSAGE
+  // WHATSAPP MESSAGE
   const lines = [];
   lines.push(`🛒 Shop: ${SHOP_NAME}`);
   lines.push(`🧾 Order ID: ${uniqueEID}`);
@@ -918,54 +918,22 @@ if (floatingCartBtn) {
 }
 
 // ===== ORDER CHECK FEATURE =====
-// const checkOrderBtn = document.getElementById('check-order-btn');
-// const orderPhoneInput = document.getElementById('order-phone');
-// const orderResult = document.getElementById('order-status-result');
+// ===== ORDER CHECK FEATURE (SAFE & DISABLED) =====
+const checkOrderBtn = document.getElementById('check-order-btn');
+const orderPhoneInput = document.getElementById('order-phone');
+const orderResult = document.getElementById('order-status-result');
 
-// checkOrderBtn?.addEventListener('click', () => {
-//   const q = (orderPhoneInput.value || '').trim();
-//   if (!q) {
-//     orderResult.textContent = '⚠️ Enter your Order ID (EID) or phone number.';
-//     return;
-//   }
+checkOrderBtn?.addEventListener('click', () => {
+  // Old localStorage based order check disabled intentionally
+  // This prevents script break and keeps products rendering
 
-//   const allOrders = JSON.parse(localStorage.getItem('orders') || '[]');
-//   if (!allOrders.length) {
-//     orderResult.textContent = '❌ No orders found.';
-//     return;
-//   }
-
-
-  // find by EID or phone
-  const found = allOrders.find(o => (o.EID && o.EID === q) || (o.phone && o.phone === q));
-  if (!found) {
-    orderResult.textContent = '❌ No order found for that EID or phone number.';
-    return;
+  if (orderResult) {
+    orderResult.textContent =
+      "⚠️ Order tracking is temporarily unavailable. Please contact the shop.";
+  } else {
+    alert("Order tracking is temporarily unavailable.");
   }
-
-  // build readable result (show success badge)
-  let html = `<div style="margin-bottom:8px;font-weight:700;color:var(--accent-dark)">✅ Order found!</div>`;
-  html += `
-    <strong>Order ID:</strong> ${found.EID}<br>
-    <strong>Date:</strong> ${found.date}<br>
-    <strong>Name:</strong> ${escapeHtml(found.name)}<br>
-    <strong>Phone:</strong> ${escapeHtml(found.phone)}<br>
-    <strong>Address:</strong> ${escapeHtml(found.address)}<br>
-    <strong>PIN:</strong> ${escapeHtml(found.pin)}<br>
-    <strong>Status:</strong> ${escapeHtml(found.status)}<br>
-    <strong>Total:</strong> ₹${found.total}<br>
-    ${found.discount ? `<strong>Saved:</strong> ₹${Number(found.discount).toFixed(2)}<br>` : ''}
-
-``
-    <br><strong>Items:</strong><br>
-  `;
-  found.items.forEach(it => {
-    html += `${it.qty} × ${escapeHtml(it.name)} — ₹${(it.price * it.qty).toFixed(2)}<br>`;
-  });
-
-  orderResult.innerHTML = html;
-// });
-
+});
 // ===== INITIALIZE =====
 loadProducts();
 renderCart();
@@ -984,12 +952,20 @@ async function submitOrderToServer(orderData) {
       body: JSON.stringify(orderData),
     });
     const data = await res.json();
-    if (data?.success) {
-      window.LAST_ORDER_ID = data.orderId;
+    if (data && data.success) {
       console.log("✅ Order saved on server:", data.orderId);
+      window.LAST_ORDER_ID = data.orderId;
+      // friendly pop-up for user (non-intrusive)
+      try {
+        // show a small toast if you have one; fallback to alert
+        if (typeof showToast === 'function') showToast('Order saved to server');
+        else console.info('Order saved to server');
+      } catch (e) {}
+    } else {
+      console.warn("❌ Order save failed on server:", data);
     }
   } catch (err) {
-    console.error("❌ Backend order save failed:", err);
+    console.error("⚠️ Unable to connect to backend for order save:", err);
   }
 }
 
