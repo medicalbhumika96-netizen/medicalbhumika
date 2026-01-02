@@ -971,22 +971,33 @@ async function submitOrderToServer(orderData) {
 
 // Upload payment proof (txn ID or screenshot)
 async function submitPaymentProof(txnId, file) {
+  // 🚫 HARD BLOCK if orderId missing
+  if (!window.LAST_ORDER_ID) {
+    alert("⚠️ Please place the order first. Order ID not generated yet.");
+    return;
+  }
+
   const fd = new FormData();
   fd.append("txnId", txnId || "");
-  fd.append("orderId", window.LAST_ORDER_ID || "");
+  fd.append("orderId", window.LAST_ORDER_ID); // now guaranteed
   if (file) fd.append("screenshot", file);
 
   try {
-    const res = await fetch(`${BACKEND_BASE}/api/payment-proof`, { method: "POST", body: fd });
+    const res = await fetch(`${BACKEND_BASE}/api/payment-proof`, {
+      method: "POST",
+      body: fd
+    });
+
     const data = await res.json();
+
     if (data && data.success) {
-      alert("✅ Payment proof submitted! We will verify and confirm your order soon.");
+      alert("✅ Payment proof submitted successfully!");
     } else {
-      alert("❌ Upload failed. Try again.");
+      alert("❌ Payment proof upload failed.");
     }
   } catch (err) {
     console.error("Payment proof upload error:", err);
-    alert("⚠️ Failed to upload payment proof.");
+    alert("⚠️ Network error while uploading proof.");
   }
 }
 
