@@ -935,6 +935,7 @@ if (floatingCartBtn) {
 //     return;
 //   }
 
+
   // find by EID or phone
   const found = allOrders.find(o => (o.EID && o.EID === q) || (o.phone && o.phone === q));
   if (!found) {
@@ -963,7 +964,7 @@ if (floatingCartBtn) {
   });
 
   orderResult.innerHTML = html;
-});
+// });
 
 // ===== INITIALIZE =====
 loadProducts();
