@@ -134,8 +134,11 @@ app.post("/api/admin/login", (req, res) => {
     return res.json({ success: true, token });
   }
 
-  res.status(401).json({ success: false, message: "Invalid credentials" });
+  res.status(401).json({ success: false });
 });
+
+app.use(express.static("public"));
+
 
 
 /* ==================================================

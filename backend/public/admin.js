@@ -1,40 +1,39 @@
 const BACKEND_BASE = "https://medicalbhumika-2.onrender.com";
 
-/* =========================
-   ADMIN LOGIN
-========================= */
 async function loginAdmin() {
   const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value.trim();
 
   if (!email || !password) {
-    alert("Enter email and password");
+    alert("Enter email & password");
     return;
   }
 
+  const res = await fetch(`${BACKEND_BASE}/api/admin/login`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ email, password })
+  });
+
+  // 🔴 SAFETY CHECK
+  const text = await res.text();
+
+  let data;
   try {
-    const res = await fetch(`${BACKEND_BASE}/api/admin/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password })
-    });
+    data = JSON.parse(text);
+  } catch (e) {
+    console.error("Server returned HTML instead of JSON:", text);
+    alert("Server error. Check backend route.");
+    return;
+  }
 
-    const data = await res.json();
-
-    if (!data.success) {
-      alert("Invalid admin credentials");
-      return;
-    }
-
-    // ✅ Save JWT token
+  if (data.success) {
     localStorage.setItem("adminToken", data.token);
-
-    // redirect to admin dashboard
     window.location.href = "admin.html";
-
-  } catch (err) {
-    console.error(err);
-    alert("Login error");
+  } else {
+    alert("Invalid login");
   }
 }
 
