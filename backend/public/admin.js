@@ -1,103 +1,97 @@
-const BACKEND_BASE = "https://medicalbhumika-2.onrender.com";
+const BACKEND = "https://medicalbhumika-2.onrender.com";
 
-async function loginAdmin() {
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value.trim();
+/* ================= LOGIN ================= */
+async function login() {
+  const email = email.value;
+  const password = document.getElementById("password").value;
 
-  if (!email || !password) {
-    alert("Enter email & password");
-    return;
-  }
-
-  const res = await fetch(`${BACKEND_BASE}/api/admin/login`, {
+  const res = await fetch(`${BACKEND}/api/admin/login`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password })
   });
 
-  // 🔴 SAFETY CHECK
-  const text = await res.text();
+  const data = await res.json();
 
-  let data;
-  try {
-    data = JSON.parse(text);
-  } catch (e) {
-    console.error("Server returned HTML instead of JSON:", text);
-    alert("Server error. Check backend route.");
-    return;
-  }
+  if (!data.success) return alert("Login failed");
 
-  if (data.success) {
-    localStorage.setItem("adminToken", data.token);
-    window.location.href = "admin.html";
-  } else {
-    alert("Invalid login");
-  }
+  localStorage.setItem("adminToken", data.token);
+  loadOrders();
 }
 
-/* =========================
-   LOAD ORDERS
-========================= */
+/* ================= LOAD ORDERS ================= */
 async function loadOrders() {
   const token = localStorage.getItem("adminToken");
+  if (!token) return;
 
-  if (!token) {
-    alert("Admin not logged in");
-    window.location.href = "admin-login.html";
-    return;
-  }
+  const res = await fetch(`${BACKEND}/api/admin/orders`, {
+    headers: { Authorization: "Bearer " + token }
+  });
 
-  try {
-    const res = await fetch(`${BACKEND_BASE}/api/admin/orders`, {
-      headers: {
-        "Authorization": "Bearer " + token
-      }
-    });
+  const data = await res.json();
+  if (!data.success) return alert("Failed to load orders");
 
-    const data = await res.json();
+  const tbody = document.querySelector("#ordersTable tbody");
+  tbody.innerHTML = "";
 
-    if (!data.success) {
-      alert("Failed to load orders");
-      return;
-    }
+  data.orders.forEach(o => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${o.orderId}</td>
+      <td>${o.name}<br><small>${o.phone}</small></td>
+      <td>₹${o.total}</td>
+      <td class="status ${o.status}">${o.status}</td>
+      <td>
+        <button class="btn view" onclick="toggle('${o._id}')">View</button>
+        <button class="btn approve" onclick="update('${o.orderId}','Approved')">✔</button>
+        <button class="btn reject" onclick="update('${o.orderId}','Rejected')">✖</button>
+      </td>
+    `;
 
-    const tbody = document.querySelector("#ordersTable tbody");
-    tbody.innerHTML = "";
+    const details = document.createElement("tr");
+    details.id = o._id;
+    details.className = "details";
+    details.innerHTML = `
+      <td colspan="5">
+        <b>Items:</b><br>
+        ${o.items.map(i => `${i.qty} × ${i.name}`).join("<br>")}
+        <hr>
+        <b>Payment:</b><br>
+        Txn: ${o.payment?.txn || "N/A"}<br>
+        ${o.payment?.fileUrl ? `<img src="${o.payment.fileUrl}" class="thumb" onclick="showImg('${o.payment.fileUrl}')">` : "No screenshot"}
+      </td>
+    `;
 
-    data.orders.forEach(o => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${o.orderId}</td>
-        <td>${o.name}</td>
-        <td>${o.phone}</td>
-        <td>₹${o.total}</td>
-        <td>${o.status}</td>
-        <td>${new Date(o.createdAt).toLocaleString()}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-
-  } catch (err) {
-    console.error(err);
-    alert("Server error while loading orders");
-  }
+    tbody.appendChild(tr);
+    tbody.appendChild(details);
+  });
 }
 
-/* =========================
-   AUTO LOAD ON ADMIN PAGE
-========================= */
-document.addEventListener("DOMContentLoaded", () => {
-  if (document.getElementById("ordersTable")) {
-    loadOrders();
-  }
-});
-
-/* =========================
-   LOGOUT
-========================= */
-function logoutAdmin() {
-  localStorage.removeItem("adminToken");
-  window.location.href = "admin-login.html";
+/* ================= ACTIONS ================= */
+function toggle(id) {
+  const row = document.getElementById(id);
+  row.style.display = row.style.display === "table-row" ? "none" : "table-row";
 }
+
+async function update(orderId, status) {
+  const token = localStorage.getItem("adminToken");
+
+  await fetch(`${BACKEND}/api/admin/orders/${orderId}/status`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + token
+    },
+    body: JSON.stringify({ status })
+  });
+
+  loadOrders();
+}
+
+function showImg(src) {
+  modalImg.src = src;
+  modal.style.display = "flex";
+}
+
+/* AUTO LOAD */
+document.addEventListener("DOMContentLoaded", loadOrders);

@@ -1,84 +1,106 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Bhumika Medical – Admin Dashboard</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bhumika Medical – Admin</title>
 
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f6f7f9;
-      padding: 20px;
-    }
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background:#f4f6f8;
+  margin:0;
+  padding:10px;
+}
+h2 { margin-top:0 }
+table {
+  width:100%;
+  border-collapse:collapse;
+  background:#fff;
+}
+th, td {
+  padding:8px;
+  border:1px solid #ddd;
+  font-size:14px;
+}
+th {
+  background:#0a7cff;
+  color:#fff;
+}
+.status {
+  font-weight:600;
+}
+.Pending { color:orange }
+.Approved { color:green }
+.Rejected { color:red }
 
-    h2 {
-      margin-bottom: 10px;
-    }
+.btn {
+  padding:5px 8px;
+  border:none;
+  cursor:pointer;
+  border-radius:4px;
+  font-size:12px;
+}
+.approve { background:#28a745; color:#fff }
+.reject { background:#dc3545; color:#fff }
+.view { background:#007bff; color:#fff }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: #fff;
-    }
-
-    th, td {
-      padding: 10px;
-      border: 1px solid #ddd;
-      text-align: left;
-    }
-
-    th {
-      background: #0a7cff;
-      color: #fff;
-    }
-
-    .pending {
-      color: orange;
-      font-weight: 600;
-    }
-
-    .done {
-      color: green;
-      font-weight: 600;
-    }
-
-    .topbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-
-    button {
-      padding: 8px 14px;
-      cursor: pointer;
-    }
-  </style>
+.details {
+  display:none;
+  background:#fafafa;
+}
+img.thumb {
+  width:60px;
+  cursor:pointer;
+  border:1px solid #ccc;
+}
+#modal {
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.7);
+  justify-content:center;
+  align-items:center;
+}
+#modal img {
+  max-width:90%;
+  max-height:90%;
+  background:#fff;
+}
+@media(max-width:600px){
+  th,td { font-size:12px }
+}
+</style>
 </head>
 
 <body>
 
-  <div class="topbar">
-    <h2>📦 Orders – Bhumika Medical</h2>
-    <button onclick="logoutAdmin()">Logout</button>
-  </div>
+<h2>🔐 Admin Login</h2>
+<input id="email" placeholder="Email">
+<input id="password" type="password" placeholder="Password">
+<button onclick="login()">Login</button>
 
-  <table id="ordersTable">
-    <thead>
-      <tr>
-        <th>Order ID</th>
-        <th>Name</th>
-        <th>Phone</th>
-        <th>Total</th>
-        <th>Status</th>
-        <th>Date</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+<hr>
 
-  <!-- ONLY ONE SCRIPT -->
-  <script src="admin.js"></script>
+<h2>📦 Orders</h2>
 
+<table id="ordersTable">
+<thead>
+<tr>
+  <th>Order</th>
+  <th>Name</th>
+  <th>Total</th>
+  <th>Status</th>
+  <th>Actions</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+
+<div id="modal" onclick="this.style.display='none'">
+  <img id="modalImg">
+</div>
+
+<script src="admin.js"></script>
 </body>
 </html>
