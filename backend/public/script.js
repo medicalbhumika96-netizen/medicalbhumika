@@ -934,16 +934,22 @@ checkOrderBtn?.addEventListener('click', () => {
     alert("Order tracking is temporarily unavailable.");
   }
 });
+
 // ===== INITIALIZE =====
 loadProducts();
 renderCart();
+disablePaymentProofBtn(); // 🔒 disabled until order placed
 
 
 // =======================================================
 // === MANUAL PAYMENT VERIFICATION BACKEND INTEGRATION ===
 // =======================================================
 
-// Save Order to backend
+
+// =======================================================
+// === MANUAL PAYMENT VERIFICATION BACKEND INTEGRATION ===
+// =======================================================
+
 async function submitOrderToServer(orderData) {
   try {
     const res = await fetch(`${BACKEND_BASE}/api/orders`, {
@@ -951,18 +957,15 @@ async function submitOrderToServer(orderData) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(orderData),
     });
+
     const data = await res.json();
+
     if (data && data.success) {
       console.log("✅ Order saved on server:", data.orderId);
       window.LAST_ORDER_ID = data.orderId;
-      // friendly pop-up for user (non-intrusive)
-      try {
-        // show a small toast if you have one; fallback to alert
-        if (typeof showToast === 'function') showToast('Order saved to server');
-        else console.info('Order saved to server');
-      } catch (e) {}
-    } else {
-      console.warn("❌ Order save failed on server:", data);
+
+      // ✅ ENABLE payment proof button now
+      enablePaymentProofBtn();
     }
   } catch (err) {
     console.error("⚠️ Unable to connect to backend for order save:", err);
@@ -1001,37 +1004,23 @@ async function submitPaymentProof(txnId, file) {
   }
 }
 
-// Hook: when local order is created by your existing sendOrderBtn flow,
-// also send it to backend. We wrap the click to capture the local stored order.
-if (sendOrderBtn) {
-  // keep existing listeners intact; add second listener to send to server
-  sendOrderBtn.addEventListener("click", () => {
-    // small delay to allow localStorage write (your flow writes immediately)
-    setTimeout(async () => {
-      try {
-        const allOrders = JSON.parse(localStorage.getItem("orders") || "[]");
-        const lastOrder = allOrders[allOrders.length - 1];
-        if (lastOrder) {
-          await submitOrderToServer({
-            EID: lastOrder.EID,
-            phone: lastOrder.phone,
-            name: lastOrder.name,
-            address: lastOrder.address,
-            pin: lastOrder.pin,
-            items: lastOrder.items,
-            total: lastOrder.total,
-            discount: lastOrder.discount,
-            status: lastOrder.status,
-            date: new Date().toISOString(),
-            payment: lastOrder.payment || {}
-          });
-        }
-      } catch (err) {
-        console.error("Error sending order to backend:", err);
-      }
-    }, 800);
-  });
+// ===== PAYMENT PROOF BUTTON CONTROL =====
+function disablePaymentProofBtn() {
+  if (proofBtn) {
+    proofBtn.disabled = true;
+    proofBtn.style.opacity = "0.6";
+    proofBtn.style.cursor = "not-allowed";
+  }
 }
+
+function enablePaymentProofBtn() {
+  if (proofBtn) {
+    proofBtn.disabled = false;
+    proofBtn.style.opacity = "1";
+    proofBtn.style.cursor = "pointer";
+  }
+}
+
 
 // Payment proof submit button hookup
 if (proofBtn) {
@@ -1046,6 +1035,7 @@ if (proofBtn) {
       } else alert("⚠️ Enter UPI transaction ID or upload screenshot.");
       return;
     }
+
 
     // optional UX feedback
     if (proofMsg) {
