@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 import multer from "multer";
 import dotenv from "dotenv";
 import fs from "fs";
+import jwt from "jsonwebtoken";
 import Order from "./models/Order.js";
 
 dotenv.config();
@@ -43,7 +44,7 @@ app.post("/api/orders", async (req, res) => {
   try {
     const data = req.body;
     if (!data || !data.phone) {
-      return res.status(400).json({ error: "Invalid order data" });
+      return res.status(400).json({ success: false, error: "Invalid order data" });
     }
 
     const orderId = "ORD-" + Date.now();
@@ -58,58 +59,84 @@ app.post("/api/orders", async (req, res) => {
     res.json({ success: true, orderId });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Order save failed" });
+    res.status(500).json({ success: false, error: "Order save failed" });
   }
 });
 
 /* ==================================================
    CUSTOMER — PAYMENT PROOF
 ================================================== */
-app.post(
-  "/api/payment-proof",
-  upload.single("screenshot"),
-  async (req, res) => {
-    try {
-      const { orderId, txnId = "" } = req.body;
+app.post("/api/payment-proof", upload.single("screenshot"), async (req, res) => {
+  try {
+    const { orderId, txnId = "" } = req.body;
 
-      if (!orderId) {
-        return res.status(400).json({ error: "orderId missing" });
-      }
-
-      const order = await Order.findOne({ orderId });
-      if (!order) {
-        return res.status(404).json({ error: "Order not found" });
-      }
-
-      order.payment = {
-        txn: txnId,
-        fileUrl: req.file
-          ? `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`
-          : "",
-        method: "UPI",
-      };
-
-      await order.save();
-      res.json({ success: true });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: "Payment update failed" });
+    if (!orderId) {
+      return res.status(400).json({ success: false, error: "orderId missing" });
     }
+
+    const order = await Order.findOne({ orderId });
+    if (!order) {
+      return res.status(404).json({ success: false, error: "Order not found" });
+    }
+
+    order.payment = {
+      txn: txnId,
+      fileUrl: req.file
+        ? `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`
+        : "",
+      method: "UPI",
+    };
+
+    await order.save();
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: "Payment update failed" });
   }
-);
+});
 
 /* ==================================================
-   ADMIN AUTH
+   ADMIN AUTH (JWT)
 ================================================== */
-const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
-
 function adminAuth(req, res, next) {
-  const token = req.headers["x-admin-token"];
-  if (!token || token !== ADMIN_TOKEN) {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(401).json({ error: "Unauthorized admin" });
   }
-  next();
+
+  const token = authHeader.split(" ")[1];
+
+  try {
+    jwt.verify(token, process.env.ADMIN_JWT_SECRET);
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: "Invalid admin token" });
+  }
 }
+
+/* ==================================================
+   ADMIN — LOGIN (JWT TOKEN GENERATE)
+================================================== */
+app.post("/api/admin/login", (req, res) => {
+  const { email, password } = req.body;
+
+  if (
+    email === process.env.ADMIN_EMAIL &&
+    password === process.env.ADMIN_PASSWORD
+  ) {
+    const token = jwt.sign(
+      { role: "admin" },
+      process.env.ADMIN_JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    return res.json({ success: true, token });
+  }
+
+  res.status(401).json({ success: false, message: "Invalid credentials" });
+});
+
 
 /* ==================================================
    ADMIN — FETCH ORDERS
@@ -117,6 +144,7 @@ function adminAuth(req, res, next) {
 app.get("/api/admin/orders", adminAuth, async (req, res) => {
   try {
     const q = (req.query.q || "").toLowerCase();
+
     let orders = await Order.find().sort({ createdAt: -1 });
 
     if (q) {
@@ -130,33 +158,30 @@ app.get("/api/admin/orders", adminAuth, async (req, res) => {
 
     res.json({ success: true, orders });
   } catch (err) {
-    res.status(500).json({ error: "Failed to fetch orders" });
+    console.error(err);
+    res.status(500).json({ success: false, error: "Failed to fetch orders" });
   }
 });
 
 /* ==================================================
    ADMIN — UPDATE STATUS
 ================================================== */
-app.post(
-  "/api/admin/orders/:id/status",
-  adminAuth,
-  async (req, res) => {
-    try {
-      const { status } = req.body;
-      const order = await Order.findOne({ orderId: req.params.id });
+app.post("/api/admin/orders/:id/status", adminAuth, async (req, res) => {
+  try {
+    const { status } = req.body;
+    const order = await Order.findOne({ orderId: req.params.id });
 
-      if (!order) {
-        return res.status(404).json({ error: "Order not found" });
-      }
-
-      order.status = status;
-      await order.save();
-      res.json({ success: true });
-    } catch (err) {
-      res.status(500).json({ error: "Failed to update order" });
+    if (!order) {
+      return res.status(404).json({ success: false, error: "Order not found" });
     }
+
+    order.status = status;
+    await order.save();
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: "Failed to update order" });
   }
-);
+});
 
 /* ==================================================
    ADMIN — DELETE ORDER
@@ -166,7 +191,7 @@ app.delete("/api/admin/orders/:id", adminAuth, async (req, res) => {
     await Order.deleteOne({ orderId: req.params.id });
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: "Failed to delete order" });
+    res.status(500).json({ success: false, error: "Failed to delete order" });
   }
 });
 
@@ -183,13 +208,10 @@ app.get("/api/admin/export", adminAuth, async (req, res) => {
     });
 
     res.setHeader("Content-Type", "text/csv");
-    res.setHeader(
-      "Content-Disposition",
-      "attachment; filename=orders.csv"
-    );
+    res.setHeader("Content-Disposition", "attachment; filename=orders.csv");
     res.send(csv);
   } catch (err) {
-    res.status(500).json({ error: "Failed to export orders" });
+    res.status(500).json({ success: false, error: "Failed to export orders" });
   }
 });
 
@@ -210,16 +232,6 @@ app.post("/upload-prescription", upload.single("prescription"), (req, res) => {
 ================================================== */
 app.get("/", (_, res) => {
   res.send("✅ Bhumika Medical Backend Running");
-});
- // ADMIN – get all orders
-app.get("/api/admin/orders", async (req, res) => {
-  try {
-    const orders = await Order.find().sort({ createdAt: -1 });
-    res.json({ success: true, orders });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: "Failed to fetch orders" });
-  }
 });
 
 /* ==================================================

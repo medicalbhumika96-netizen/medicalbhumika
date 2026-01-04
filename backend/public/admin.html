@@ -1,33 +1,84 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Bhumika Medical – Admin</title>
+  <meta charset="UTF-8">
+  <title>Bhumika Medical – Admin Dashboard</title>
+
   <style>
-    body { font-family: Arial; background:#f6f7f9; padding:20px }
-    table { width:100%; border-collapse:collapse; background:#fff }
-    th, td { padding:10px; border:1px solid #ddd; text-align:left }
-    th { background:#0a7cff; color:#fff }
-    .pending { color: orange; font-weight:600 }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f6f7f9;
+      padding: 20px;
+    }
+
+    h2 {
+      margin-bottom: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+    }
+
+    th, td {
+      padding: 10px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+
+    th {
+      background: #0a7cff;
+      color: #fff;
+    }
+
+    .pending {
+      color: orange;
+      font-weight: 600;
+    }
+
+    .done {
+      color: green;
+      font-weight: 600;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    button {
+      padding: 8px 14px;
+      cursor: pointer;
+    }
   </style>
 </head>
+
 <body>
 
-<h2>📦 Orders – Bhumika Medical</h2>
+  <div class="topbar">
+    <h2>📦 Orders – Bhumika Medical</h2>
+    <button onclick="logoutAdmin()">Logout</button>
+  </div>
 
-<table id="ordersTable">
-  <thead>
-    <tr>
-      <th>Order ID</th>
-      <th>Name</th>
-      <th>Phone</th>
-      <th>Total</th>
-      <th>Status</th>
-      <th>Date</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
+  <table id="ordersTable">
+    <thead>
+      <tr>
+        <th>Order ID</th>
+        <th>Name</th>
+        <th>Phone</th>
+        <th>Total</th>
+        <th>Status</th>
+        <th>Date</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
-<script src="admin.js"></script>
+  <!-- ONLY ONE SCRIPT -->
+  <script src="admin.js"></script>
+
 </body>
 </html>
