@@ -211,6 +211,16 @@ app.post("/upload-prescription", upload.single("prescription"), (req, res) => {
 app.get("/", (_, res) => {
   res.send("✅ Bhumika Medical Backend Running");
 });
+ // ADMIN – get all orders
+app.get("/api/admin/orders", async (req, res) => {
+  try {
+    const orders = await Order.find().sort({ createdAt: -1 });
+    res.json({ success: true, orders });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Failed to fetch orders" });
+  }
+});
 
 /* ==================================================
    START SERVER

@@ -1,90 +1,33 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Bhumika Medical – Admin Orders</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bhumika Medical – Admin</title>
   <style>
-    body { font-family: Arial; background:#f4f6f8; padding:15px; }
-    .order {
-      background:#fff; margin-bottom:12px; padding:12px;
-      border-radius:6px; box-shadow:0 2px 5px rgba(0,0,0,.1);
-    }
-    .status { font-weight:bold; }
-    button { margin-top:6px; }
+    body { font-family: Arial; background:#f6f7f9; padding:20px }
+    table { width:100%; border-collapse:collapse; background:#fff }
+    th, td { padding:10px; border:1px solid #ddd; text-align:left }
+    th { background:#0a7cff; color:#fff }
+    .pending { color: orange; font-weight:600 }
   </style>
 </head>
 <body>
 
-<h2>🧾 Bhumika Medical – Orders</h2>
+<h2>📦 Orders – Bhumika Medical</h2>
 
-<input id="search" placeholder="Search phone / order ID" />
-<button onclick="loadOrders()">Search</button>
+<table id="ordersTable">
+  <thead>
+    <tr>
+      <th>Order ID</th>
+      <th>Name</th>
+      <th>Phone</th>
+      <th>Total</th>
+      <th>Status</th>
+      <th>Date</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
 
-<div id="orders"></div>
-
-<script>
-const ADMIN_TOKEN = "bhumika-admin-2026";
-
-async function loadOrders() {
-  const q = document.getElementById("search").value;
-  const res = await fetch(`/api/admin/orders?q=${encodeURIComponent(q)}`, {
-    headers: { "x-admin-token": ADMIN_TOKEN }
-  });
-  const data = await res.json();
-
-  const box = document.getElementById("orders");
-  box.innerHTML = "";
-
-  data.orders.forEach(o => {
-    box.innerHTML += `
-      <div class="order">
-        <b>${o.name}</b> (${o.phone})<br>
-        ${o.address}<br><br>
-
-        <b>Order ID:</b> ${o.orderId}<br>
-        <b>Total:</b> ₹${o.total}<br>
-        <b>Status:</b> <span class="status">${o.status}</span><br>
-
-        <b>Items:</b>
-        <ul>
-          ${o.items.map(i => `<li>${i.name} × ${i.qty}</li>`).join("")}
-        </ul>
-
-        ${o.payment?.fileUrl
-          ? `<a href="${o.payment.fileUrl}" target="_blank">View Payment Proof</a><br>`
-          : ""}
-
-        <button onclick="updateStatus('${o.orderId}','Confirmed')">Confirm</button>
-        <button onclick="updateStatus('${o.orderId}','Delivered')">Delivered</button>
-        <button onclick="deleteOrder('${o.orderId}')">Delete</button>
-      </div>
-    `;
-  });
-}
-
-async function updateStatus(id, status) {
-  await fetch(`/api/admin/orders/${id}/status`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-admin-token": ADMIN_TOKEN
-    },
-    body: JSON.stringify({ status })
-  });
-  loadOrders();
-}
-
-async function deleteOrder(id) {
-  if (!confirm("Delete order?")) return;
-  await fetch(`/api/admin/orders/${id}`, {
-    method: "DELETE",
-    headers: { "x-admin-token": ADMIN_TOKEN }
-  });
-  loadOrders();
-}
-
-loadOrders();
-</script>
-
+<script src="admin.js"></script>
 </body>
 </html>
