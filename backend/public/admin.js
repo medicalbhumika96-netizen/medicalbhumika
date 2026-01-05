@@ -92,6 +92,18 @@ function showImg(src) {
   modalImg.src = src;
   modal.style.display = "flex";
 }
+function logout() {
+  localStorage.removeItem("adminToken");
+  window.location.href = "admin-login.html";
+}
+
+/* BLOCK ACCESS IF NOT LOGGED IN */
+document.addEventListener("DOMContentLoaded", () => {
+  const token = localStorage.getItem("adminToken");
+  if (!token) {
+    window.location.href = "admin-login.html";
+  }
+});
 
 /* AUTO LOAD */
 document.addEventListener("DOMContentLoaded", loadOrders);
