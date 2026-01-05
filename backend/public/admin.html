@@ -1,116 +1,83 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Bhumika Medical – Admin</title>
+  <meta charset="UTF-8" />
+  <title>Bhumika Medical — Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-<style>
-body {
-  font-family: Arial, sans-serif;
-  background:#f4f6f8;
-  margin:0;
-  padding:10px;
-}
-h2 { margin-top:0 }
-table {
-  width:100%;
-  border-collapse:collapse;
-  background:#fff;
-}
-th, td {
-  padding:8px;
-  border:1px solid #ddd;
-  font-size:14px;
-}
-th {
-  background:#0a7cff;
-  color:#fff;
-}
-.status {
-  font-weight:600;
-}
-.Pending { color:orange }
-.Approved { color:green }
-.Rejected { color:red }
+  <style>
+    body { font-family: Arial, sans-serif; background:#f6f7f9; padding:20px }
+    h2 { margin-bottom:10px }
 
-.btn {
-  padding:5px 8px;
-  border:none;
-  cursor:pointer;
-  border-radius:4px;
-  font-size:12px;
-}
-.approve { background:#28a745; color:#fff }
-.reject { background:#dc3545; color:#fff }
-.view { background:#007bff; color:#fff }
+    .toolbar {
+      display:flex;
+      gap:10px;
+      margin-bottom:15px;
+      flex-wrap:wrap;
+    }
 
-.details {
-  display:none;
-  background:#fafafa;
-}
-img.thumb {
-  width:60px;
-  cursor:pointer;
-  border:1px solid #ccc;
-}
-#modal {
-  display:none;
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.7);
-  justify-content:center;
-  align-items:center;
-}
-#modal img {
-  max-width:90%;
-  max-height:90%;
-  background:#fff;
-}
-@media(max-width:600px){
-  th,td { font-size:12px }
-}
-</style>
+    select, button {
+      padding:6px 10px;
+      border-radius:4px;
+      border:1px solid #ccc;
+      cursor:pointer;
+    }
+
+    button.export { background:#333; color:#fff }
+    button.approve { background:#28a745; color:#fff }
+    button.reject { background:#dc3545; color:#fff }
+
+    table { width:100%; border-collapse:collapse; background:#fff }
+    th, td { padding:10px; border:1px solid #ddd; font-size:14px; vertical-align:top }
+    th { background:#0a7cff; color:#fff }
+
+    .small { font-size:12px; color:#555 }
+    .muted { color:#999 }
+
+    img.proof {
+      width:60px;
+      height:60px;
+      object-fit:cover;
+      border-radius:6px;
+      border:1px solid #ccc;
+      cursor:pointer;
+    }
+
+    .status { font-weight:bold }
+  </style>
 </head>
-
 <body>
 
-<h2>🔐 Admin Login</h2>
-<input id="email" placeholder="Email">
-<input id="password" type="password" placeholder="Password">
-<button onclick="login()">Login</button>
-<button onclick="logout()" style="
-  background:#dc3545;
-  color:white;
-  border:none;
-  padding:6px 10px;
-  float:right;
-  cursor:pointer;
-">
-  Logout
-</button>
+<h2>📦 Orders — Admin Panel</h2>
 
+<div class="toolbar">
+  <select id="statusFilter">
+    <option value="">All Orders</option>
+    <option value="Pending">Pending</option>
+    <option value="Approved">Approved</option>
+    <option value="Rejected">Rejected</option>
+  </select>
 
-<hr>
-
-<h2>📦 Orders</h2>
-
-<table id="ordersTable">
-<thead>
-<tr>
-  <th>Order</th>
-  <th>Name</th>
-  <th>Total</th>
-  <th>Status</th>
-  <th>Actions</th>
-</tr>
-</thead>
-<tbody></tbody>
-</table>
-
-<div id="modal" onclick="this.style.display='none'">
-  <img id="modalImg">
+  <button class="export" onclick="exportCSV()">⬇ Export CSV</button>
 </div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Order ID</th>
+      <th>Customer</th>
+      <th>Items</th>
+      <th>Total</th>
+      <th>Payment Proof</th>
+      <th>Status</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+
+  <tbody id="orders-body">
+    <tr><td colspan="7">Loading…</td></tr>
+  </tbody>
+</table>
 
 <script src="admin.js"></script>
 </body>

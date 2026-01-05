@@ -75,6 +75,8 @@ let cart = {};
 let prescriptionData = null;
 window.LAST_FINAL_TOTAL = 0; // accessible globally for QR updates
 window.LAST_ORDER_ID = null; // set after server save
+// ===== BACKEND ORDER TRACK =====
+
 
 // set shop name & phone
 document.querySelectorAll('.brand-name').forEach(el => el.textContent = SHOP_NAME);
@@ -940,7 +942,7 @@ checkOrderBtn?.addEventListener('click', () => {
 // ===== INITIALIZE =====
 loadProducts();
 renderCart();
-//disablePaymentProofBtn(); // 🔒 disabled until order placed
+disablePaymentProofBtn(); // 🔒 disabled until order placed
 
 
 // =======================================================
@@ -1057,5 +1059,21 @@ if (proofBtn) {
     if (txnIdInput) txnIdInput.value = '';
     if (screenshotUpload) screenshotUpload.value = '';
   });
+}
+
+function disablePaymentProofBtn() {
+  if (submitProofBtn) {
+    submitProofBtn.disabled = true;
+    submitProofBtn.style.opacity = "0.6";
+    submitProofBtn.style.cursor = "not-allowed";
+  }
+}
+
+function enablePaymentProofBtn() {
+  if (submitProofBtn) {
+    submitProofBtn.disabled = false;
+    submitProofBtn.style.opacity = "1";
+    submitProofBtn.style.cursor = "pointer";
+  }
 }
 

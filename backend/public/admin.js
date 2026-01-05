@@ -1,109 +1,171 @@
-const BACKEND = "https://medicalbhumika-2.onrender.com";
+const API_BASE = "https://medicalbhumika-2.onrender.com";
+const token = localStorage.getItem("adminToken");
 
-/* ================= LOGIN ================= */
-async function login() {
-  const email = email.value;
-  const password = document.getElementById("password").value;
-
-  const res = await fetch(`${BACKEND}/api/admin/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password })
-  });
-
-  const data = await res.json();
-
-  if (!data.success) return alert("Login failed");
-
-  localStorage.setItem("adminToken", data.token);
-  loadOrders();
+if (!token) {
+  alert("Admin not logged in");
+  location.href = "/admin-login.html";
 }
 
-/* ================= LOAD ORDERS ================= */
+const tbody = document.getElementById("orders-body");
+const filterSelect = document.getElementById("statusFilter");
+
+let ALL_ORDERS = [];
+
+// ================= LOAD ORDERS =================
 async function loadOrders() {
-  const token = localStorage.getItem("adminToken");
-  if (!token) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/orders`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
 
-  const res = await fetch(`${BACKEND}/api/admin/orders`, {
-    headers: { Authorization: "Bearer " + token }
-  });
+    const data = await res.json();
+    if (!data.success) {
+      tbody.innerHTML = `<tr><td colspan="7">Failed to load orders</td></tr>`;
+      return;
+    }
 
-  const data = await res.json();
-  if (!data.success) return alert("Failed to load orders");
+    ALL_ORDERS = data.orders;
+    applyFilter();
+  } catch (err) {
+    console.error(err);
+    tbody.innerHTML = `<tr><td colspan="7">Server error</td></tr>`;
+  }
+}
 
-  const tbody = document.querySelector("#ordersTable tbody");
+// ================= FILTER =================
+function applyFilter() {
+  const status = filterSelect.value;
+  const filtered = status
+    ? ALL_ORDERS.filter(o => o.status === status)
+    : ALL_ORDERS;
+
+  renderOrders(filtered);
+}
+
+filterSelect.addEventListener("change", applyFilter);
+
+// ================= RENDER =================
+function renderOrders(orders) {
+  if (!orders.length) {
+    tbody.innerHTML = `<tr><td colspan="7">No orders</td></tr>`;
+    return;
+  }
+
   tbody.innerHTML = "";
 
-  data.orders.forEach(o => {
+  orders.forEach(order => {
     const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${o.orderId}</td>
-      <td>${o.name}<br><small>${o.phone}</small></td>
-      <td>₹${o.total}</td>
-      <td class="status ${o.status}">${o.status}</td>
-      <td>
-        <button class="btn view" onclick="toggle('${o._id}')">View</button>
-        <button class="btn approve" onclick="update('${o.orderId}','Approved')">✔</button>
-        <button class="btn reject" onclick="update('${o.orderId}','Rejected')">✖</button>
-      </td>
-    `;
 
-    const details = document.createElement("tr");
-    details.id = o._id;
-    details.className = "details";
-    details.innerHTML = `
-      <td colspan="5">
-        <b>Items:</b><br>
-        ${o.items.map(i => `${i.qty} × ${i.name}`).join("<br>")}
-        <hr>
-        <b>Payment:</b><br>
-        Txn: ${o.payment?.txn || "N/A"}<br>
-        ${o.payment?.fileUrl ? `<img src="${o.payment.fileUrl}" class="thumb" onclick="showImg('${o.payment.fileUrl}')">` : "No screenshot"}
+    tr.innerHTML = `
+      <td>${order.orderId}</td>
+
+      <td>
+        <b>${order.name || "-"}</b><br>
+        <span class="small">${order.phone || ""}</span><br>
+        <span class="small">${order.address || ""}</span>
+      </td>
+
+      <td>
+        ${order.items.map(i =>
+          `<div class="small">${i.qty} × ${i.name}</div>`
+        ).join("")}
+      </td>
+
+      <td>₹${order.total}</td>
+
+      <td>
+        <div><b>${order.payment?.method || "N/A"}</b></div>
+        <div class="small">Txn: ${order.payment?.txn || "-"}</div>
+        ${
+          order.payment?.fileUrl
+            ? `<img class="proof"
+                   src="${order.payment.fileUrl}"
+                   onclick="window.open('${order.payment.fileUrl}','_blank')">`
+            : `<span class="small muted">No Screenshot</span>`
+        }
+      </td>
+
+      <td class="status">${order.status}</td>
+
+      <td>
+        <button class="approve"
+          onclick="updateStatus('${order.orderId}','Approved','${order.phone}','${order.total}')">
+          Approve
+        </button>
+        <button class="reject"
+          onclick="updateStatus('${order.orderId}','Rejected')">
+          Reject
+        </button>
       </td>
     `;
 
     tbody.appendChild(tr);
-    tbody.appendChild(details);
   });
 }
 
-/* ================= ACTIONS ================= */
-function toggle(id) {
-  const row = document.getElementById(id);
-  row.style.display = row.style.display === "table-row" ? "none" : "table-row";
-}
+// ================= UPDATE STATUS =================
+async function updateStatus(orderId, status, phone, total) {
+  if (!confirm(`Mark order ${orderId} as ${status}?`)) return;
 
-async function update(orderId, status) {
-  const token = localStorage.getItem("adminToken");
+  try {
+    const res = await fetch(
+      `${API_BASE}/api/admin/orders/${orderId}/status`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ status })
+      }
+    );
 
-  await fetch(`${BACKEND}/api/admin/orders/${orderId}/status`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer " + token
-    },
-    body: JSON.stringify({ status })
-  });
-
-  loadOrders();
-}
-
-function showImg(src) {
-  modalImg.src = src;
-  modal.style.display = "flex";
-}
-function logout() {
-  localStorage.removeItem("adminToken");
-  window.location.href = "admin-login.html";
-}
-
-/* BLOCK ACCESS IF NOT LOGGED IN */
-document.addEventListener("DOMContentLoaded", () => {
-  const token = localStorage.getItem("adminToken");
-  if (!token) {
-    window.location.href = "admin-login.html";
+    const data = await res.json();
+    if (data.success) {
+      if (status === "Approved" && phone) {
+        sendWhatsApp(phone, orderId, total);
+      }
+      loadOrders();
+    } else {
+      alert("Failed to update status");
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Server error");
   }
-});
+}
 
-/* AUTO LOAD */
-document.addEventListener("DOMContentLoaded", loadOrders);
+// ================= WHATSAPP NOTIFY =================
+function sendWhatsApp(phone, orderId, total) {
+  const msg =
+    `✅ Your order has been APPROVED!\n\n` +
+    `Order ID: ${orderId}\n` +
+    `Total: ₹${total}\n\n` +
+    `Bhumika Medical\nThank you!`;
+
+  const url = `https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`;
+  window.open(url, "_blank");
+}
+
+// ================= CSV EXPORT =================
+function exportCSV() {
+  if (!ALL_ORDERS.length) {
+    alert("No orders to export");
+    return;
+  }
+
+  let csv = "OrderID,Name,Phone,Total,Status,PaymentMethod,TxnID\n";
+
+  ALL_ORDERS.forEach(o => {
+    csv += `"${o.orderId}","${o.name}","${o.phone}","${o.total}","${o.status}","${o.payment?.method || ""}","${o.payment?.txn || ""}"\n`;
+  });
+
+  const blob = new Blob([csv], { type: "text/csv" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = "orders.csv";
+  link.click();
+}
+
+// ================= INIT =================
+loadOrders();
