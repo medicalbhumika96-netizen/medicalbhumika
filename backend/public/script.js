@@ -657,6 +657,8 @@ sendOrderBtn?.addEventListener('click', () => {
       console.error('Order send to backend failed:', e);
     }
   })();
+window.LAST_ORDER_ID = window.LAST_ORDER_ID || uniqueEID;
+enablePaymentProofBtn();
 
   closeModal();
   showResult(true, `✅ Your Order ID: ${uniqueEID}`);
@@ -938,7 +940,7 @@ checkOrderBtn?.addEventListener('click', () => {
 // ===== INITIALIZE =====
 loadProducts();
 renderCart();
-disablePaymentProofBtn(); // 🔒 disabled until order placed
+//disablePaymentProofBtn(); // 🔒 disabled until order placed
 
 
 // =======================================================
