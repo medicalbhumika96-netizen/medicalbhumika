@@ -89,15 +89,12 @@ app.post(
       }
 
       order.payment = {
-        txn: txnId,
-        screenshot: req.file
-          ? `/uploads/${req.file.filename}`
-          : "",
-        method: "UPI",
-      };
+  txn: txnId,
+  screenshot: `/uploads/${req.file.filename}`,
+  method: "UPI"
+};
 
-      await order.save();
-
+await order.save();
       console.log("✅ Payment proof saved:", orderId);
       res.json({ success: true });
 
