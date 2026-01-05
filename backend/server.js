@@ -9,7 +9,6 @@ import Order from "./models/Order.js";
 import cron from "node-cron";
 import nodemailer from "nodemailer";
 
-
 dotenv.config();
 
 const app = express();
@@ -44,15 +43,11 @@ const upload = multer({ storage });
    CUSTOMER — PLACE ORDER
 ================================================== */
 app.post("/api/orders", async (req, res) => {
-  console.log("🔥 /api/orders HIT");
-  console.log("📦 BODY:", req.body);
-
   try {
     const data = req.body;
 
     if (!data || !data.phone) {
-      console.log("❌ Invalid order data");
-      return res.status(400).json({ success: false, error: "Invalid order data" });
+      return res.status(400).json({ success: false });
     }
 
     const orderId = "ORD-" + Date.now();
@@ -66,11 +61,11 @@ app.post("/api/orders", async (req, res) => {
     await order.save();
 
     console.log("✅ Order saved:", orderId);
-
     res.json({ success: true, orderId });
+
   } catch (err) {
     console.error("❌ Order save error:", err);
-    res.status(500).json({ success: false, error: "Order save failed" });
+    res.status(500).json({ success: false });
   }
 });
 
@@ -81,46 +76,34 @@ app.post(
   "/api/payment-proof",
   upload.single("screenshot"),
   async (req, res) => {
-    console.log("🔥 /api/payment-proof HIT");
-    console.log("📦 BODY:", req.body);
-    console.log("🖼 FILE:", req.file);
-
     try {
       const { orderId, txnId = "" } = req.body;
 
       if (!orderId) {
-        console.log("❌ orderId missing");
-        return res
-          .status(400)
-          .json({ success: false, error: "orderId missing" });
+        return res.status(400).json({ success: false });
       }
 
       const order = await Order.findOne({ orderId });
       if (!order) {
-        console.log("❌ Order not found:", orderId);
-        return res
-          .status(404)
-          .json({ success: false, error: "Order not found" });
+        return res.status(404).json({ success: false });
       }
 
       order.payment = {
         txn: txnId,
-        fileUrl: req.file
-          ? `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`
+        screenshot: req.file
+          ? `/uploads/${req.file.filename}`
           : "",
         method: "UPI",
       };
 
       await order.save();
 
-      console.log("✅ Payment proof saved for:", orderId);
-
+      console.log("✅ Payment proof saved:", orderId);
       res.json({ success: true });
+
     } catch (err) {
-      console.error("❌ Payment update error:", err);
-      res
-        .status(500)
-        .json({ success: false, error: "Payment update failed" });
+      console.error("❌ Payment proof error:", err);
+      res.status(500).json({ success: false });
     }
   }
 );
@@ -129,19 +112,18 @@ app.post(
    ADMIN AUTH (JWT)
 ================================================== */
 function adminAuth(req, res, next) {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ error: "Unauthorized admin" });
+  const auth = req.headers.authorization;
+  if (!auth || !auth.startsWith("Bearer ")) {
+    return res.status(401).json({ success: false });
   }
 
-  const token = authHeader.split(" ")[1];
+  const token = auth.split(" ")[1];
 
   try {
     jwt.verify(token, process.env.ADMIN_JWT_SECRET);
     next();
   } catch {
-    return res.status(401).json({ error: "Invalid admin token" });
+    return res.status(401).json({ success: false });
   }
 }
 
@@ -171,25 +153,48 @@ app.post("/api/admin/login", (req, res) => {
 ================================================== */
 app.get("/api/admin/orders", adminAuth, async (req, res) => {
   try {
-    const q = (req.query.q || "").toLowerCase();
-
-    let orders = await Order.find().sort({ createdAt: -1 });
-
-    if (q) {
-      orders = orders.filter(
-        (o) =>
-          o.orderId?.toLowerCase().includes(q) ||
-          o.phone?.includes(q) ||
-          o.name?.toLowerCase().includes(q)
-      );
-    }
-
+    const orders = await Order.find().sort({ createdAt: -1 });
     res.json({ success: true, orders });
   } catch (err) {
     console.error("❌ Fetch orders error:", err);
     res.status(500).json({ success: false });
   }
 });
+
+/* ==================================================
+   ADMIN — UPDATE STATUS (APPROVE / REJECT) 🔥
+================================================== */
+app.post(
+  "/api/admin/orders/:orderId/status",
+  adminAuth,
+  async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      const { status } = req.body;
+
+      if (!["Pending", "Approved", "Rejected"].includes(status)) {
+        return res.status(400).json({ success: false });
+      }
+
+      const order = await Order.findOneAndUpdate(
+        { orderId },
+        { status },
+        { new: true }
+      );
+
+      if (!order) {
+        return res.status(404).json({ success: false });
+      }
+
+      console.log(`✅ Order ${orderId} → ${status}`);
+      res.json({ success: true });
+
+    } catch (err) {
+      console.error("❌ Status update error:", err);
+      res.status(500).json({ success: false });
+    }
+  }
+);
 
 /* ==================================================
    ROOT
