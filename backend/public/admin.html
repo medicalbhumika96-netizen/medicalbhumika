@@ -1,84 +1,266 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Bhumika Medical — Admin</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta charset="UTF-8">
+<title>Bhumika Medical — Admin Console</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <style>
-    body { font-family: Arial, sans-serif; background:#f6f7f9; padding:20px }
-    h2 { margin-bottom:10px }
+<style>
+/* ========== BASE ========== */
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:system-ui, Arial;
+  background:#0c1117;
+  color:#e6edf3;
+  padding:16px;
+}
 
-    .toolbar {
-      display:flex;
-      gap:10px;
-      margin-bottom:15px;
-      flex-wrap:wrap;
-    }
+/* ========== HEADER ========== */
+.header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:15px;
+}
+.header h2{margin:0;font-size:20px}
+.logout{
+  background:#dc3545;
+  border:none;
+  color:#fff;
+  padding:6px 12px;
+  cursor:pointer;
+}
 
-    select, button {
-      padding:6px 10px;
-      border-radius:4px;
-      border:1px solid #ccc;
-      cursor:pointer;
-    }
+/* ========== TOOLBAR ========== */
+.toolbar{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-bottom:12px;
+}
+select,input,button{
+  padding:6px 10px;
+  border-radius:4px;
+  border:1px solid #333;
+  background:#111827;
+  color:#e6edf3;
+}
+button.export{background:#1f2937}
+button.approve{background:#16a34a}
+button.reject{background:#dc2626}
 
-    button.export { background:#333; color:#fff }
-    button.approve { background:#28a745; color:#fff }
-    button.reject { background:#dc3545; color:#fff }
+/* ========== TABLE ========== */
+table{
+  width:100%;
+  border-collapse:collapse;
+  background:#020617;
+}
+th,td{
+  border:1px solid #1f2937;
+  padding:8px;
+  font-size:13px;
+  vertical-align:top;
+}
+th{
+  background:#0a7cff;
+  color:#fff;
+  position:sticky;
+  top:0;
+}
+tr:hover{background:#020617cc}
 
-    table { width:100%; border-collapse:collapse; background:#fff }
-    th, td { padding:10px; border:1px solid #ddd; font-size:14px; vertical-align:top }
-    th { background:#0a7cff; color:#fff }
+/* ========== STATUS ========== */
+.status.Pending{color:#facc15}
+.status.Approved{color:#22c55e}
+.status.Rejected{color:#ef4444}
 
-    .small { font-size:12px; color:#555 }
-    .muted { color:#999 }
+/* ========== ITEMS ========== */
+.items{
+  cursor:pointer;
+  color:#38bdf8;
+}
+.details{
+  display:none;
+  background:#020617;
+}
+.details td{
+  font-size:12px;
+  color:#cbd5e1;
+}
 
-    img.proof {
-      width:60px;
-      height:60px;
-      object-fit:cover;
-      border-radius:6px;
-      border:1px solid #ccc;
-      cursor:pointer;
-    }
+/* ========== IMAGE ========== */
+img.proof{
+  width:60px;
+  height:60px;
+  object-fit:cover;
+  border-radius:6px;
+  cursor:pointer;
+  border:1px solid #334155;
+}
 
-    .status { font-weight:bold }
-  </style>
+/* ========== MODAL ========== */
+.modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.85);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:999;
+}
+.modal img{
+  max-width:90%;
+  max-height:90%;
+  border-radius:8px;
+}
+
+/* MOBILE */
+@media(max-width:768px){
+  th,td{font-size:12px}
+}
+</style>
 </head>
+
 <body>
 
-<h2>📦 Orders — Admin Panel</h2>
+<div class="header">
+  <h2>📦 Admin Orders Console</h2>
+  <button class="logout" onclick="logout()">Logout</button>
+</div>
 
 <div class="toolbar">
+  <input id="search" placeholder="Search order / phone">
   <select id="statusFilter">
-    <option value="">All Orders</option>
+    <option value="">All</option>
     <option value="Pending">Pending</option>
     <option value="Approved">Approved</option>
     <option value="Rejected">Rejected</option>
   </select>
-
   <button class="export" onclick="exportCSV()">⬇ Export CSV</button>
 </div>
 
 <table>
-  <thead>
-    <tr>
-      <th>Order ID</th>
-      <th>Customer</th>
-      <th>Items</th>
-      <th>Total</th>
-      <th>Payment Proof</th>
-      <th>Status</th>
-      <th>Action</th>
-    </tr>
-  </thead>
-
-  <tbody id="orders-body">
-    <tr><td colspan="7">Loading…</td></tr>
-  </tbody>
+<thead>
+<tr>
+  <th>Order</th>
+  <th>Customer</th>
+  <th>Items</th>
+  <th>Total</th>
+  <th>Proof</th>
+  <th>Status</th>
+  <th>Action</th>
+</tr>
+</thead>
+<tbody id="orders"></tbody>
 </table>
 
-<script src="admin.js"></script>
+<div class="modal" id="modal" onclick="this.style.display='none'">
+  <img id="modalImg">
+</div>
+
+<script>
+/* ========== CONFIG ========== */
+const BACKEND="https://medicalbhumika-2.onrender.com";
+const token=localStorage.getItem("adminToken");
+if(!token) location.href="admin-login.html";
+
+/* ========== FETCH ORDERS ========== */
+let ORDERS=[];
+async function loadOrders(){
+  const res=await fetch(`${BACKEND}/api/orders`,{
+    headers:{Authorization:`Bearer ${token}`}
+  });
+  const data=await res.json();
+  ORDERS=data.orders||[];
+  render();
+}
+
+/* ========== RENDER ========== */
+function render(){
+  const q=document.getElementById("search").value.toLowerCase();
+  const st=document.getElementById("statusFilter").value;
+  const body=document.getElementById("orders");
+  body.innerHTML="";
+
+  ORDERS.filter(o=>{
+    return (!st||o.status===st) &&
+      (o.orderId?.toLowerCase().includes(q) || o.phone?.includes(q));
+  }).forEach(o=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td>${o.orderId}</td>
+      <td>${o.name}<br><span class="small">${o.phone}</span></td>
+      <td class="items" onclick="toggle('${o._id}')">${o.items.length} items</td>
+      <td>₹${o.total}</td>
+      <td>${o.payment?.screenshot?
+        `<img src="${o.payment.screenshot}" class="proof" onclick="showImg(event,'${o.payment.screenshot}')">`
+        :"—"}</td>
+      <td class="status ${o.status}">${o.status}</td>
+      <td>
+        <button class="approve" onclick="updateStatus('${o._id}','Approved')">✓</button>
+        <button class="reject" onclick="updateStatus('${o._id}','Rejected')">✕</button>
+      </td>`;
+    body.appendChild(tr);
+
+    const d=document.createElement("tr");
+    d.className="details";
+    d.id=o._id;
+    d.innerHTML=`<td colspan="7">
+      <b>Address:</b> ${o.address}<br>
+      <b>Txn:</b> ${o.payment?.txnId||"—"}<br>
+      <b>Items:</b><br>
+      ${o.items.map(i=>`• ${i.name} × ${i.qty}`).join("<br>")}
+    </td>`;
+    body.appendChild(d);
+  });
+}
+
+/* ========== ACTIONS ========== */
+function toggle(id){
+  const r=document.getElementById(id);
+  r.style.display=r.style.display==="table-row"?"none":"table-row";
+}
+function showImg(e,src){
+  e.stopPropagation();
+  modalImg.src=src;
+  modal.style.display="flex";
+}
+async function updateStatus(id,status){
+  await fetch(`${BACKEND}/api/orders/${id}`,{
+    method:"PATCH",
+    headers:{
+      "Content-Type":"application/json",
+      Authorization:`Bearer ${token}`
+    },
+    body:JSON.stringify({status})
+  });
+  loadOrders();
+}
+
+/* ========== CSV EXPORT ========== */
+function exportCSV(){
+  let csv="Order,Name,Phone,Total,Status\n";
+  ORDERS.forEach(o=>{
+    csv+=`${o.orderId},${o.name},${o.phone},${o.total},${o.status}\n`;
+  });
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+  a.download="orders.csv";
+  a.click();
+}
+
+/* ========== LOGOUT ========== */
+function logout(){
+  localStorage.removeItem("adminToken");
+  location.href="admin-login.html";
+}
+
+/* ========== EVENTS ========== */
+search.oninput=statusFilter.onchange=render;
+
+loadOrders();
+</script>
+
 </body>
 </html>
