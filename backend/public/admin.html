@@ -12,13 +12,15 @@ body{
   font-family:system-ui, Arial;
   background:#0c1117;
   color:#e6edf3;
-  padding:16px;
+  padding:14px;
 }
+
+/* ===== HEADER ===== */
 .header{
   display:flex;
   justify-content:space-between;
   align-items:center;
-  margin-bottom:15px;
+  margin-bottom:14px;
 }
 .logout{
   background:#dc3545;
@@ -27,13 +29,39 @@ body{
   padding:6px 12px;
   cursor:pointer;
 }
+
+/* ===== DASHBOARD ===== */
+.dashboard{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:12px;
+  margin-bottom:16px;
+}
+.card{
+  background:#020617;
+  border:1px solid #1f2937;
+  padding:12px;
+  border-radius:8px;
+}
+.card h4{
+  margin:0;
+  font-size:12px;
+  color:#94a3b8;
+}
+.card .value{
+  margin-top:6px;
+  font-size:22px;
+  font-weight:700;
+}
+
+/* ===== TOOLBAR ===== */
 .toolbar{
   display:flex;
   gap:10px;
   margin-bottom:12px;
   flex-wrap:wrap;
 }
-select,input,button{
+input,select,button{
   padding:6px 10px;
   border-radius:4px;
   border:1px solid #333;
@@ -41,9 +69,10 @@ select,input,button{
   color:#e6edf3;
 }
 button.export{background:#1f2937}
-button.approve{background:#16a34a}
-button.reject{background:#dc2626}
+button.approve{background:#16a34a;color:#fff}
+button.reject{background:#dc2626;color:#fff}
 
+/* ===== TABLE ===== */
 table{
   width:100%;
   border-collapse:collapse;
@@ -57,9 +86,9 @@ th,td{
 }
 th{background:#0a7cff;color:#fff}
 
-.status.Pending{color:#facc15}
-.status.Approved{color:#22c55e}
-.status.Rejected{color:#ef4444}
+.status.Pending{color:#facc15;font-weight:700}
+.status.Approved{color:#22c55e;font-weight:700}
+.status.Rejected{color:#ef4444;font-weight:700}
 
 .items{cursor:pointer;color:#38bdf8}
 .details{display:none;background:#020617}
@@ -73,6 +102,7 @@ img.proof{
   border:1px solid #334155;
 }
 
+/* ===== MODAL ===== */
 .modal{
   position:fixed;
   inset:0;
@@ -83,14 +113,30 @@ img.proof{
   z-index:999;
 }
 .modal img{max-width:90%;max-height:90%}
+
+/* ===== MOBILE ===== */
+@media(max-width:768px){
+  table,thead,tbody,tr,td{display:block}
+  thead{display:none}
+  tr{margin-bottom:12px;border:1px solid #1f2937}
+  td{border:none}
+}
 </style>
 </head>
 
 <body>
 
 <div class="header">
-  <h2>📦 Admin Orders Console</h2>
+  <h2>📦 Admin Orders</h2>
   <button class="logout" onclick="logout()">Logout</button>
+</div>
+
+<!-- DASHBOARD -->
+<div class="dashboard">
+  <div class="card"><h4>Today Orders</h4><div class="value" id="todayOrders">0</div></div>
+  <div class="card"><h4>Today Revenue</h4><div class="value" id="todayRevenue">₹0</div></div>
+  <div class="card"><h4>Pending Orders</h4><div class="value" id="pendingOrders">0</div></div>
+  <div class="card"><h4>Unique Customers</h4><div class="value" id="uniqueCustomers">0</div></div>
 </div>
 
 <div class="toolbar">
@@ -107,11 +153,11 @@ img.proof{
 <table>
 <thead>
 <tr>
-  <th>Order ID</th>
+  <th>Order</th>
   <th>Customer</th>
   <th>Items</th>
   <th>Total</th>
-  <th>Payment Proof</th>
+  <th>Payment</th>
   <th>Status</th>
   <th>Action</th>
 </tr>
@@ -123,85 +169,105 @@ img.proof{
   <img id="modalImg">
 </div>
 
+<audio id="notifySound" src="/new-order.mp3"></audio>
+
 <script>
-/* ================= CONFIG ================= */
-const BACKEND = "https://medicalbhumika-2.onrender.com";
-const token = localStorage.getItem("adminToken");
+const BACKEND="https://medicalbhumika-2.onrender.com";
+const token=localStorage.getItem("adminToken");
 if(!token) location.href="admin-login.html";
 
-let ORDERS = [];
+let ORDERS=[];
+let LAST_COUNT=0;
 
-/* ================= LOAD ================= */
+/* ===== LOAD ===== */
 async function loadOrders(){
-  const res = await fetch(`${BACKEND}/api/admin/orders`,{
-    headers:{ Authorization:"Bearer "+token }
+  const res=await fetch(`${BACKEND}/api/admin/orders`,{
+    headers:{Authorization:"Bearer "+token}
   });
-  const data = await res.json();
-  ORDERS = data.orders || [];
+  const data=await res.json();
+  ORDERS=data.orders||[];
+
+  if(ORDERS.length>LAST_COUNT){
+    document.getElementById("notifySound").play();
+  }
+  LAST_COUNT=ORDERS.length;
+
+  updateDashboard();
   render();
 }
 
-/* ================= RENDER ================= */
+/* ===== DASHBOARD ===== */
+function updateDashboard(){
+  const today=new Date().toDateString();
+  let tOrders=0,tRev=0,pending=0;
+  const cust=new Set();
+
+  ORDERS.forEach(o=>{
+    const d=new Date(o.createdAt).toDateString();
+    if(d===today){
+      tOrders++;
+      tRev+=Number(o.total||0);
+    }
+    if(o.status==="Pending") pending++;
+    if(o.phone) cust.add(o.phone);
+  });
+
+  todayOrders.textContent=tOrders;
+  todayRevenue.textContent="₹"+tRev.toFixed(2);
+  pendingOrders.textContent=pending;
+  uniqueCustomers.textContent=cust.size;
+}
+
+/* ===== RENDER ===== */
 function render(){
-  const q = search.value.toLowerCase();
-  const st = statusFilter.value;
-  orders.innerHTML = "";
+  orders.innerHTML="";
+  const q=search.value.toLowerCase();
+  const st=statusFilter.value;
 
   ORDERS.filter(o=>{
-    return (!st || o.status===st) &&
-      (o.orderId.toLowerCase().includes(q) || o.phone.includes(q));
+    return (!st||o.status===st) &&
+      (o.orderId.toLowerCase().includes(q)||o.phone.includes(q));
   }).forEach(o=>{
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
       <td>${o.orderId}</td>
       <td>${o.name}<br><small>${o.phone}</small></td>
       <td class="items" onclick="toggle('${o.orderId}')">${o.items.length} items</td>
       <td>₹${o.total}</td>
-      <td>
-        ${o.payment?.screenshot
-          ? `<img src="${BACKEND}${o.payment.screenshot}"
-                  class="proof"
-                  onclick="showImg(event,'${BACKEND}${o.payment.screenshot}')">`
-          : "—"}
-      </td>
+      <td>${o.payment?.fileUrl
+        ? `<img src="${o.payment.fileUrl}" class="proof"
+           onclick="showImg(event,'${o.payment.fileUrl}')">`
+        :"—"}</td>
       <td class="status ${o.status}">${o.status}</td>
       <td>
         <button class="approve" onclick="updateStatus('${o.orderId}','Approved')">✓</button>
         <button class="reject" onclick="updateStatus('${o.orderId}','Rejected')">✕</button>
-      </td>
-    `;
+      </td>`;
     orders.appendChild(tr);
 
-    const d = document.createElement("tr");
+    const d=document.createElement("tr");
     d.className="details";
     d.id=o.orderId;
-    d.innerHTML=`
-      <td colspan="7">
-        <b>Address:</b> ${o.address}<br>
-        <b>Payment:</b> ${o.payment?.method || "N/A"}<br>
-        <b>Txn:</b> ${o.payment?.txn || "—"}<br><br>
-        <b>Products:</b><br>
-        ${o.items.map(i=>`• ${i.name} × ${i.qty} = ₹${i.price * i.qty}`).join("<br>")}
-      </td>
-    `;
+    d.innerHTML=`<td colspan="7">
+      <b>Address:</b> ${o.address}<br>
+      <b>Txn:</b> ${o.payment?.txn||"—"}<br><br>
+      ${o.items.map(i=>`• ${i.name} × ${i.qty}`).join("<br>")}
+    </td>`;
     orders.appendChild(d);
   });
 }
 
-/* ================= ACTIONS ================= */
 function toggle(id){
   const r=document.getElementById(id);
-  r.style.display = r.style.display==="table-row"?"none":"table-row";
+  r.style.display=r.style.display==="table-row"?"none":"table-row";
 }
-
 function showImg(e,src){
   e.stopPropagation();
   modalImg.src=src;
   modal.style.display="flex";
 }
-
-async function updateStatus(orderId,status){
-  await fetch(`${BACKEND}/api/admin/orders/${orderId}/status`,{
+async function updateStatus(id,status){
+  await fetch(`${BACKEND}/api/admin/orders/${id}/status`,{
     method:"POST",
     headers:{
       "Content-Type":"application/json",
@@ -211,7 +277,6 @@ async function updateStatus(orderId,status){
   });
   loadOrders();
 }
-
 function exportCSV(){
   let csv="Order,Name,Phone,Total,Status\n";
   ORDERS.forEach(o=>{
@@ -222,16 +287,16 @@ function exportCSV(){
   a.download="orders.csv";
   a.click();
 }
-
 function logout(){
   localStorage.removeItem("adminToken");
   location.href="admin-login.html";
 }
 
 search.oninput=statusFilter.onchange=render;
+
 loadOrders();
+setInterval(loadOrders,30000);
 </script>
 
 </body>
 </html>
-  
