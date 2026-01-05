@@ -41,9 +41,14 @@ const upload = multer({ storage });
    CUSTOMER — PLACE ORDER
 ================================================== */
 app.post("/api/orders", async (req, res) => {
+  console.log("🔥 /api/orders HIT");
+  console.log("📦 BODY:", req.body);
+
   try {
     const data = req.body;
+
     if (!data || !data.phone) {
+      console.log("❌ Invalid order data");
       return res.status(400).json({ success: false, error: "Invalid order data" });
     }
 
@@ -56,9 +61,12 @@ app.post("/api/orders", async (req, res) => {
     });
 
     await order.save();
+
+    console.log("✅ Order saved:", orderId);
+
     res.json({ success: true, orderId });
   } catch (err) {
-    console.error(err);
+    console.error("❌ Order save error:", err);
     res.status(500).json({ success: false, error: "Order save failed" });
   }
 });
@@ -66,34 +74,53 @@ app.post("/api/orders", async (req, res) => {
 /* ==================================================
    CUSTOMER — PAYMENT PROOF
 ================================================== */
-app.post("/api/payment-proof", upload.single("screenshot"), async (req, res) => {
-  try {
-    const { orderId, txnId = "" } = req.body;
+app.post(
+  "/api/payment-proof",
+  upload.single("screenshot"),
+  async (req, res) => {
+    console.log("🔥 /api/payment-proof HIT");
+    console.log("📦 BODY:", req.body);
+    console.log("🖼 FILE:", req.file);
 
-    if (!orderId) {
-      return res.status(400).json({ success: false, error: "orderId missing" });
+    try {
+      const { orderId, txnId = "" } = req.body;
+
+      if (!orderId) {
+        console.log("❌ orderId missing");
+        return res
+          .status(400)
+          .json({ success: false, error: "orderId missing" });
+      }
+
+      const order = await Order.findOne({ orderId });
+      if (!order) {
+        console.log("❌ Order not found:", orderId);
+        return res
+          .status(404)
+          .json({ success: false, error: "Order not found" });
+      }
+
+      order.payment = {
+        txn: txnId,
+        fileUrl: req.file
+          ? `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`
+          : "",
+        method: "UPI",
+      };
+
+      await order.save();
+
+      console.log("✅ Payment proof saved for:", orderId);
+
+      res.json({ success: true });
+    } catch (err) {
+      console.error("❌ Payment update error:", err);
+      res
+        .status(500)
+        .json({ success: false, error: "Payment update failed" });
     }
-
-    const order = await Order.findOne({ orderId });
-    if (!order) {
-      return res.status(404).json({ success: false, error: "Order not found" });
-    }
-
-    order.payment = {
-      txn: txnId,
-      fileUrl: req.file
-        ? `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`
-        : "",
-      method: "UPI",
-    };
-
-    await order.save();
-    res.json({ success: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, error: "Payment update failed" });
   }
-});
+);
 
 /* ==================================================
    ADMIN AUTH (JWT)
@@ -110,13 +137,13 @@ function adminAuth(req, res, next) {
   try {
     jwt.verify(token, process.env.ADMIN_JWT_SECRET);
     next();
-  } catch (err) {
+  } catch {
     return res.status(401).json({ error: "Invalid admin token" });
   }
 }
 
 /* ==================================================
-   ADMIN — LOGIN (JWT TOKEN GENERATE)
+   ADMIN — LOGIN
 ================================================== */
 app.post("/api/admin/login", (req, res) => {
   const { email, password } = req.body;
@@ -130,16 +157,11 @@ app.post("/api/admin/login", (req, res) => {
       process.env.ADMIN_JWT_SECRET,
       { expiresIn: "1d" }
     );
-
     return res.json({ success: true, token });
   }
 
   res.status(401).json({ success: false });
 });
-
-app.use(express.static("public"));
-
-
 
 /* ==================================================
    ADMIN — FETCH ORDERS
@@ -161,73 +183,9 @@ app.get("/api/admin/orders", adminAuth, async (req, res) => {
 
     res.json({ success: true, orders });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, error: "Failed to fetch orders" });
+    console.error("❌ Fetch orders error:", err);
+    res.status(500).json({ success: false });
   }
-});
-
-/* ==================================================
-   ADMIN — UPDATE STATUS
-================================================== */
-app.post("/api/admin/orders/:id/status", adminAuth, async (req, res) => {
-  try {
-    const { status } = req.body;
-    const order = await Order.findOne({ orderId: req.params.id });
-
-    if (!order) {
-      return res.status(404).json({ success: false, error: "Order not found" });
-    }
-
-    order.status = status;
-    await order.save();
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ success: false, error: "Failed to update order" });
-  }
-});
-
-/* ==================================================
-   ADMIN — DELETE ORDER
-================================================== */
-app.delete("/api/admin/orders/:id", adminAuth, async (req, res) => {
-  try {
-    await Order.deleteOne({ orderId: req.params.id });
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ success: false, error: "Failed to delete order" });
-  }
-});
-
-/* ==================================================
-   ADMIN — EXPORT CSV
-================================================== */
-app.get("/api/admin/export", adminAuth, async (req, res) => {
-  try {
-    const orders = await Order.find().sort({ createdAt: -1 });
-
-    let csv = "OrderID,Name,Phone,Address,Total,Status,Date\n";
-    orders.forEach((o) => {
-      csv += `"${o.orderId}","${o.name}","${o.phone}","${o.address}","${o.total}","${o.status}","${o.createdAt}"\n`;
-    });
-
-    res.setHeader("Content-Type", "text/csv");
-    res.setHeader("Content-Disposition", "attachment; filename=orders.csv");
-    res.send(csv);
-  } catch (err) {
-    res.status(500).json({ success: false, error: "Failed to export orders" });
-  }
-});
-
-/* ==================================================
-   PRESCRIPTION UPLOAD
-================================================== */
-app.post("/upload-prescription", upload.single("prescription"), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ success: false });
-  }
-
-  const fileUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
-  res.json({ success: true, fileUrl });
 });
 
 /* ==================================================
