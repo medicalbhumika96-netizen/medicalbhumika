@@ -6,7 +6,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-/* ========== BASE ========== */
 *{box-sizing:border-box}
 body{
   margin:0;
@@ -15,15 +14,12 @@ body{
   color:#e6edf3;
   padding:16px;
 }
-
-/* ========== HEADER ========== */
 .header{
   display:flex;
   justify-content:space-between;
   align-items:center;
   margin-bottom:15px;
 }
-.header h2{margin:0;font-size:20px}
 .logout{
   background:#dc3545;
   border:none;
@@ -31,13 +27,11 @@ body{
   padding:6px 12px;
   cursor:pointer;
 }
-
-/* ========== TOOLBAR ========== */
 .toolbar{
   display:flex;
-  flex-wrap:wrap;
   gap:10px;
   margin-bottom:12px;
+  flex-wrap:wrap;
 }
 select,input,button{
   padding:6px 10px;
@@ -49,8 +43,6 @@ select,input,button{
 button.export{background:#1f2937}
 button.approve{background:#16a34a}
 button.reject{background:#dc2626}
-
-/* ========== TABLE ========== */
 table{
   width:100%;
   border-collapse:collapse;
@@ -65,31 +57,12 @@ th,td{
 th{
   background:#0a7cff;
   color:#fff;
-  position:sticky;
-  top:0;
 }
-tr:hover{background:#020617cc}
-
-/* ========== STATUS ========== */
 .status.Pending{color:#facc15}
 .status.Approved{color:#22c55e}
 .status.Rejected{color:#ef4444}
-
-/* ========== ITEMS ========== */
-.items{
-  cursor:pointer;
-  color:#38bdf8;
-}
-.details{
-  display:none;
-  background:#020617;
-}
-.details td{
-  font-size:12px;
-  color:#cbd5e1;
-}
-
-/* ========== IMAGE ========== */
+.items{cursor:pointer;color:#38bdf8}
+.details{display:none;background:#020617}
 img.proof{
   width:60px;
   height:60px;
@@ -98,8 +71,6 @@ img.proof{
   cursor:pointer;
   border:1px solid #334155;
 }
-
-/* ========== MODAL ========== */
 .modal{
   position:fixed;
   inset:0;
@@ -109,16 +80,7 @@ img.proof{
   justify-content:center;
   z-index:999;
 }
-.modal img{
-  max-width:90%;
-  max-height:90%;
-  border-radius:8px;
-}
-
-/* MOBILE */
-@media(max-width:768px){
-  th,td{font-size:12px}
-}
+.modal img{max-width:90%;max-height:90%}
 </style>
 </head>
 
@@ -130,7 +92,7 @@ img.proof{
 </div>
 
 <div class="toolbar">
-  <input id="search" placeholder="Search order / phone">
+  <input id="search" placeholder="Search Order / Phone">
   <select id="statusFilter">
     <option value="">All</option>
     <option value="Pending">Pending</option>
@@ -143,11 +105,11 @@ img.proof{
 <table>
 <thead>
 <tr>
-  <th>Order</th>
+  <th>Order ID</th>
   <th>Customer</th>
   <th>Items</th>
   <th>Total</th>
-  <th>Proof</th>
+  <th>Payment Proof</th>
   <th>Status</th>
   <th>Action</th>
 </tr>
@@ -160,85 +122,93 @@ img.proof{
 </div>
 
 <script>
-/* ========== CONFIG ========== */
-const BACKEND="https://medicalbhumika-2.onrender.com";
-const token=localStorage.getItem("adminToken");
-if(!token) location.href="admin-login.html";
+const BACKEND = "https://medicalbhumika-2.onrender.com";
+const token = localStorage.getItem("adminToken");
 
-/* ========== FETCH ORDERS ========== */
-let ORDERS=[];
+if(!token){
+  alert("Session expired");
+  location.href="admin-login.html";
+}
+
+let ORDERS = [];
+
+/* LOAD ORDERS */
 async function loadOrders(){
-  const res=await fetch(`${BACKEND}/api/orders`,{
-    headers:{Authorization:`Bearer ${token}`}
+  const res = await fetch(`${BACKEND}/api/admin/orders`,{
+    headers:{ Authorization:"Bearer "+token }
   });
-  const data=await res.json();
-  ORDERS=data.orders||[];
+  const data = await res.json();
+  ORDERS = data.orders || [];
   render();
 }
 
-/* ========== RENDER ========== */
+/* RENDER */
 function render(){
-  const q=document.getElementById("search").value.toLowerCase();
-  const st=document.getElementById("statusFilter").value;
-  const body=document.getElementById("orders");
-  body.innerHTML="";
+  const q = search.value.toLowerCase();
+  const st = statusFilter.value;
+  orders.innerHTML = "";
 
   ORDERS.filter(o=>{
-    return (!st||o.status===st) &&
-      (o.orderId?.toLowerCase().includes(q) || o.phone?.includes(q));
+    return (!st || o.status===st) &&
+      (o.orderId.toLowerCase().includes(q) || o.phone.includes(q));
   }).forEach(o=>{
-    const tr=document.createElement("tr");
-    tr.innerHTML=`
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
       <td>${o.orderId}</td>
-      <td>${o.name}<br><span class="small">${o.phone}</span></td>
-      <td class="items" onclick="toggle('${o._id}')">${o.items.length} items</td>
+      <td>${o.name}<br><small>${o.phone}</small></td>
+      <td class="items" onclick="toggle('${o.orderId}')">${o.items.length} items</td>
       <td>₹${o.total}</td>
-      <td>${o.payment?.screenshot?
-        `<img src="${o.payment.screenshot}" class="proof" onclick="showImg(event,'${o.payment.screenshot}')">`
-        :"—"}</td>
+      <td>
+        ${o.payment?.fileUrl
+          ? `<img src="${o.payment.fileUrl}" class="proof" onclick="showImg(event,'${o.payment.fileUrl}')">`
+          : "—"}
+      </td>
       <td class="status ${o.status}">${o.status}</td>
       <td>
-        <button class="approve" onclick="updateStatus('${o._id}','Approved')">✓</button>
-        <button class="reject" onclick="updateStatus('${o._id}','Rejected')">✕</button>
-      </td>`;
-    body.appendChild(tr);
+        <button class="approve" onclick="updateStatus('${o.orderId}','Approved')">✓</button>
+        <button class="reject" onclick="updateStatus('${o.orderId}','Rejected')">✕</button>
+      </td>
+    `;
+    orders.appendChild(tr);
 
-    const d=document.createElement("tr");
+    const d = document.createElement("tr");
     d.className="details";
-    d.id=o._id;
-    d.innerHTML=`<td colspan="7">
-      <b>Address:</b> ${o.address}<br>
-      <b>Txn:</b> ${o.payment?.txnId||"—"}<br>
-      <b>Items:</b><br>
-      ${o.items.map(i=>`• ${i.name} × ${i.qty}`).join("<br>")}
-    </td>`;
-    body.appendChild(d);
+    d.id=o.orderId;
+    d.innerHTML=`
+      <td colspan="7">
+        <b>Address:</b> ${o.address}<br>
+        <b>Txn:</b> ${o.payment?.txn || "—"}<br>
+        <b>Items:</b><br>
+        ${o.items.map(i=>`• ${i.name} × ${i.qty}`).join("<br>")}
+      </td>
+    `;
+    orders.appendChild(d);
   });
 }
 
-/* ========== ACTIONS ========== */
 function toggle(id){
   const r=document.getElementById(id);
-  r.style.display=r.style.display==="table-row"?"none":"table-row";
+  r.style.display = r.style.display==="table-row"?"none":"table-row";
 }
+
 function showImg(e,src){
   e.stopPropagation();
   modalImg.src=src;
   modal.style.display="flex";
 }
-async function updateStatus(id,status){
-  await fetch(`${BACKEND}/api/orders/${id}`,{
-    method:"PATCH",
+
+async function updateStatus(orderId,status){
+  await fetch(`${BACKEND}/api/admin/orders/${orderId}/status`,{
+    method:"POST",
     headers:{
       "Content-Type":"application/json",
-      Authorization:`Bearer ${token}`
+      Authorization:"Bearer "+token
     },
     body:JSON.stringify({status})
   });
   loadOrders();
 }
 
-/* ========== CSV EXPORT ========== */
 function exportCSV(){
   let csv="Order,Name,Phone,Total,Status\n";
   ORDERS.forEach(o=>{
@@ -250,13 +220,11 @@ function exportCSV(){
   a.click();
 }
 
-/* ========== LOGOUT ========== */
 function logout(){
   localStorage.removeItem("adminToken");
   location.href="admin-login.html";
 }
 
-/* ========== EVENTS ========== */
 search.oninput=statusFilter.onchange=render;
 
 loadOrders();
