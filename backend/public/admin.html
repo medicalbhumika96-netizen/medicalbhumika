@@ -43,6 +43,7 @@ select,input,button{
 button.export{background:#1f2937}
 button.approve{background:#16a34a}
 button.reject{background:#dc2626}
+
 table{
   width:100%;
   border-collapse:collapse;
@@ -54,15 +55,15 @@ th,td{
   font-size:13px;
   vertical-align:top;
 }
-th{
-  background:#0a7cff;
-  color:#fff;
-}
+th{background:#0a7cff;color:#fff}
+
 .status.Pending{color:#facc15}
 .status.Approved{color:#22c55e}
 .status.Rejected{color:#ef4444}
+
 .items{cursor:pointer;color:#38bdf8}
 .details{display:none;background:#020617}
+
 img.proof{
   width:60px;
   height:60px;
@@ -71,6 +72,7 @@ img.proof{
   cursor:pointer;
   border:1px solid #334155;
 }
+
 .modal{
   position:fixed;
   inset:0;
@@ -122,17 +124,14 @@ img.proof{
 </div>
 
 <script>
+/* ================= CONFIG ================= */
 const BACKEND = "https://medicalbhumika-2.onrender.com";
 const token = localStorage.getItem("adminToken");
-
-if(!token){
-  alert("Session expired");
-  location.href="admin-login.html";
-}
+if(!token) location.href="admin-login.html";
 
 let ORDERS = [];
 
-/* LOAD ORDERS */
+/* ================= LOAD ================= */
 async function loadOrders(){
   const res = await fetch(`${BACKEND}/api/admin/orders`,{
     headers:{ Authorization:"Bearer "+token }
@@ -142,7 +141,7 @@ async function loadOrders(){
   render();
 }
 
-/* RENDER */
+/* ================= RENDER ================= */
 function render(){
   const q = search.value.toLowerCase();
   const st = statusFilter.value;
@@ -159,8 +158,10 @@ function render(){
       <td class="items" onclick="toggle('${o.orderId}')">${o.items.length} items</td>
       <td>₹${o.total}</td>
       <td>
-        ${o.payment?.fileUrl
-          ? `<img src="${o.payment.fileUrl}" class="proof" onclick="showImg(event,'${o.payment.fileUrl}')">`
+        ${o.payment?.screenshot
+          ? `<img src="${BACKEND}${o.payment.screenshot}"
+                  class="proof"
+                  onclick="showImg(event,'${BACKEND}${o.payment.screenshot}')">`
           : "—"}
       </td>
       <td class="status ${o.status}">${o.status}</td>
@@ -177,15 +178,17 @@ function render(){
     d.innerHTML=`
       <td colspan="7">
         <b>Address:</b> ${o.address}<br>
-        <b>Txn:</b> ${o.payment?.txn || "—"}<br>
-        <b>Items:</b><br>
-        ${o.items.map(i=>`• ${i.name} × ${i.qty}`).join("<br>")}
+        <b>Payment:</b> ${o.payment?.method || "N/A"}<br>
+        <b>Txn:</b> ${o.payment?.txn || "—"}<br><br>
+        <b>Products:</b><br>
+        ${o.items.map(i=>`• ${i.name} × ${i.qty} = ₹${i.price * i.qty}`).join("<br>")}
       </td>
     `;
     orders.appendChild(d);
   });
 }
 
+/* ================= ACTIONS ================= */
 function toggle(id){
   const r=document.getElementById(id);
   r.style.display = r.style.display==="table-row"?"none":"table-row";
@@ -226,7 +229,6 @@ function logout(){
 }
 
 search.oninput=statusFilter.onchange=render;
-
 loadOrders();
 </script>
 
