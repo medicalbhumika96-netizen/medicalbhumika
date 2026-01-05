@@ -172,24 +172,24 @@ if(localStorage.getItem("adminToken")){
 }
 
 /* ================= MATRIX ================= */
-const c=document.getElementById("matrix"),ctx=c.getContext("2d");
-c.width=innerWidth;c.height=innerHeight;
-const letters="01ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-const font=14;const cols=c.width/font;
-const drops=Array(cols).fill(1);
-function matrix(){
-  ctx.fillStyle="rgba(0,0,0,0.05)";
-  ctx.fillRect(0,0,c.width,c.height);
-  ctx.fillStyle="#00ffcc";
-  ctx.font=font+"px monospace";
-  drops.forEach((y,i)=>{
-    const text=letters[Math.floor(Math.random()*letters.length)];
-    ctx.fillText(text,i*font,y*font);
-    if(y*font>c.height&&Math.random()>0.975)drops[i]=0;
-    drops[i]++;
-  });
-}
-setInterval(matrix,50);
+// const c=document.getElementById("matrix"),ctx=c.getContext("2d");
+// c.width=innerWidth;c.height=innerHeight;
+// const letters="01ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+// const font=14;const cols=c.width/font;
+// const drops=Array(cols).fill(1);
+// function matrix(){
+//   ctx.fillStyle="rgba(0,0,0,0.05)";
+//   ctx.fillRect(0,0,c.width,c.height);
+//   ctx.fillStyle="#00ffcc";
+//   ctx.font=font+"px monospace";
+//   drops.forEach((y,i)=>{
+//     const text=letters[Math.floor(Math.random()*letters.length)];
+//     ctx.fillText(text,i*font,y*font);
+//     if(y*font>c.height&&Math.random()>0.975)drops[i]=0;
+//     drops[i]++;
+//   });
+// }
+// setInterval(matrix,50);
 
 /* ================= TERMINAL TEXT ================= */
 const out=document.getElementById("output");
