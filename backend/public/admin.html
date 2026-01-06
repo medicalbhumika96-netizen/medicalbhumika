@@ -315,7 +315,32 @@ function logout(){
 
 search.oninput=statusFilter.onchange=render;
 loadOrders();
+ 
+let lastOrderId = localStorage.getItem("lastOrderId") || null;
+const orderSound = new Audio("/new-order.mp3");
 
+/* AUTO REFRESH + SOUND */
+setInterval(async () => {
+  const res = await fetch(`${BACKEND}/api/admin/orders`, {
+    headers: { Authorization: "Bearer " + token }
+  });
+  const data = await res.json();
+
+  if (!data.success || !data.orders.length) return;
+
+  const newestOrder = data.orders[0].orderId;
+
+  if (lastOrderId && newestOrder !== lastOrderId) {
+    orderSound.play().catch(()=>{});
+  }
+
+  lastOrderId = newestOrder;
+  localStorage.setItem("lastOrderId", newestOrder);
+
+  ORDERS = data.orders;
+  updateDashboard();
+  render();
+}, 15000); // every 15 seconds
 /* PWA */
 if("serviceWorker"in navigator){
   navigator.serviceWorker.register("/sw.js");

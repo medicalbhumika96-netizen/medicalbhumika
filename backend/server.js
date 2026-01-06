@@ -17,6 +17,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 /* ================= STATIC ================= */
+if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
 app.use("/uploads", express.static("uploads"));
 app.use(express.static("public"));
 
@@ -24,16 +25,13 @@ app.use(express.static("public"));
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB connected"))
-  .catch((err) => console.error("❌ MongoDB error:", err));
-
-/* ================= FILE SYSTEM ================= */
-if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
+  .catch(err => console.error("❌ MongoDB error:", err));
 
 /* ================= MULTER ================= */
 const storage = multer.diskStorage({
   destination: (_, __, cb) => cb(null, "uploads/"),
   filename: (_, file, cb) =>
-    cb(null, Date.now() + "-" + file.originalname.replace(/\s+/g, "_")),
+    cb(null, Date.now() + "-" + file.originalname.replace(/\s+/g, "_"))
 });
 const upload = multer({ storage });
 
@@ -53,6 +51,7 @@ app.post("/api/orders", async (req, res) => {
       ...data,
       orderId,
       status: "Pending",
+      createdAt: new Date()
     });
 
     await order.save();
@@ -66,18 +65,16 @@ app.post("/api/orders", async (req, res) => {
 });
 
 /* ==================================================
-   CUSTOMER — TRACK ORDERS (PHONE BASED) ✅
+   CUSTOMER — TRACK ORDERS (PHONE)
 ================================================== */
 app.get("/api/orders/track/:phone", async (req, res) => {
   try {
-    const phone = req.params.phone;
-
-    const orders = await Order.find({ phone })
+    const orders = await Order.find({ phone: req.params.phone })
       .sort({ createdAt: -1 });
 
     res.json({ success: true, orders });
   } catch (err) {
-    console.error("❌ Track order error:", err);
+    console.error("❌ Track error:", err);
     res.status(500).json({ success: false });
   }
 });
@@ -88,26 +85,21 @@ app.get("/api/orders/track/:phone", async (req, res) => {
 app.post("/api/payment-proof", upload.single("screenshot"), async (req, res) => {
   try {
     const { orderId, txnId = "" } = req.body;
-
-    if (!orderId) {
-      return res.status(400).json({ success: false, message: "orderId missing" });
-    }
+    if (!orderId) return res.status(400).json({ success: false });
 
     const order = await Order.findOne({ orderId });
-    if (!order) {
-      return res.status(404).json({ success: false, message: "Order not found" });
-    }
+    if (!order) return res.status(404).json({ success: false });
 
     order.payment = {
       txn: txnId,
       screenshot: req.file ? `/uploads/${req.file.filename}` : "",
-      method: "UPI",
+      method: "UPI"
     };
 
     await order.save();
     console.log("✅ Payment proof saved:", orderId);
-
     res.json({ success: true });
+
   } catch (err) {
     console.error("❌ Payment proof error:", err);
     res.status(500).json({ success: false });
@@ -119,18 +111,14 @@ app.post("/api/payment-proof", upload.single("screenshot"), async (req, res) => 
 ================================================== */
 function adminAuth(req, res, next) {
   const auth = req.headers.authorization;
-
-  if (!auth || !auth.startsWith("Bearer ")) {
+  if (!auth || !auth.startsWith("Bearer "))
     return res.status(401).json({ success: false });
-  }
-
-  const token = auth.split(" ")[1];
 
   try {
-    jwt.verify(token, process.env.ADMIN_JWT_SECRET);
+    jwt.verify(auth.split(" ")[1], process.env.ADMIN_JWT_SECRET);
     next();
   } catch {
-    return res.status(401).json({ success: false });
+    res.status(401).json({ success: false });
   }
 }
 
@@ -149,7 +137,6 @@ app.post("/api/admin/login", (req, res) => {
       process.env.ADMIN_JWT_SECRET,
       { expiresIn: "1d" }
     );
-
     return res.json({ success: true, token });
   }
 
@@ -159,7 +146,7 @@ app.post("/api/admin/login", (req, res) => {
 /* ==================================================
    ADMIN — FETCH ORDERS
 ================================================== */
-app.get("/api/admin/orders", adminAuth, async (req, res) => {
+app.get("/api/admin/orders", adminAuth, async (_, res) => {
   try {
     const orders = await Order.find().sort({ createdAt: -1 });
     res.json({ success: true, orders });
@@ -177,9 +164,8 @@ app.post("/api/admin/orders/:orderId/status", adminAuth, async (req, res) => {
     const { orderId } = req.params;
     const { status } = req.body;
 
-    if (!["Pending", "Approved", "Rejected"].includes(status)) {
+    if (!["Pending", "Approved", "Rejected"].includes(status))
       return res.status(400).json({ success: false });
-    }
 
     const order = await Order.findOneAndUpdate(
       { orderId },
@@ -187,43 +173,31 @@ app.post("/api/admin/orders/:orderId/status", adminAuth, async (req, res) => {
       { new: true }
     );
 
-    if (!order) {
-      return res.status(404).json({ success: false });
-    }
+    if (!order) return res.status(404).json({ success: false });
 
     console.log(`✅ Order ${orderId} → ${status}`);
     res.json({ success: true });
+
   } catch (err) {
     console.error("❌ Status update error:", err);
     res.status(500).json({ success: false });
   }
 });
 
-// ==================================================
-// CUSTOMER — TRACK ORDER (ORDER ID + PHONE) 🔐
-// ==================================================
+/* ==================================================
+   CUSTOMER — TRACK (ORDER ID + PHONE)
+================================================== */
 app.post("/api/orders/track-secure", async (req, res) => {
   try {
     const { orderId, phone } = req.body;
-
-    if (!orderId || !phone) {
-      return res.status(400).json({
-        success: false,
-        message: "Order ID and phone required"
-      });
-    }
+    if (!orderId || !phone)
+      return res.status(400).json({ success: false });
 
     const order = await Order.findOne({ orderId, phone });
-
-    if (!order) {
-      return res.json({
-        success: false,
-        message: "No matching order found"
-      });
-    }
+    if (!order)
+      return res.json({ success: false, message: "No order found" });
 
     res.json({ success: true, order });
-
   } catch (err) {
     console.error("❌ Secure track error:", err);
     res.status(500).json({ success: false });
@@ -242,5 +216,5 @@ app.get("/", (_, res) => {
 ================================================== */
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
