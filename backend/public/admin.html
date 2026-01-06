@@ -5,6 +5,10 @@
 <title>Bhumika Medical — Admin Console</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<!-- PWA -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0a7cff">
+
 <style>
 *{box-sizing:border-box}
 body{
@@ -79,7 +83,6 @@ th{background:#0a7cff;color:#fff}
 .status.Rejected{color:#ef4444}
 
 .items{cursor:pointer;color:#38bdf8}
-.details{display:none;background:#020617}
 
 img.proof{
   width:60px;
@@ -88,6 +91,31 @@ img.proof{
   border-radius:6px;
   cursor:pointer;
   border:1px solid #334155;
+}
+
+/* MOBILE */
+#mobileOrders{display:none}
+.order-card{
+  background:#020617;
+  border:1px solid #1f2937;
+  padding:12px;
+  border-radius:10px;
+  margin-bottom:12px;
+}
+.order-top{
+  display:flex;
+  justify-content:space-between;
+  font-weight:600;
+}
+.order-actions{
+  display:flex;
+  gap:8px;
+  margin-top:8px;
+}
+
+@media (max-width:768px){
+  table{display:none}
+  #mobileOrders{display:block}
 }
 
 /* MODAL */
@@ -100,9 +128,7 @@ img.proof{
   justify-content:center;
   z-index:999;
 }
-.modal-content{
-  position:relative;
-}
+.modal-content{position:relative}
 .modal img{
   max-width:90vw;
   max-height:80vh;
@@ -162,6 +188,8 @@ img.proof{
 <tbody id="orders"></tbody>
 </table>
 
+<div id="mobileOrders"></div>
+
 <!-- IMAGE MODAL -->
 <div class="modal" id="modal" onclick="closeModal()">
   <div class="modal-content" onclick="event.stopPropagation()">
@@ -177,7 +205,7 @@ if(!token) location.href="admin-login.html";
 
 let ORDERS=[];
 
-/* LOAD ORDERS */
+/* LOAD */
 async function loadOrders(){
   const res=await fetch(`${BACKEND}/api/admin/orders`,{
     headers:{Authorization:"Bearer "+token}
@@ -191,89 +219,67 @@ async function loadOrders(){
 /* DASHBOARD */
 function updateDashboard(){
   const today=new Date().toDateString();
-  let todayOrders=0,todayRevenue=0,pending=0;
-  const customers=new Set();
+  let tO=0,tR=0,p=0;
+  const c=new Set();
 
   ORDERS.forEach(o=>{
     if(new Date(o.createdAt).toDateString()===today){
-      todayOrders++;
-      todayRevenue+=Number(o.total||0);
+      tO++;tR+=Number(o.total||0);
     }
-    if(o.status==="Pending") pending++;
-    if(o.phone) customers.add(o.phone);
+    if(o.status==="Pending") p++;
+    if(o.phone) c.add(o.phone);
   });
 
-  todayOrdersEl.textContent=todayOrders;
-  todayRevenueEl.textContent="₹"+todayRevenue;
-  pendingOrdersEl.textContent=pending;
-  uniqueCustomersEl.textContent=customers.size;
+  todayOrders.textContent=tO;
+  todayRevenue.textContent="₹"+tR;
+  pendingOrders.textContent=p;
+  uniqueCustomers.textContent=c.size;
 }
 
 /* RENDER */
-function render() {
-  const q = search.value.toLowerCase();
-  const st = statusFilter.value;
+function render(){
+  orders.innerHTML="";
+  mobileOrders.innerHTML="";
+  const q=search.value.toLowerCase();
+  const st=statusFilter.value;
 
-  orders.innerHTML = "";
-  mobileOrders.innerHTML = "";
+  ORDERS.filter(o=>(!st||o.status===st)&&
+    (o.orderId.toLowerCase().includes(q)||o.phone.includes(q)))
+  .forEach(o=>{
+    orders.innerHTML+=`
+      <tr>
+        <td>${o.orderId}</td>
+        <td>${o.name}<br><small>${o.phone}</small></td>
+        <td>${o.items.length}</td>
+        <td>₹${o.total}</td>
+        <td>${o.payment?.screenshot?
+          `<img src="${BACKEND}${o.payment.screenshot}" class="proof"
+           onclick="showImg('${BACKEND}${o.payment.screenshot}')">`:"—"}</td>
+        <td class="status ${o.status}" id="status-${o.orderId}">${o.status}</td>
+        <td>
+          <button class="approve" onclick="updateStatus('${o.orderId}','Approved')">✓</button>
+          <button class="reject" onclick="updateStatus('${o.orderId}','Rejected')">✕</button>
+        </td>
+      </tr>`;
 
-  ORDERS.filter(o => {
-    return (!st || o.status === st) &&
-      (o.orderId.toLowerCase().includes(q) || o.phone.includes(q));
-  }).forEach(o => {
-
-    /* ===== DESKTOP TABLE ===== */
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${o.orderId}</td>
-      <td>${o.name}<br><small>${o.phone}</small></td>
-      <td class="items" onclick="toggle('${o.orderId}')">${o.items.length} items</td>
-      <td>₹${o.total}</td>
-      <td>${o.payment?.screenshot
-        ? `<img src="${BACKEND}${o.payment.screenshot}" class="proof"
-           onclick="showImg('${BACKEND}${o.payment.screenshot}')">`
-        : "—"}</td>
-      <td class="status ${o.status}" id="status-${o.orderId}">${o.status}</td>
-      <td>
-        <button class="approve" onclick="updateStatus('${o.orderId}','Approved')">✓</button>
-        <button class="reject" onclick="updateStatus('${o.orderId}','Rejected')">✕</button>
-      </td>`;
-    orders.appendChild(tr);
-
-    /* ===== MOBILE CARD ===== */
-    const card = document.createElement("div");
-    card.className = "order-card";
-    card.innerHTML = `
-      <div class="order-top">
-        <span>${o.orderId}</span>
-        <span class="status ${o.status}">${o.status}</span>
-      </div>
-
-      <div class="order-mid">
-        👤 ${o.name}<br>
-        📞 ${o.phone}<br>
-        💰 ₹${o.total}<br>
-        📦 ${o.items.length} items
-      </div>
-
-      ${o.payment?.screenshot
-        ? `<img src="${BACKEND}${o.payment.screenshot}" class="proof"
-             onclick="showImg('${BACKEND}${o.payment.screenshot}')">`
-        : ""}
-
-      <div class="order-actions">
-        <button class="approve" onclick="updateStatus('${o.orderId}','Approved')">Approve</button>
-        <button class="reject" onclick="updateStatus('${o.orderId}','Rejected')">Reject</button>
-      </div>
-    `;
-    mobileOrders.appendChild(card);
+    mobileOrders.innerHTML+=`
+      <div class="order-card">
+        <div class="order-top">
+          <span>${o.orderId}</span>
+          <span class="status ${o.status}" id="m-${o.orderId}">${o.status}</span>
+        </div>
+        👤 ${o.name}<br>📞 ${o.phone}<br>💰 ₹${o.total}<br>
+        <div class="order-actions">
+          <button class="approve" onclick="updateStatus('${o.orderId}','Approved')">Approve</button>
+          <button class="reject" onclick="updateStatus('${o.orderId}','Rejected')">Reject</button>
+        </div>
+      </div>`;
   });
 }
 
-
-/* STATUS UPDATE – INSTANT */
-async function updateStatus(orderId,status){
-  await fetch(`${BACKEND}/api/admin/orders/${orderId}/status`,{
+/* STATUS */
+async function updateStatus(id,status){
+  const res=await fetch(`${BACKEND}/api/admin/orders/${id}/status`,{
     method:"POST",
     headers:{
       "Content-Type":"application/json",
@@ -281,13 +287,11 @@ async function updateStatus(orderId,status){
     },
     body:JSON.stringify({status})
   });
-
-  const badge=document.getElementById("status-"+orderId);
-  badge.textContent=status;
-  badge.className="status "+status;
+  if(!res.ok){alert("Failed");return;}
+  document.getElementById("status-"+id).textContent=status;
 }
 
-/* IMAGE MODAL */
+/* MODAL */
 function showImg(src){
   modalImg.src=src;
   downloadLink.href=src;
@@ -295,38 +299,27 @@ function showImg(src){
 }
 function closeModal(){modal.style.display="none"}
 
-/* TOGGLE ITEMS */
-function toggle(id){
-  const r=document.getElementById(id);
-  r.style.display=r.style.display==="table-row"?"none":"table-row";
-}
-
-/* CSV */
 function exportCSV(){
   let csv="Order,Name,Phone,Total,Status\n";
-  ORDERS.forEach(o=>{
-    csv+=`${o.orderId},${o.name},${o.phone},${o.total},${o.status}\n`;
-  });
+  ORDERS.forEach(o=>csv+=`${o.orderId},${o.name},${o.phone},${o.total},${o.status}\n`);
   const a=document.createElement("a");
-  a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+  a.href=URL.createObjectURL(new Blob([csv]));
   a.download="orders.csv";
   a.click();
 }
 
-/* LOGOUT */
 function logout(){
   localStorage.removeItem("adminToken");
   location.href="admin-login.html";
 }
 
 search.oninput=statusFilter.onchange=render;
-
-const todayOrdersEl=document.getElementById("todayOrders");
-const todayRevenueEl=document.getElementById("todayRevenue");
-const pendingOrdersEl=document.getElementById("pendingOrders");
-const uniqueCustomersEl=document.getElementById("uniqueCustomers");
-
 loadOrders();
+
+/* PWA */
+if("serviceWorker"in navigator){
+  navigator.serviceWorker.register("/sw.js");
+}
 </script>
 
 </body>
