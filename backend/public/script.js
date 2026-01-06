@@ -1000,7 +1000,7 @@ function renderOrderTimeline(order) {
     </div>
   `;
 }
-  
+
 
 // ===== INITIALIZE =====
 loadProducts();
@@ -1178,4 +1178,48 @@ function guardDuplicateOrder() {
 document.addEventListener("DOMContentLoaded", () => {
   loadCartAuto();
   if (typeof renderCart === "function") renderCart();
+});
+
+let lastCheck = new Date().toISOString();
+
+setInterval(async () => {
+  const res = await fetch(
+    `${BACKEND}/api/admin/orders?since=${lastCheck}`,
+    { headers: { Authorization: "Bearer " + token } }
+  );
+  const data = await res.json();
+
+  if (data.orders && data.orders.length > 0) {
+    document.getElementById("newOrderSound").play();
+    alert("🔔 New Order Received!");
+    loadOrders(); // refresh table
+  }
+
+  lastCheck = new Date().toISOString();
+}, 10000);
+
+
+app.post("/api/admin/orders/:orderId/status", adminAuth, async (req, res) => {
+  const { orderId } = req.params;
+  const { status } = req.body;
+
+  const order = await Order.findOneAndUpdate(
+    { orderId },
+    { status },
+    { new: true }
+  );
+
+  if (!order) return res.status(404).json({ success: false });
+
+  // 🔔 WhatsApp auto message link
+  const msg =
+    status === "Approved"
+      ? `✅ Your order ${orderId} is approved and will be delivered soon.`
+      : `❌ Your order ${orderId} has been rejected. Please contact shop.`;
+
+  const waLink = `https://wa.me/91${order.phone}?text=${encodeURIComponent(msg)}`;
+
+  console.log("Send this WhatsApp:", waLink);
+
+  res.json({ success: true, waLink });
 });

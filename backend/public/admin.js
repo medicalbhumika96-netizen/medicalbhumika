@@ -1,196 +1,231 @@
-const API_BASE = "https://medicalbhumika-2.onrender.com";
+// ================================
+// Bhumika Medical — Admin JS
+// ================================
+
+const BACKEND = "https://medicalbhumika-2.onrender.com";
 const token = localStorage.getItem("adminToken");
 
+// 🔐 Auth guard
 if (!token) {
-  alert("Admin not logged in");
-  location.href = "/admin-login.html";
+  location.href = "admin-login.html";
 }
 
-const tbody = document.getElementById("orders-body");
-const filterSelect = document.getElementById("statusFilter");
+let ORDERS = [];
 
-let ALL_ORDERS = [];
-
-// ================= LOAD ORDERS =================
+/* ================================
+   LOAD ORDERS
+================================ */
 async function loadOrders() {
   try {
-    const res = await fetch(`${API_BASE}/api/admin/orders`, {
-      headers: { Authorization: `Bearer ${token}` }
+    const res = await fetch(`${BACKEND}/api/admin/orders`, {
+      headers: {
+        Authorization: "Bearer " + token
+      }
     });
 
     const data = await res.json();
+
     if (!data.success) {
-      tbody.innerHTML = `<tr><td colspan="7">Failed to load orders</td></tr>`;
+      alert("Failed to load orders");
       return;
     }
 
-    ALL_ORDERS = data.orders;
-    applyFilter();
+    ORDERS = data.orders || [];
+    updateDashboard();
+    renderOrders();
+
   } catch (err) {
-    console.error(err);
-    tbody.innerHTML = `<tr><td colspan="7">Server error</td></tr>`;
+    console.error("Load orders error:", err);
+    alert("Server error while loading orders");
   }
 }
 
-// ================= FILTER =================
-function applyFilter() {
-  const status = filterSelect.value;
-  const filtered = status
-    ? ALL_ORDERS.filter(o => o.status === status)
-    : ALL_ORDERS;
+/* ================================
+   DASHBOARD METRICS
+================================ */
+function updateDashboard() {
+  const today = new Date().toDateString();
 
-  renderOrders(filtered);
+  let todayOrders = 0;
+  let todayRevenue = 0;
+  let pending = 0;
+  const customers = new Set();
+
+  ORDERS.forEach(o => {
+    if (new Date(o.createdAt).toDateString() === today) {
+      todayOrders++;
+      todayRevenue += Number(o.total || 0);
+    }
+    if (o.status === "Pending") pending++;
+    if (o.phone) customers.add(o.phone);
+  });
+
+  document.getElementById("todayOrders").textContent = todayOrders;
+  document.getElementById("todayRevenue").textContent = "₹" + todayRevenue;
+  document.getElementById("pendingOrders").textContent = pending;
+  document.getElementById("uniqueCustomers").textContent = customers.size;
 }
 
-filterSelect.addEventListener("change", applyFilter);
+/* ================================
+   RENDER ORDERS (TABLE + MOBILE)
+================================ */
+function renderOrders() {
+  const q = document.getElementById("search").value.toLowerCase();
+  const st = document.getElementById("statusFilter").value;
 
-// ================= RENDER =================
-function renderOrders(orders) {
-  if (!orders.length) {
-    tbody.innerHTML = `<tr><td colspan="7">No orders</td></tr>`;
-    return;
-  }
+  const tableBody = document.getElementById("orders");
+  const mobileWrap = document.getElementById("mobileOrders");
 
-  tbody.innerHTML = "";
+  tableBody.innerHTML = "";
+  if (mobileWrap) mobileWrap.innerHTML = "";
 
-  orders.forEach(order => {
+  ORDERS.filter(o =>
+    (!st || o.status === st) &&
+    (o.orderId.toLowerCase().includes(q) || o.phone.includes(q))
+  ).forEach(o => {
+
+    // ===== DESKTOP ROW =====
     const tr = document.createElement("tr");
-
     tr.innerHTML = `
-      <td>${order.orderId}</td>
-
+      <td>${o.orderId}</td>
+      <td>${o.name}<br><small>${o.phone}</small></td>
+      <td>${o.items.length}</td>
+      <td>₹${o.total}</td>
       <td>
-        <b>${order.name || "-"}</b><br>
-        <span class="small">${order.phone || ""}</span><br>
-        <span class="small">${order.address || ""}</span>
+        ${o.payment?.screenshot
+          ? `<img src="${BACKEND}${o.payment.screenshot}"
+                 class="proof"
+                 onclick="showImg('${BACKEND}${o.payment.screenshot}')">`
+          : "—"}
       </td>
-
-      <td>
-        ${order.items.map(i =>
-          `<div class="small">${i.qty} × ${i.name}</div>`
-        ).join("")}
+      <td class="status ${o.status}" id="status-${o.orderId}">
+        ${o.status}
       </td>
-
-      <td>₹${order.total}</td>
-
-      <td>
-        <div><b>${order.payment?.method || "N/A"}</b></div>
-        <div class="small">Txn: ${order.payment?.txn || "-"}</div>
-        ${
-          order.payment?.fileUrl
-            ? `<img class="proof"
-                   src="${order.payment.fileUrl}"
-                   onclick="window.open('${order.payment.fileUrl}','_blank')">`
-            : `<span class="small muted">No Screenshot</span>`
-        }
-      </td>
-
-      <td class="status">${order.status}</td>
-
       <td>
         <button class="approve"
-          onclick="updateStatus('${order.orderId}','Approved','${order.phone}','${order.total}')">
-          Approve
-        </button>
+          onclick="updateStatus('${o.orderId}','Approved')">✓</button>
         <button class="reject"
-          onclick="updateStatus('${order.orderId}','Rejected')">
-          Reject
-        </button>
+          onclick="updateStatus('${o.orderId}','Rejected')">✕</button>
       </td>
     `;
+    tableBody.appendChild(tr);
 
-    tbody.appendChild(tr);
+    // ===== MOBILE CARD =====
+    if (mobileWrap) {
+      const card = document.createElement("div");
+      card.className = "order-card";
+      card.innerHTML = `
+        <div class="order-top">
+          <span>${o.orderId}</span>
+          <span class="status ${o.status}"
+                id="m-${o.orderId}">${o.status}</span>
+        </div>
+        👤 ${o.name}<br>
+        📞 ${o.phone}<br>
+        💰 ₹${o.total}<br>
+        📦 ${o.items.length} items
+        <div class="order-actions">
+          <button class="approve"
+            onclick="updateStatus('${o.orderId}','Approved')">Approve</button>
+          <button class="reject"
+            onclick="updateStatus('${o.orderId}','Rejected')">Reject</button>
+        </div>
+      `;
+      mobileWrap.appendChild(card);
+    }
   });
 }
 
-// ================= UPDATE STATUS =================
-async function updateStatus(orderId, status, phone, total) {
-  if (!confirm(`Mark order ${orderId} as ${status}?`)) return;
-
+/* ================================
+   UPDATE STATUS
+   + WHATSAPP AUTO OPEN
+================================ */
+async function updateStatus(orderId, status) {
   try {
     const res = await fetch(
-      `${API_BASE}/api/admin/orders/${orderId}/status`,
+      `${BACKEND}/api/admin/orders/${orderId}/status`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
+          Authorization: "Bearer " + token
         },
         body: JSON.stringify({ status })
       }
     );
 
     const data = await res.json();
-    if (data.success) {
-      if (status === "Approved" && phone) {
-        sendWhatsApp(phone, orderId, total);
-      }
-      loadOrders();
-    } else {
-      alert("Failed to update status");
+
+    if (!data.success) {
+      alert("Status update failed");
+      return;
     }
+
+    // 🟢 INSTANT UI UPDATE (DESKTOP)
+    const badge = document.getElementById("status-" + orderId);
+    if (badge) {
+      badge.textContent = status;
+      badge.className = "status " + status;
+    }
+
+    // 🟢 MOBILE BADGE
+    const mb = document.getElementById("m-" + orderId);
+    if (mb) {
+      mb.textContent = status;
+      mb.className = "status " + status;
+    }
+
+    // 🔔 AUTO OPEN WHATSAPP
+    if (data.waLink) {
+      window.open(data.waLink, "_blank");
+    }
+
   } catch (err) {
-    console.error(err);
-    alert("Server error");
+    console.error("Update status error:", err);
+    alert("Server error while updating status");
   }
 }
 
-// ================= WHATSAPP NOTIFY =================
-function sendWhatsApp(phone, orderId, total) {
-  const msg =
-    `✅ Your order has been APPROVED!\n\n` +
-    `Order ID: ${orderId}\n` +
-    `Total: ₹${total}\n\n` +
-    `Bhumika Medical\nThank you!`;
-
-  const url = `https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`;
-  window.open(url, "_blank");
+/* ================================
+   IMAGE MODAL
+================================ */
+function showImg(src) {
+  document.getElementById("modalImg").src = src;
+  document.getElementById("downloadLink").href = src;
+  document.getElementById("modal").style.display = "flex";
 }
 
-// ================= CSV EXPORT =================
+function closeModal() {
+  document.getElementById("modal").style.display = "none";
+}
+
+/* ================================
+   EXPORT CSV
+================================ */
 function exportCSV() {
-  if (!ALL_ORDERS.length) {
-    alert("No orders to export");
-    return;
-  }
-
-  let csv = "OrderID,Name,Phone,Total,Status,PaymentMethod,TxnID\n";
-
-  ALL_ORDERS.forEach(o => {
-    csv += `"${o.orderId}","${o.name}","${o.phone}","${o.total}","${o.status}","${o.payment?.method || ""}","${o.payment?.txn || ""}"\n`;
+  let csv = "OrderID,Name,Phone,Total,Status\n";
+  ORDERS.forEach(o => {
+    csv += `${o.orderId},${o.name},${o.phone},${o.total},${o.status}\n`;
   });
 
-  const blob = new Blob([csv], { type: "text/csv" });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = "orders.csv";
-  link.click();
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+  a.download = "orders.csv";
+  a.click();
 }
 
-async function loadByDate() {
-  const from = fromDate.value;
-  const to = toDate.value;
-
-  if (!from || !to) {
-    alert("Select both dates");
-    return;
-  }
-
-  const res = await fetch(
-    `${BACKEND}/api/admin/orders-by-date?from=${from}&to=${to}`,
-    {
-      headers: {
-        Authorization: "Bearer " + token
-      }
-    }
-  );
-
-  const data = await res.json();
-  ORDERS = data.orders || [];
-  updateDashboard();
-  render();
+/* ================================
+   LOGOUT
+================================ */
+function logout() {
+  localStorage.removeItem("adminToken");
+  location.href = "admin-login.html";
 }
 
+/* ================================
+   EVENTS + INIT
+================================ */
+document.getElementById("search").oninput = renderOrders;
+document.getElementById("statusFilter").onchange = renderOrders;
 
-// ================= INIT =================
 loadOrders();

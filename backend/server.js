@@ -229,6 +229,18 @@ app.get("/api/admin/orders-by-date", adminAuth, async (req, res) => {
   }
 });
 
+app.get("/api/admin/orders", adminAuth, async (req, res) => {
+  const { since } = req.query;
+
+  const query = since
+    ? { createdAt: { $gt: new Date(since) } }
+    : {};
+
+  const orders = await Order.find(query).sort({ createdAt: -1 });
+
+  res.json({ success: true, orders });
+});
+
 /* ==================================================
    ROOT
 ================================================== */
