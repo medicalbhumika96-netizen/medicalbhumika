@@ -210,30 +210,29 @@ function updateDashboard(){
 }
 
 /* RENDER */
-function render(){
-  const q=search.value.toLowerCase();
-  const st=statusFilter.value;
-  orders.innerHTML="";
+function render() {
+  const q = search.value.toLowerCase();
+  const st = statusFilter.value;
 
-  ORDERS.filter(o=>{
-    return (!st||o.status===st) &&
-      (o.orderId.toLowerCase().includes(q)||o.phone.includes(q));
-  }).forEach(o=>{
-    const tr=document.createElement("tr");
-    tr.id="row-"+o.orderId;
+  orders.innerHTML = "";
+  mobileOrders.innerHTML = "";
 
-    const proof =
-      o.payment?.screenshot && o.payment.screenshot.startsWith("/uploads/")
-      ? `<img src="${BACKEND}${o.payment.screenshot}" class="proof"
-          onclick="showImg('${BACKEND}${o.payment.screenshot}')">`
-      : "—";
+  ORDERS.filter(o => {
+    return (!st || o.status === st) &&
+      (o.orderId.toLowerCase().includes(q) || o.phone.includes(q));
+  }).forEach(o => {
 
-    tr.innerHTML=`
+    /* ===== DESKTOP TABLE ===== */
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
       <td>${o.orderId}</td>
       <td>${o.name}<br><small>${o.phone}</small></td>
       <td class="items" onclick="toggle('${o.orderId}')">${o.items.length} items</td>
       <td>₹${o.total}</td>
-      <td>${proof}</td>
+      <td>${o.payment?.screenshot
+        ? `<img src="${BACKEND}${o.payment.screenshot}" class="proof"
+           onclick="showImg('${BACKEND}${o.payment.screenshot}')">`
+        : "—"}</td>
       <td class="status ${o.status}" id="status-${o.orderId}">${o.status}</td>
       <td>
         <button class="approve" onclick="updateStatus('${o.orderId}','Approved')">✓</button>
@@ -241,18 +240,36 @@ function render(){
       </td>`;
     orders.appendChild(tr);
 
-    const d=document.createElement("tr");
-    d.className="details";
-    d.id=o.orderId;
-    d.innerHTML=`
-      <td colspan="7">
-        <b>Address:</b> ${o.address}<br>
-        <b>Txn:</b> ${o.payment?.txn||"—"}<br><br>
-        ${o.items.map(i=>`• ${i.name} × ${i.qty}`).join("<br>")}
-      </td>`;
-    orders.appendChild(d);
+    /* ===== MOBILE CARD ===== */
+    const card = document.createElement("div");
+    card.className = "order-card";
+    card.innerHTML = `
+      <div class="order-top">
+        <span>${o.orderId}</span>
+        <span class="status ${o.status}">${o.status}</span>
+      </div>
+
+      <div class="order-mid">
+        👤 ${o.name}<br>
+        📞 ${o.phone}<br>
+        💰 ₹${o.total}<br>
+        📦 ${o.items.length} items
+      </div>
+
+      ${o.payment?.screenshot
+        ? `<img src="${BACKEND}${o.payment.screenshot}" class="proof"
+             onclick="showImg('${BACKEND}${o.payment.screenshot}')">`
+        : ""}
+
+      <div class="order-actions">
+        <button class="approve" onclick="updateStatus('${o.orderId}','Approved')">Approve</button>
+        <button class="reject" onclick="updateStatus('${o.orderId}','Rejected')">Reject</button>
+      </div>
+    `;
+    mobileOrders.appendChild(card);
   });
 }
+
 
 /* STATUS UPDATE – INSTANT */
 async function updateStatus(orderId,status){

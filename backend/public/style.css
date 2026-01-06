@@ -1453,3 +1453,54 @@ a {
 .timeline-step.done:not(:last-child)::after {
   background: #0a8a0a;
 }
+/* ===== MOBILE FIRST ===== */
+@media (max-width: 768px) {
+
+  body { padding: 8px }
+
+  table, thead { display: none }
+
+  .mobile-orders {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .order-card {
+    background: #020617;
+    border: 1px solid #1f2937;
+    border-radius: 10px;
+    padding: 12px;
+  }
+
+  .order-top {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 700;
+  }
+
+  .order-mid {
+    font-size: 13px;
+    margin-top: 6px;
+    color: #cbd5f5;
+  }
+
+  .order-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  .order-actions button {
+    flex: 1;
+    padding: 10px;
+    font-size: 15px;
+    border-radius: 8px;
+  }
+
+  .proof {
+    width: 100%;
+    height: auto;
+    margin-top: 8px;
+  }
+}
