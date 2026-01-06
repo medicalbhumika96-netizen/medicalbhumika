@@ -204,6 +204,31 @@ app.post("/api/orders/track-secure", async (req, res) => {
   }
 });
 
+// ==================================================
+// ADMIN — FETCH ORDERS BY DATE RANGE 📅
+// ==================================================
+app.get("/api/admin/orders-by-date", adminAuth, async (req, res) => {
+  try {
+    const { from, to } = req.query;
+
+    let filter = {};
+
+    if (from && to) {
+      filter.createdAt = {
+        $gte: new Date(from + "T00:00:00"),
+        $lte: new Date(to + "T23:59:59")
+      };
+    }
+
+    const orders = await Order.find(filter).sort({ createdAt: -1 });
+
+    res.json({ success: true, orders });
+  } catch (err) {
+    console.error("❌ Date filter error:", err);
+    res.status(500).json({ success: false });
+  }
+});
+
 /* ==================================================
    ROOT
 ================================================== */

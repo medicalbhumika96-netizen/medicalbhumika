@@ -167,5 +167,30 @@ function exportCSV() {
   link.click();
 }
 
+async function loadByDate() {
+  const from = fromDate.value;
+  const to = toDate.value;
+
+  if (!from || !to) {
+    alert("Select both dates");
+    return;
+  }
+
+  const res = await fetch(
+    `${BACKEND}/api/admin/orders-by-date?from=${from}&to=${to}`,
+    {
+      headers: {
+        Authorization: "Bearer " + token
+      }
+    }
+  );
+
+  const data = await res.json();
+  ORDERS = data.orders || [];
+  updateDashboard();
+  render();
+}
+
+
 // ================= INIT =================
 loadOrders();

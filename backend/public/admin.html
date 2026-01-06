@@ -171,6 +171,10 @@ img.proof{
     <option value="Rejected">Rejected</option>
   </select>
   <button class="export" onclick="exportCSV()">⬇ Export CSV</button>
+  <input type="date" id="fromDate">
+<input type="date" id="toDate">
+<button onclick="loadByDate()">Filter</button>
+
 </div>
 
 <table>
@@ -314,7 +318,39 @@ function logout(){
 }
 
 search.oninput=statusFilter.onchange=render;
-loadOrders();
+// ===== AUTO LOAD CURRENT MONTH ORDERS =====
+function loadCurrentMonth() {
+  const now = new Date();
+
+  const from = new Date(now.getFullYear(), now.getMonth(), 1)
+    .toISOString().slice(0, 10);
+
+  const to = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+    .toISOString().slice(0, 10);
+
+  loadByDateRange(from, to);
+}
+
+// generic date loader
+async function loadByDateRange(from, to) {
+  const res = await fetch(
+    `${BACKEND}/api/admin/orders-by-date?from=${from}&to=${to}`,
+    {
+      headers: {
+        Authorization: "Bearer " + token
+      }
+    }
+  );
+
+  const data = await res.json();
+  ORDERS = data.orders || [];
+  updateDashboard();
+  render();
+}
+
+// auto call on page open
+loadCurrentMonth();
+
  
 let lastOrderId = localStorage.getItem("lastOrderId") || null;
 const orderSound = new Audio("/new-order.mp3");
