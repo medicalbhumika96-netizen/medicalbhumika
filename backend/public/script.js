@@ -1077,3 +1077,58 @@ function enablePaymentProofBtn() {
   }
 }
 
+
+
+
+/* =====================================================
+   OPTION B – BUSINESS FEATURES (SAFE ADDON)
+   (Layout unchanged)
+===================================================== */
+
+const SHOP_OPEN_TIME = 8;
+const SHOP_CLOSE_TIME = 23;
+const MIN_ORDER_AMOUNT = 149;
+const ALLOWED_PINS = ["411041","411048","411058"];
+
+function isShopOpen() {
+  const h = new Date().getHours();
+  return h >= SHOP_OPEN_TIME && h < SHOP_CLOSE_TIME;
+}
+
+function guardShopOpen() {
+  if (!isShopOpen()) {
+    alert("🕒 Shop is closed right now.");
+    return false;
+  }
+  return true;
+}
+
+function validatePin(pin) {
+  return ALLOWED_PINS.includes(String(pin));
+}
+
+function saveCartAuto() {
+  try { localStorage.setItem("cart", JSON.stringify(cart)); } catch(e){}
+}
+
+function loadCartAuto() {
+  try {
+    const c = JSON.parse(localStorage.getItem("cart") || "{}");
+    if (c && typeof c === "object") cart = c;
+  } catch(e){}
+}
+
+function guardDuplicateOrder() {
+  const last = Number(localStorage.getItem("lastOrderTime") || 0);
+  if (Date.now() - last < 120000) {
+    alert("⚠️ Please wait before placing another order.");
+    return false;
+  }
+  localStorage.setItem("lastOrderTime", Date.now());
+  return true;
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  loadCartAuto();
+  if (typeof renderCart === "function") renderCart();
+});

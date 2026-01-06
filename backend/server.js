@@ -6,8 +6,6 @@ import dotenv from "dotenv";
 import fs from "fs";
 import jwt from "jsonwebtoken";
 import Order from "./models/Order.js";
-import cron from "node-cron";
-import nodemailer from "nodemailer";
 
 dotenv.config();
 
@@ -45,9 +43,8 @@ const upload = multer({ storage });
 app.post("/api/orders", async (req, res) => {
   try {
     const data = req.body;
-
     if (!data || !data.phone) {
-      return res.status(400).json({ success: false });
+      return res.status(400).json({ success: false, message: "Invalid order data" });
     }
 
     const orderId = "ORD-" + Date.now();
@@ -59,10 +56,9 @@ app.post("/api/orders", async (req, res) => {
     });
 
     await order.save();
-
     console.log("✅ Order saved:", orderId);
-    res.json({ success: true, orderId });
 
+    res.json({ success: true, orderId });
   } catch (err) {
     console.error("❌ Order save error:", err);
     res.status(500).json({ success: false });
@@ -70,46 +66,60 @@ app.post("/api/orders", async (req, res) => {
 });
 
 /* ==================================================
+   CUSTOMER — TRACK ORDERS (PHONE BASED) ✅
+================================================== */
+app.get("/api/orders/track/:phone", async (req, res) => {
+  try {
+    const phone = req.params.phone;
+
+    const orders = await Order.find({ phone })
+      .sort({ createdAt: -1 });
+
+    res.json({ success: true, orders });
+  } catch (err) {
+    console.error("❌ Track order error:", err);
+    res.status(500).json({ success: false });
+  }
+});
+
+/* ==================================================
    CUSTOMER — PAYMENT PROOF
 ================================================== */
-app.post(
-  "/api/payment-proof",
-  upload.single("screenshot"),
-  async (req, res) => {
-    try {
-      const { orderId, txnId = "" } = req.body;
+app.post("/api/payment-proof", upload.single("screenshot"), async (req, res) => {
+  try {
+    const { orderId, txnId = "" } = req.body;
 
-      if (!orderId) {
-        return res.status(400).json({ success: false });
-      }
-
-      const order = await Order.findOne({ orderId });
-      if (!order) {
-        return res.status(404).json({ success: false });
-      }
-
-      order.payment = {
-  txn: txnId,
-  screenshot: `/uploads/${req.file.filename}`,
-  method: "UPI"
-};
-
-await order.save();
-      console.log("✅ Payment proof saved:", orderId);
-      res.json({ success: true });
-
-    } catch (err) {
-      console.error("❌ Payment proof error:", err);
-      res.status(500).json({ success: false });
+    if (!orderId) {
+      return res.status(400).json({ success: false, message: "orderId missing" });
     }
+
+    const order = await Order.findOne({ orderId });
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    order.payment = {
+      txn: txnId,
+      screenshot: req.file ? `/uploads/${req.file.filename}` : "",
+      method: "UPI",
+    };
+
+    await order.save();
+    console.log("✅ Payment proof saved:", orderId);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("❌ Payment proof error:", err);
+    res.status(500).json({ success: false });
   }
-);
+});
 
 /* ==================================================
    ADMIN AUTH (JWT)
 ================================================== */
 function adminAuth(req, res, next) {
   const auth = req.headers.authorization;
+
   if (!auth || !auth.startsWith("Bearer ")) {
     return res.status(401).json({ success: false });
   }
@@ -139,6 +149,7 @@ app.post("/api/admin/login", (req, res) => {
       process.env.ADMIN_JWT_SECRET,
       { expiresIn: "1d" }
     );
+
     return res.json({ success: true, token });
   }
 
@@ -159,39 +170,34 @@ app.get("/api/admin/orders", adminAuth, async (req, res) => {
 });
 
 /* ==================================================
-   ADMIN — UPDATE STATUS (APPROVE / REJECT) 🔥
+   ADMIN — UPDATE STATUS
 ================================================== */
-app.post(
-  "/api/admin/orders/:orderId/status",
-  adminAuth,
-  async (req, res) => {
-    try {
-      const { orderId } = req.params;
-      const { status } = req.body;
+app.post("/api/admin/orders/:orderId/status", adminAuth, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { status } = req.body;
 
-      if (!["Pending", "Approved", "Rejected"].includes(status)) {
-        return res.status(400).json({ success: false });
-      }
-
-      const order = await Order.findOneAndUpdate(
-        { orderId },
-        { status },
-        { new: true }
-      );
-
-      if (!order) {
-        return res.status(404).json({ success: false });
-      }
-
-      console.log(`✅ Order ${orderId} → ${status}`);
-      res.json({ success: true });
-
-    } catch (err) {
-      console.error("❌ Status update error:", err);
-      res.status(500).json({ success: false });
+    if (!["Pending", "Approved", "Rejected"].includes(status)) {
+      return res.status(400).json({ success: false });
     }
+
+    const order = await Order.findOneAndUpdate(
+      { orderId },
+      { status },
+      { new: true }
+    );
+
+    if (!order) {
+      return res.status(404).json({ success: false });
+    }
+
+    console.log(`✅ Order ${orderId} → ${status}`);
+    res.json({ success: true });
+  } catch (err) {
+    console.error("❌ Status update error:", err);
+    res.status(500).json({ success: false });
   }
-);
+});
 
 /* ==================================================
    ROOT
@@ -205,5 +211,5 @@ app.get("/", (_, res) => {
 ================================================== */
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🚀 Server running on ${PORT}`);
 });
