@@ -199,6 +199,37 @@ app.post("/api/admin/orders/:orderId/status", adminAuth, async (req, res) => {
   }
 });
 
+// ==================================================
+// CUSTOMER — TRACK ORDER (ORDER ID + PHONE) 🔐
+// ==================================================
+app.post("/api/orders/track-secure", async (req, res) => {
+  try {
+    const { orderId, phone } = req.body;
+
+    if (!orderId || !phone) {
+      return res.status(400).json({
+        success: false,
+        message: "Order ID and phone required"
+      });
+    }
+
+    const order = await Order.findOne({ orderId, phone });
+
+    if (!order) {
+      return res.json({
+        success: false,
+        message: "No matching order found"
+      });
+    }
+
+    res.json({ success: true, order });
+
+  } catch (err) {
+    console.error("❌ Secure track error:", err);
+    res.status(500).json({ success: false });
+  }
+});
+
 /* ==================================================
    ROOT
 ================================================== */

@@ -1410,3 +1410,46 @@ a {
   top: 12px;
   color: var(--accent-dark);
 }
+.timeline {
+  display: flex;
+  justify-content: space-between;
+  margin: 16px 0;
+}
+
+.timeline-step {
+  text-align: center;
+  flex: 1;
+  position: relative;
+  color: #999;
+}
+
+.timeline-step .dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ccc;
+  margin: 0 auto 6px;
+}
+
+.timeline-step.done {
+  color: #0a8a0a;
+}
+
+.timeline-step.done .dot {
+  background: #0a8a0a;
+}
+
+.timeline-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  right: -50%;
+  width: 100%;
+  height: 2px;
+  background: #ccc;
+  z-index: -1;
+}
+
+.timeline-step.done:not(:last-child)::after {
+  background: #0a8a0a;
+}

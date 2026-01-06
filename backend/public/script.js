@@ -663,7 +663,11 @@ window.LAST_ORDER_ID = window.LAST_ORDER_ID || uniqueEID;
 enablePaymentProofBtn();
 
   closeModal();
-  showResult(true, `✅ Your Order ID: ${uniqueEID}`);
+  showResult(
+  true,
+  `✅ Your Order ID: ${window.LAST_ORDER_ID || uniqueEID}`
+);
+
   cart = {};
   renderCart();
 });
@@ -921,23 +925,82 @@ if (floatingCartBtn) {
   });
 }
 
-// ===== ORDER CHECK FEATURE =====
-// ===== ORDER CHECK FEATURE (SAFE & DISABLED) =====
+// ===== ORDER TRACKING (LIVE BACKEND) =====
 const checkOrderBtn = document.getElementById('check-order-btn');
 const orderPhoneInput = document.getElementById('order-phone');
 const orderResult = document.getElementById('order-status-result');
 
-checkOrderBtn?.addEventListener('click', () => {
-  // Old localStorage based order check disabled intentionally
-  // This prevents script break and keeps products rendering
+checkOrderBtn?.addEventListener('click', async () => {
+  const input = orderPhoneInput.value.trim();
 
-  if (orderResult) {
-    orderResult.textContent =
-      "⚠️ Order tracking is temporarily unavailable. Please contact the shop.";
-  } else {
-    alert("Order tracking is temporarily unavailable.");
+  if (!input || !input.includes('-')) {
+    orderResult.textContent = "⚠️ Enter Order ID and Phone (ORD-xxx | 9876543210)";
+    return;
+  }
+
+  const [orderId, phone] = input.split('|').map(s => s.trim());
+
+  if (!orderId || !phone) {
+    orderResult.textContent = "⚠️ Invalid format";
+    return;
+  }
+
+  orderResult.textContent = "⏳ Checking your order...";
+
+  try {
+    const res = await fetch(`${BACKEND_BASE}/api/orders/track-secure`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderId, phone })
+    });
+
+    const data = await res.json();
+
+    if (!data.success) {
+      orderResult.innerHTML = "<p>❌ Order not found</p>";
+      return;
+    }
+
+    renderOrderTimeline(data.order);
+
+  } catch (err) {
+    console.error(err);
+    orderResult.textContent = "❌ Server error";
   }
 });
+
+function renderOrderTimeline(order) {
+  const steps = [
+    "Placed",
+    "Approved",
+    "Packed",
+    "Out for Delivery",
+    "Delivered"
+  ];
+
+  const currentIndex = steps.indexOf(order.status);
+
+  orderResult.innerHTML = `
+    <div class="order-card">
+      <h4>Order ID: ${order.orderId}</h4>
+      <p><b>Total:</b> ₹${order.total}</p>
+
+      <div class="timeline">
+        ${steps.map((step, i) => `
+          <div class="timeline-step ${i <= currentIndex ? 'done' : ''}">
+            <div class="dot"></div>
+            <div class="label">${step}</div>
+          </div>
+        `).join('')}
+      </div>
+
+      <p class="small muted">
+        Last updated: ${new Date(order.updatedAt || order.createdAt).toLocaleString()}
+      </p>
+    </div>
+  `;
+}
+
 
 // ===== INITIALIZE =====
 loadProducts();
@@ -1059,22 +1122,6 @@ if (proofBtn) {
     if (txnIdInput) txnIdInput.value = '';
     if (screenshotUpload) screenshotUpload.value = '';
   });
-}
-
-function disablePaymentProofBtn() {
-  if (submitProofBtn) {
-    submitProofBtn.disabled = true;
-    submitProofBtn.style.opacity = "0.6";
-    submitProofBtn.style.cursor = "not-allowed";
-  }
-}
-
-function enablePaymentProofBtn() {
-  if (submitProofBtn) {
-    submitProofBtn.disabled = false;
-    submitProofBtn.style.opacity = "1";
-    submitProofBtn.style.cursor = "pointer";
-  }
 }
 
 
