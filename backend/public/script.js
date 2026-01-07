@@ -440,8 +440,11 @@ navSearchInput && navSearchInput.addEventListener('input', e => {
   renderProducts(v);
 });
 
-document.getElementById("uploadValidateBtn").addEventListener("click", async () => {
-  const file = document.getElementById("prescription-input").files[0];
+const prescInput = document.getElementById("prescription-input");
+const uploadBtn = document.getElementById("upload-prescription-btn");
+
+uploadBtn.addEventListener("click", async () => {
+  const file = prescInput.files[0];
   if (!file) {
     alert("Please select prescription image");
     return;
@@ -457,18 +460,22 @@ document.getElementById("uploadValidateBtn").addEventListener("click", async () 
   fd.append("phone", phone);
   fd.append("address", address);
 
+  uploadBtn.disabled = true;
+  uploadBtn.textContent = "Uploading...";
+
   try {
-    const res = await fetch("https://medicalbhumika-2.onrender.com/upload-prescription", {
+    const res = await fetch(`${BACKEND_BASE}/upload-prescription`, {
       method: "POST",
       body: fd
     });
 
     const data = await res.json();
+
     if (!data.success) throw new Error("Upload failed");
 
-    // ✅ WhatsApp with IMAGE LINK
+    // 🔗 WhatsApp message WITH IMAGE LINK
     const msg =
-      `🧾 Prescription Uploaded\n\n` +
+      `🧾 Prescription Received\n\n` +
       `Name: ${name}\nPhone: ${phone}\nAddress: ${address}\n\n` +
       `📎 View Prescription:\n${data.imageUrl}`;
 
@@ -477,10 +484,10 @@ document.getElementById("uploadValidateBtn").addEventListener("click", async () 
       "_blank"
     );
 
-    alert("Prescription uploaded successfully!");
-
-  } catch (e) {
-    alert("Upload failed. Please try again.");
+   
+  } finally {
+    uploadBtn.disabled = false;
+    uploadBtn.textContent = "Upload & Validate";
   }
 });
 
