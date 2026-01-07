@@ -167,7 +167,7 @@
       display: none;
       align-items: center;
       justify-content: center;
-      z-index: 999;
+      z-index: 999
     }
 
     .modal-content {
@@ -189,7 +189,7 @@
       padding: 6px 10px;
       border-radius: 6px;
       text-decoration: none;
-      font-size: 13px;
+      font-size: 13px
     }
 
     /* ===== MOBILE WHATSAPP-LIKE ADMIN ===== */
@@ -237,7 +237,8 @@
 
       .wa-items {
         font-size: 12px;
-        color: #94a3b8
+        color: #94a3b8;
+        cursor: pointer;
       }
 
       .wa-right {
@@ -408,7 +409,7 @@
       <tr>
         <td>${o.orderId}</td>
         <td>${o.name}<br><small>${o.phone}</small></td>
-        <td class="items">${o.items.length}</td>
+        <td class="items" onclick='viewItemsMobile(${JSON.stringify(o.items)})'>${o.items.length}</td>
         <td>₹${o.total}</td>
         <td>${o.payment?.screenshot ? `<img src="${BACKEND}${o.payment.screenshot}" class="proof" onclick="showImg('${BACKEND}${o.payment.screenshot}')">` : "—"}</td>
         <td class="status ${o.status}">${o.status}</td>
@@ -426,28 +427,46 @@
         <div class="wa-left">
           <div class="wa-name">${o.name}</div>
           <div class="wa-phone" onclick="callNow('${o.phone}')">📞 ${o.phone}</div>
-          <div class="wa-items">Items: ${o.items.length}</div>
+          <div class="wa-items"
+               onclick='viewItemsMobile(${JSON.stringify(o.items)})'>
+            📦 Items: ${o.items.length}
+          </div>
         </div>
 
         <div class="wa-right">
           <div class="wa-total">₹${o.total}</div>
           <div class="wa-status status ${o.status}">${o.status}</div>
+          <div style="margin-top:6px;font-size:18px;cursor:pointer"
+               onclick="openOrderWA('${o.phone}','${o.orderId}')">
+            💬
+          </div>
         </div>
       </div>`;
         });
     }
 
+    /* MOBILE ACTIONS */
+    function viewItemsMobile(items) {
+      if (!items || !items.length) return alert("No items found");
+      alert("📦 ORDER ITEMS\n\n" + items.map(i => `${i.qty} × ${i.name}`).join("\n"));
+    }
+    function openOrderWA(phone, id) {
+      if (!phone) return;
+      const msg = `Hello from Bhumika Medical\nOrder ID: ${id}`;
+      window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, "_blank");
+    }
+    function callNow(p) { if (p) location.href = `tel:${p}` }
+
     /* SWIPE + HAPTIC */
     let startX = 0;
     function touchStart(e) { startX = e.changedTouches[0].clientX }
-
     function vibrate(type) {
       if (!navigator.vibrate) return;
       navigator.vibrate(type === "approve" ? [40, 30, 40] : [100, 40, 100]);
     }
-
     function touchEnd(e, id) {
       const diff = e.changedTouches[0].clientX - startX;
+      if (Math.abs(diff) < 30) return;
       const card = e.currentTarget;
       if (diff > 70) {
         card.classList.add("swipe-approve");
@@ -461,7 +480,6 @@
     }
 
     /* HELPERS */
-    function callNow(p) { if (p) location.href = `tel:${p}` }
     function showImg(src) { modalImg.src = src; downloadLink.href = src; modal.style.display = "flex" }
     function closeModal() { modal.style.display = "none" }
 
@@ -499,7 +517,6 @@
     /* AUTO REFRESH + SOUND */
     let lastOrderId = localStorage.getItem("lastOrderId");
     const sound = new Audio("/new-order.mp3");
-
     setInterval(async () => {
       const res = await fetch(`${BACKEND}/api/admin/orders`, {
         headers: { Authorization: "Bearer " + token }
