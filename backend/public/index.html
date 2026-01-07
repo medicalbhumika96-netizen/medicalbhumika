@@ -167,16 +167,28 @@
           </form>
         </div>
         <!-- My Orders -->
-        <section id="orders" class="card orders">
-          <h3>My Orders</h3>
-          <p>Enter your phone number to check your order status.</p>
+     <section id="orders" class="card modern-track">
+  <h3>Track Your Order</h3>
+  <p class="subtitle">
+    Enter your <b>Order ID | Phone Number</b> to see live status
+  </p>
 
-          <input id="order-phone" placeholder="Enter Order ID or Phone Number">
-          <button id="check-order-btn">Check Order</button>
-          <div id="order-status-result"></div>
+  <div class="track-fields">
+    <label for="order-phone">Order ID | Phone</label>
+    <input
+      id="order-phone"
+      placeholder="ORD-123456 | 9876543210"
+      autocomplete="off"
+    />
+  </div>
 
-        </section>
-      
+  <button id="check-order-btn" class="track-btn">
+    🔍 Check Order Status
+  </button>
+
+  <div id="order-status-result" class="track-result"></div>
+</section>
+
 
       </main>
 

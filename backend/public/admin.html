@@ -1,414 +1,426 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<title>Bhumika Medical — Admin Console</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<audio id="newOrderSound" src="new-order.mp3" preload="auto"></audio>
+  <meta charset="UTF-8">
+  <title>Bhumika Medical — Admin Console</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <audio id="newOrderSound" src="new-order.mp3" preload="auto"></audio>
 
-<!-- PWA -->
-<link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#0a7cff">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0a7cff">
 
-<style>
-*{box-sizing:border-box}
-body{
-  margin:0;
-  font-family:system-ui, Arial;
-  background:#0c1117;
-  color:#e6edf3;
-  padding:16px;
-}
+  <style>
+    * {
+      box-sizing: border-box
+    }
 
-/* HEADER */
-.header{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  margin-bottom:15px;
-}
-.logout{
-  background:#dc3545;
-  border:none;
-  color:#fff;
-  padding:6px 12px;
-  cursor:pointer;
-}
+    body {
+      margin: 0;
+      font-family: system-ui, Arial;
+      background: #0c1117;
+      color: #e6edf3;
+      padding: 16px;
+    }
 
-/* DASHBOARD */
-.dashboard{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
-  gap:12px;
-  margin-bottom:18px;
-}
-.card{
-  background:#020617;
-  border:1px solid #1f2937;
-  padding:14px;
-  border-radius:8px;
-}
-.card h4{margin:0;font-size:13px;color:#94a3b8}
-.card .value{margin-top:6px;font-size:22px;font-weight:700}
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px
+    }
 
-/* TOOLBAR */
-.toolbar{
-  display:flex;
-  gap:10px;
-  margin-bottom:12px;
-  flex-wrap:wrap;
-}
-select,input,button{
-  padding:6px 10px;
-  border-radius:4px;
-  border:1px solid #333;
-  background:#111827;
-  color:#e6edf3;
-}
-button.export{background:#1f2937}
-button.approve{background:#16a34a}
-button.reject{background:#dc2626}
+    .logout {
+      background: #dc3545;
+      border: none;
+      color: #fff;
+      padding: 6px 12px;
+      cursor: pointer
+    }
 
-/* TABLE */
-table{width:100%;border-collapse:collapse;background:#020617}
-th,td{
-  border:1px solid #1f2937;
-  padding:8px;
-  font-size:13px;
-  vertical-align:top;
-}
-th{background:#0a7cff;color:#fff}
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
 
-.status.Pending{color:#facc15}
-.status.Approved{color:#22c55e}
-.status.Rejected{color:#ef4444}
+    .card {
+      background: #020617;
+      border: 1px solid #1f2937;
+      padding: 14px;
+      border-radius: 8px;
+    }
 
-.items{cursor:pointer;color:#38bdf8}
+    .card h4 {
+      margin: 0;
+      font-size: 13px;
+      color: #94a3b8
+    }
 
-img.proof{
-  width:60px;
-  height:60px;
-  object-fit:cover;
-  border-radius:6px;
-  cursor:pointer;
-  border:1px solid #334155;
-}
+    .card .value {
+      margin-top: 6px;
+      font-size: 22px;
+      font-weight: 700
+    }
 
-/* MOBILE */
-#mobileOrders{display:none}
-.order-card{
-  background:#020617;
-  border:1px solid #1f2937;
-  padding:12px;
-  border-radius:10px;
-  margin-bottom:12px;
-}
-.order-top{
-  display:flex;
-  justify-content:space-between;
-  font-weight:600;
-}
-.order-actions{
-  display:flex;
-  gap:8px;
-  margin-top:8px;
-}
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+      flex-wrap: wrap
+    }
 
-@media (max-width:768px){
-  table{display:none}
-  #mobileOrders{display:block}
-}
+    select,
+    input,
+    button {
+      padding: 6px 10px;
+      border-radius: 4px;
+      border: 1px solid #333;
+      background: #111827;
+      color: #e6edf3
+    }
 
-/* MODAL */
-.modal{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.85);
-  display:none;
-  align-items:center;
-  justify-content:center;
-  z-index:999;
-}
-.modal-content{position:relative}
-.modal img{
-  max-width:90vw;
-  max-height:80vh;
-  border-radius:8px;
-}
-.download{
-  position:absolute;
-  top:-40px;
-  right:0;
-  background:#22c55e;
-  color:#000;
-  padding:6px 10px;
-  border-radius:6px;
-  text-decoration:none;
-  font-size:13px;
-}
-</style>
+    button.export {
+      background: #1f2937
+    }
+
+    button.approve {
+      background: #16a34a
+    }
+
+    button.reject {
+      background: #dc2626
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #020617
+    }
+
+    th,
+    td {
+      border: 1px solid #1f2937;
+      padding: 8px;
+      font-size: 13px;
+      vertical-align: top
+    }
+
+    th {
+      background: #0a7cff;
+      color: #fff
+    }
+
+    .status.Pending {
+      color: #facc15
+    }
+
+    .status.Approved {
+      color: #22c55e
+    }
+
+    .status.Packed {
+      color: #38bdf8
+    }
+
+    .status.Out\ for\ Delivery {
+      color: #a855f7
+    }
+
+    .status.Delivered {
+      color: #10b981
+    }
+
+    .status.Rejected {
+      color: #ef4444
+    }
+
+    .items {
+      cursor: pointer;
+      color: #38bdf8
+    }
+
+    img.proof {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 1px solid #334155
+    }
+
+    /* MOBILE */
+    #mobileOrders {
+      display: none
+    }
+
+    .order-card {
+      background: #020617;
+      border: 1px solid #1f2937;
+      padding: 12px;
+      border-radius: 10px;
+      margin-bottom: 12px
+    }
+
+    .order-top {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 600
+    }
+
+    .order-actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+      flex-wrap: wrap
+    }
+
+    @media (max-width:768px) {
+      table {
+        display: none
+      }
+
+      #mobileOrders {
+        display: block
+      }
+    }
+
+    /* MODAL */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .85);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 999
+    }
+
+    .modal-content {
+      position: relative
+    }
+
+    .modal img {
+      max-width: 90vw;
+      max-height: 80vh;
+      border-radius: 8px
+    }
+
+    .download {
+      position: absolute;
+      top: -40px;
+      right: 0;
+      background: #22c55e;
+      color: #000;
+      padding: 6px 10px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 13px
+    }
+  </style>
 </head>
 
 <body>
 
-<div class="header">
-  <h2>📦 Admin Orders Console</h2>
-  <button class="logout" onclick="logout()">Logout</button>
-</div>
-
-<div class="dashboard">
-  <div class="card"><h4>Today Orders</h4><div class="value" id="todayOrders">0</div></div>
-  <div class="card"><h4>Today Revenue</h4><div class="value" id="todayRevenue">₹0</div></div>
-  <div class="card"><h4>Pending Orders</h4><div class="value" id="pendingOrders">0</div></div>
-  <div class="card"><h4>Unique Customers</h4><div class="value" id="uniqueCustomers">0</div></div>
-</div>
-
-<div class="toolbar">
-  <input id="search" placeholder="Search Order / Phone">
-  <select id="statusFilter">
-    <option value="">All</option>
-    <option value="Pending">Pending</option>
-    <option value="Approved">Approved</option>
-    <option value="Rejected">Rejected</option>
-  </select>
-  <button class="export" onclick="exportCSV()">⬇ Export CSV</button>
-  <input type="date" id="fromDate">
-<input type="date" id="toDate">
-<button onclick="loadByDate()">Filter</button>
-
-</div>
-
-<table>
-<thead>
-<tr>
-  <th>Order ID</th>
-  <th>Customer</th>
-  <th>Items</th>
-  <th>Total</th>
-  <th>Payment Proof</th>
-  <th>Status</th>
-  <th>Action</th>
-</tr>
-</thead>
-<tbody id="orders"></tbody>
-</table>
-
-<div id="mobileOrders"></div>
-
-<!-- IMAGE MODAL -->
-<div class="modal" id="modal" onclick="closeModal()">
-  <div class="modal-content" onclick="event.stopPropagation()">
-    <a id="downloadLink" class="download" download>⬇ Download</a>
-    <img id="modalImg">
+  <div class="header">
+    <h2>📦 Admin Orders Console</h2>
+    <button class="logout" onclick="logout()">Logout</button>
   </div>
-</div>
 
+  <div class="dashboard">
+    <div class="card">
+      <h4>Today Orders</h4>
+      <div class="value" id="todayOrders">0</div>
+    </div>
+    <div class="card">
+      <h4>Today Revenue</h4>
+      <div class="value" id="todayRevenue">₹0</div>
+    </div>
+    <div class="card">
+      <h4>Pending Orders</h4>
+      <div class="value" id="pendingOrders">0</div>
+    </div>
+    <div class="card">
+      <h4>Unique Customers</h4>
+      <div class="value" id="uniqueCustomers">0</div>
+    </div>
+  </div>
 
-<script>
-const BACKEND="https://medicalbhumika-2.onrender.com";
-const token=localStorage.getItem("adminToken");
-if(!token) location.href="admin-login.html";
+  <div class="toolbar">
+    <input id="search" placeholder="Search Order / Phone">
+    <select id="statusFilter">
+      <option value="">All</option>
+      <option>Pending</option>
+      <option>Approved</option>
+      <option>Packed</option>
+      <option>Out for Delivery</option>
+      <option>Delivered</option>
+      <option>Rejected</option>
+    </select>
+    <button class="export" onclick="exportCSV()">⬇ Export CSV</button>
+  </div>
 
-let ORDERS=[];
-
-/* LOAD */
-async function loadOrders(){
-  const res=await fetch(`${BACKEND}/api/admin/orders`,{
-    headers:{Authorization:"Bearer "+token}
-  });
-  const data=await res.json();
-  ORDERS=data.orders||[];
-  updateDashboard();
-  render();
-}
-
-/* DASHBOARD */
-function updateDashboard(){
-  const today=new Date().toDateString();
-  let tO=0,tR=0,p=0;
-  const c=new Set();
-
-  ORDERS.forEach(o=>{
-    if(new Date(o.createdAt).toDateString()===today){
-      tO++;tR+=Number(o.total||0);
-    }
-    if(o.status==="Pending") p++;
-    if(o.phone) c.add(o.phone);
-  });
-
-  todayOrders.textContent=tO;
-  todayRevenue.textContent="₹"+tR;
-  pendingOrders.textContent=p;
-  uniqueCustomers.textContent=c.size;
-}
-
-/* RENDER */
-function render(){
-  orders.innerHTML="";
-  mobileOrders.innerHTML="";
-  const q=search.value.toLowerCase();
-  const st=statusFilter.value;
-
-  ORDERS.filter(o=>(!st||o.status===st)&&
-    (o.orderId.toLowerCase().includes(q)||o.phone.includes(q)))
-  .forEach(o=>{
-    orders.innerHTML+=`
+  <table>
+    <thead>
       <tr>
+        <th>Order ID</th>
+        <th>Customer</th>
+        <th>Items</th>
+        <th>Total</th>
+        <th>Proof</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="orders"></tbody>
+  </table>
+
+  <div id="mobileOrders"></div>
+
+  <div class="modal" id="modal" onclick="closeModal()">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <a id="downloadLink" class="download" download>⬇ Download</a>
+      <img id="modalImg">
+    </div>
+  </div>
+
+  <script>
+    const BACKEND = "https://medicalbhumika-2.onrender.com";
+    const token = localStorage.getItem("adminToken");
+    if (!token) location.href = "admin-login.html";
+
+    let ORDERS = [];
+
+    /* LOAD */
+    async function loadOrders() {
+      const res = await fetch(`${BACKEND}/api/admin/orders`, {
+        headers: { Authorization: "Bearer " + token }
+      });
+      const data = await res.json();
+      ORDERS = data.orders || [];
+      updateDashboard();
+      render();
+    }
+
+    /* DASHBOARD */
+    function updateDashboard() {
+      const today = new Date().toDateString();
+      let tO = 0, tR = 0, p = 0;
+      const c = new Set();
+      ORDERS.forEach(o => {
+        if (new Date(o.createdAt).toDateString() === today) {
+          tO++; tR += Number(o.total || 0);
+        }
+        if (o.status === "Pending") p++;
+        if (o.phone) c.add(o.phone);
+      });
+      todayOrders.textContent = tO;
+      todayRevenue.textContent = "₹" + tR;
+      pendingOrders.textContent = p;
+      uniqueCustomers.textContent = c.size;
+    }
+
+    /* RENDER */
+    function render() {
+      orders.innerHTML = "";
+      mobileOrders.innerHTML = "";
+      const q = search.value.toLowerCase();
+      const st = statusFilter.value;
+
+      ORDERS.filter(o => (!st || o.status === st) &&
+        (o.orderId.toLowerCase().includes(q) || o.phone.includes(q)))
+        .forEach(o => {
+          const hi = o.total >= 1000 ? 'style="border-left:4px solid #22c55e"' : '';
+          orders.innerHTML += `
+      <tr ${hi}>
         <td>${o.orderId}</td>
         <td>${o.name}<br><small>${o.phone}</small></td>
-        <td>${o.items.length}</td>
+        <td class="items" onclick='showItems(${JSON.stringify(o.items)})'>View (${o.items.length})</td>
         <td>₹${o.total}</td>
-        <td>${o.payment?.screenshot?
-          `<img src="${BACKEND}${o.payment.screenshot}" class="proof"
-           onclick="showImg('${BACKEND}${o.payment.screenshot}')">`:"—"}</td>
+        <td>${o.payment?.screenshot ? `<img src="${BACKEND}${o.payment.screenshot}" class="proof" onclick="showImg('${BACKEND}${o.payment.screenshot}')">` : "—"}</td>
         <td class="status ${o.status}" id="status-${o.orderId}">${o.status}</td>
         <td>
           <button class="approve" onclick="updateStatus('${o.orderId}','Approved')">✓</button>
+          <button onclick="updateStatus('${o.orderId}','Packed')">📦</button>
+          <button onclick="updateStatus('${o.orderId}','Out for Delivery')">🚚</button>
+          <button onclick="updateStatus('${o.orderId}','Delivered')">✔</button>
           <button class="reject" onclick="updateStatus('${o.orderId}','Rejected')">✕</button>
+          <button onclick="openWA('${o.phone}','${o.orderId}')">💬</button>
         </td>
       </tr>`;
-
-    mobileOrders.innerHTML+=`
-      <div class="order-card">
-        <div class="order-top">
-          <span>${o.orderId}</span>
-          <span class="status ${o.status}" id="m-${o.orderId}">${o.status}</span>
-        </div>
-        👤 ${o.name}<br>📞 ${o.phone}<br>💰 ₹${o.total}<br>
-        <div class="order-actions">
-          <button class="approve" onclick="updateStatus('${o.orderId}','Approved')">Approve</button>
-          <button class="reject" onclick="updateStatus('${o.orderId}','Rejected')">Reject</button>
-        </div>
-      </div>`;
-  });
-}
-
-/* STATUS */
-async function updateStatus(id, status) {
-  try {
-    const res = await fetch(`${BACKEND}/api/admin/orders/${id}/status`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + token
-      },
-      body: JSON.stringify({ status })
-    });
-
-    const data = await res.json();
-
-    if (!res.ok || !data.success) {
-      alert("❌ Status update failed");
-      return;
+        });
     }
 
-    // update status text in table (desktop)
-    const stEl = document.getElementById("status-" + id);
-    if (stEl) stEl.textContent = status;
+    /* HELPERS */
+    function showItems(items) {
+      alert("📦 ORDER ITEMS\n\n" + items.map(i => `${i.qty} × ${i.name}`).join("\n"));
+    }
+    function openWA(phone, id) {
+      window.open(`https://wa.me/91${phone}?text=${encodeURIComponent("Order " + id + " update from Bhumika Medical")}`);
+    }
+    function showImg(src) { modalImg.src = src; downloadLink.href = src; modal.style.display = "flex" }
+    function closeModal() { modal.style.display = "none" }
 
-    // update status text in mobile card
-    const mstEl = document.getElementById("m-" + id);
-    if (mstEl) mstEl.textContent = status;
-
-    // 🔥 AUTO OPEN WHATSAPP
-    if (data.waLink) {
-      window.open(data.waLink, "_blank");
+    async function updateStatus(id, status) {
+      const res = await fetch(`${BACKEND}/api/admin/orders/${id}/status`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + token
+        },
+        body: JSON.stringify({ status })
+      });
+      const data = await res.json();
+      if (data.waLink) window.open(data.waLink, "_blank");
+      loadOrders();
     }
 
-  } catch (err) {
-    console.error(err);
-    alert("⚠️ Network error while updating status");
-  }
-}
+    function exportCSV() {
+      let csv = "Order,Name,Phone,Total,Status\n";
+      ORDERS.forEach(o => csv += `${o.orderId},${o.name},${o.phone},${o.total},${o.status}\n`);
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([csv]));
+      a.download = "orders.csv";
+      a.click();
+    }
 
+    function logout() {
+      localStorage.removeItem("adminToken");
+      location.href = "admin-login.html";
+    }
 
-/* MODAL */
-function showImg(src){
-  modalImg.src=src;
-  downloadLink.href=src;
-  modal.style.display="flex";
-}
-function closeModal(){modal.style.display="none"}
+    search.oninput = statusFilter.onchange = render;
+    loadOrders();
 
-function exportCSV(){
-  let csv="Order,Name,Phone,Total,Status\n";
-  ORDERS.forEach(o=>csv+=`${o.orderId},${o.name},${o.phone},${o.total},${o.status}\n`);
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(new Blob([csv]));
-  a.download="orders.csv";
-  a.click();
-}
+    /* AUTO REFRESH + SOUND + SCROLL */
+    let lastOrderId = localStorage.getItem("lastOrderId");
+    const sound = new Audio("/new-order.mp3");
 
-function logout(){
-  localStorage.removeItem("adminToken");
-  location.href="admin-login.html";
-}
-
-search.oninput=statusFilter.onchange=render;
-// ===== AUTO LOAD CURRENT MONTH ORDERS =====
-function loadCurrentMonth() {
-  const now = new Date();
-
-  const from = new Date(now.getFullYear(), now.getMonth(), 1)
-    .toISOString().slice(0, 10);
-
-  const to = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-    .toISOString().slice(0, 10);
-
-  loadByDateRange(from, to);
-}
-
-// generic date loader
-async function loadByDateRange(from, to) {
-  const res = await fetch(
-    `${BACKEND}/api/admin/orders-by-date?from=${from}&to=${to}`,
-    {
-      headers: {
-        Authorization: "Bearer " + token
+    setInterval(async () => {
+      const res = await fetch(`${BACKEND}/api/admin/orders`, { headers: { Authorization: "Bearer " + token } });
+      const data = await res.json();
+      if (!data.orders?.length) return;
+      const newest = data.orders[0].orderId;
+      if (lastOrderId && newest !== lastOrderId) {
+        sound.play().catch(() => { });
+        window.scrollTo({ top: 0, behavior: "smooth" });
       }
+      lastOrderId = newest;
+      localStorage.setItem("lastOrderId", newest);
+      ORDERS = data.orders;
+      updateDashboard();
+      render();
+    }, 15000);
+
+    /* AUTO LOGOUT */
+    setTimeout(() => logout(), 30 * 60 * 1000);
+
+    /* PWA */
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js");
     }
-  );
-
-  const data = await res.json();
-  ORDERS = data.orders || [];
-  updateDashboard();
-  render();
-}
-
-// auto call on page open
-loadCurrentMonth();
-
- 
-let lastOrderId = localStorage.getItem("lastOrderId") || null;
-const orderSound = new Audio("/new-order.mp3");
-
-/* AUTO REFRESH + SOUND */
-setInterval(async () => {
-  const res = await fetch(`${BACKEND}/api/admin/orders`, {
-    headers: { Authorization: "Bearer " + token }
-  });
-  const data = await res.json();
-
-  if (!data.success || !data.orders.length) return;
-
-  const newestOrder = data.orders[0].orderId;
-
-  if (lastOrderId && newestOrder !== lastOrderId) {
-    orderSound.play().catch(()=>{});
-  }
-
-  lastOrderId = newestOrder;
-  localStorage.setItem("lastOrderId", newestOrder);
-
-  ORDERS = data.orders;
-  updateDashboard();
-  render();
-}, 15000); // every 15 seconds
-/* PWA */
-if("serviceWorker"in navigator){
-  navigator.serviceWorker.register("/sw.js");
-}
-</script>
-
+  </script>
 </body>
+
 </html>

@@ -1223,6 +1223,22 @@ a {
   }
 }
 /* ==== ENHANCED UPLOAD SECTION (GLASS + ANIMATIONS) ==== */
+.track-btn {
+  background: linear-gradient(90deg, #22c55e, #16a34a);
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(34,197,94,0.25);
+}
+
+.track-btn:hover {
+  transform: translateY(-2px);
+}
+
+.track-result .order-card {
+  background: #f8fff8;
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+}
 
 /* === Professional Upload Prescription Section === */
 #upload-card {
