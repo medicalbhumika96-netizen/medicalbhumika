@@ -15,10 +15,11 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use("/uploads", express.static("uploads"));
 
 /* ================= STATIC ================= */
 if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
-app.use("/uploads", express.static("uploads"));
+
 app.use(express.static("public"));
 
 /* ================= DATABASE ================= */
@@ -239,6 +240,20 @@ app.get("/api/admin/orders", adminAuth, async (req, res) => {
   const orders = await Order.find(query).sort({ createdAt: -1 });
 
   res.json({ success: true, orders });
+});
+
+app.post("/upload-prescription", upload.single("prescription"), (req, res) => {
+  if (!req.file) {
+    return res.json({ success: false });
+  }
+
+  const imageUrl =
+    `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+
+  res.json({
+    success: true,
+    imageUrl
+  });
 });
 
 /* ==================================================

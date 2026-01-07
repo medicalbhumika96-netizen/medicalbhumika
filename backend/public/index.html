@@ -116,56 +116,46 @@
             <span class="small muted">Secure & private — pharmacists will review</span>
           </div>
 
-          <form id="prescription-form" class="prescription-form" onsubmit="return false">
-            <div class="field-row">
-              <div class="field floating">
-                <input id="presc-name" placeholder=" " required>
-                <label for="presc-name">Customer Name</label>
-                <span class="field-icon">👤</span>
-              </div>
-              <div class="field floating">
-                <input id="presc-phone" placeholder=" " required>
-                <label for="presc-phone">Mobile Number</label>
-                <span class="field-icon">📞</span>
-              </div>
-            </div>
+      <form id="prescription-form" class="prescription-form" onsubmit="return false">
 
-            <div class="field floating">
-              <input id="presc-address" placeholder=" " required>
-              <label for="presc-address">Address</label>
-              <span class="field-icon">📍</span>
-            </div>
+  <div class="field-row">
+    <div class="field floating">
+      <input id="presc-name" placeholder=" " required>
+      <label>Customer Name</label>
+    </div>
+    <div class="field floating">
+      <input id="presc-phone" placeholder=" " required>
+      <label>Mobile Number</label>
+    </div>
+  </div>
 
-            <div id="dropzone" class="dropzone" aria-label="Drag and drop prescription here">
-              <div class="dz-inner">
-                <div class="dz-illustration">📎</div>
-                <div class="dz-instructions">
-                  <strong>Drag & drop prescription</strong>
-                  <div class="muted">or click to select an image (jpg, png)</div>
-                </div>
-              </div>
-              <input type="file" id="prescription-input" accept="image/*" class="dz-input" />
-            </div>
+  <div class="field floating">
+    <input id="presc-address" placeholder=" " required>
+    <label>Address</label>
+  </div>
 
-            <div id="preview-wrap" class="preview-wrap hidden">
-              <div class="preview-thumb" id="preview-thumb"></div>
-              <div class="preview-meta">
-                <div id="preview-name" class="preview-name"></div>
-                <div class="progress-bar">
-                  <div id="upload-progress" class="progress-fill" style="width:0%"></div>
-                </div>
-              </div>
-              <button id="cancel-upload" class="clear small">Remove</button>
-            </div>
+  <div id="dropzone" class="dropzone">
+    <div class="dz-inner">
+      <strong>Drag & drop prescription</strong>
+      <div class="muted">or click to select image</div>
+    </div>
 
-            <input type="hidden" id="uploaded-url">
-            <div class="form-actions">
-              <button id="upload-now" class="btn" type="button">Upload & Validate</button>
-              <button id="send-prescription-btn" class="btn send-btn" style="display:none;" type="button">Send to
-                WhatsApp</button>
-            </div>
-          </form>
-        </div>
+    <!-- ✅ ONLY ONE FILE INPUT -->
+    <input
+      type="file"
+      id="prescription-input"
+      name="prescription"
+      accept="image/*">
+  </div>
+
+  <div class="form-actions">
+    <button type="button" id="upload-prescription-btn">
+      Upload & Validate
+    </button>
+  </div>
+
+</form>
+
         <!-- My Orders -->
        <div class="my-orders modern-track">
   <h3>Track Your Order</h3>

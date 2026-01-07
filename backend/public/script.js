@@ -440,19 +440,9 @@ navSearchInput && navSearchInput.addEventListener('input', e => {
   renderProducts(v);
 });
 
-const prescInput = document.getElementById("prescription-input");
-const sendBtn = document.getElementById("send-prescription-btn");
-
-let selectedFile = null;
-
-prescInput.addEventListener("change", (e) => {
-  selectedFile = e.target.files[0];
-  if (!selectedFile) return;
-  sendBtn.style.display = "block";
-});
-
-sendBtn.addEventListener("click", () => {
-  if (!selectedFile) {
+document.getElementById("uploadValidateBtn").addEventListener("click", async () => {
+  const file = document.getElementById("prescription-input").files[0];
+  if (!file) {
     alert("Please select prescription image");
     return;
   }
@@ -461,20 +451,39 @@ sendBtn.addEventListener("click", () => {
   const phone = document.getElementById("presc-phone").value;
   const address = document.getElementById("presc-address").value;
 
-  const message =
-    `🧾 Prescription Order\n\n` +
-    `Name: ${name}\n` +
-    `Phone: ${phone}\n` +
-    `Address: ${address}\n\n` +
-    `📎 Prescription image will be attached`;
+  const fd = new FormData();
+  fd.append("prescription", file);
+  fd.append("name", name);
+  fd.append("phone", phone);
+  fd.append("address", address);
 
-  window.open(
-    `https://wa.me/918003929804?text=${encodeURIComponent(message)}`,
-    "_blank"
-  );
+  try {
+    const res = await fetch("https://medicalbhumika-2.onrender.com/upload-prescription", {
+      method: "POST",
+      body: fd
+    });
 
-  alert("WhatsApp opened. Please attach the prescription image and send.");
+    const data = await res.json();
+    if (!data.success) throw new Error("Upload failed");
+
+    // ✅ WhatsApp with IMAGE LINK
+    const msg =
+      `🧾 Prescription Uploaded\n\n` +
+      `Name: ${name}\nPhone: ${phone}\nAddress: ${address}\n\n` +
+      `📎 View Prescription:\n${data.imageUrl}`;
+
+    window.open(
+      `https://wa.me/918003929804?text=${encodeURIComponent(msg)}`,
+      "_blank"
+    );
+
+    alert("Prescription uploaded successfully!");
+
+  } catch (e) {
+    alert("Upload failed. Please try again.");
+  }
 });
+
 
 
 // ===== MODAL FLOW =====
