@@ -148,6 +148,66 @@ function renderProducts(filter = '') {
     productList.appendChild(msg);
   }
 
+const counters = document.querySelectorAll(".count");
+
+const runCounters = () => {
+  counters.forEach(counter => {
+    const target = +counter.dataset.count;
+    let current = 0;
+    const inc = Math.max(1, Math.floor(target / 80));
+
+    const update = () => {
+      current += inc;
+      if (current >= target) {
+        counter.textContent = target;
+      } else {
+        counter.textContent = current;
+        requestAnimationFrame(update);
+      }
+    };
+    update();
+  });
+};
+
+// run once when visible
+let started = false;
+window.addEventListener("scroll", () => {
+  const sec = document.getElementById("about-modern");
+  if (!sec) return;
+  const top = sec.getBoundingClientRect().top;
+  if (!started && top < window.innerHeight - 100) {
+    started = true;
+    runCounters();
+  }
+});
+
+
+const checkSection = document.getElementById("code-check");
+const statuses = document.querySelectorAll("#code-check .status");
+
+let checksStarted = false;
+
+function runChecks(){
+  statuses.forEach((el, i) => {
+    setTimeout(() => {
+      el.textContent = "Verified ✓";
+      el.classList.remove("pending");
+      el.classList.add("ok");
+    }, 800 + i * 600);
+  });
+}
+
+window.addEventListener("scroll", () => {
+  if (!checkSection || checksStarted) return;
+  const top = checkSection.getBoundingClientRect().top;
+  if (top < window.innerHeight - 120) {
+    checksStarted = true;
+    runChecks();
+  }
+});
+
+
+
   // Handle no results
   if (limitedResults.length === 0) {
     productList.innerHTML = '<div class="muted small">No products found.</div>';

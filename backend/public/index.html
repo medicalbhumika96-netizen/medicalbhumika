@@ -1,4 +1,4 @@
-  <!doctype html>
+<!doctype html>
 <html lang="en">
 
 <head>
@@ -110,7 +110,7 @@
           <div id="product-list" class="products" aria-live="polite"></div>
         </div>
 
-         <div class="card glass upload-card section-anim" id="upload-card">
+        <div class="card glass upload-card section-anim" id="upload-card">
           <div class="upload-head">
             <strong>Upload Prescription</strong>
             <span class="small muted">Secure & private — pharmacists will review</span>
@@ -161,20 +161,28 @@
             <input type="hidden" id="uploaded-url">
             <div class="form-actions">
               <button id="upload-now" class="btn" type="button">Upload & Validate</button>
-              <button id="send-prescription-btn" class="btn send-btn" style="display:none;" type="button">Send to WhatsApp</button>
+              <button id="send-prescription-btn" class="btn send-btn" style="display:none;" type="button">Send to
+                WhatsApp</button>
             </div>
           </form>
         </div>
         <!-- My Orders -->
-        <section id="orders" class="card orders">
-          <h3>My Orders</h3>
-          <p>Enter your phone number to check your order status.</p>
+       <div class="my-orders modern-track">
+  <h3>Track Your Order</h3>
+  <p class="subtitle">Secure order status lookup</p>
 
-          <input id="order-phone" placeholder="Enter Order ID or Phone Number">
-          <button id="check-order-btn">Check Order</button>
-          <div id="order-status-result"></div>
+  <div class="track-fields">
+    <label>Order ID or Phone</label>
+    <input id="order-phone" placeholder="ORD-XXXX | 9XXXXXXXXX">
+  </div>
 
-        </section>
+  <button id="check-order-btn" class="track-btn">
+    Check Status
+  </button>
+
+  <div id="order-status-result" class="track-result"></div>
+</div>
+
         <li><a href="#orders" data-scroll>My Orders</a></li>
 
       </main>
@@ -212,29 +220,92 @@
     </div>
 
     <!-- About -->
-    <section id="about" class="card about">
-      <div class="about-grid">
-        <div>
-          <h3>About Bhumika Medical</h3>
-          <p>
-            At Bhumika Medical, we’re committed to delivering genuine healthcare products
-            with honesty and care. Whether it’s daily medicines or prescription-based orders,
-            we ensure every product you receive is authentic and safe.
-          </p>
-          <p>
-            Our goal is to make trusted medicines easily accessible in your local area,
-            supported by quick delivery and friendly customer service. We believe that
-            your health deserves both quality and convenience.
-          </p>
-        </div>
-        <div class="trust">
-          <div class="badge">✓ Genuine Medicines</div>
-          <div class="badge">✓ Local Delivery</div>
-          <div class="badge">✓ Verified Pharmacists</div>
-          <div class="badge">✓ Prescription Friendly</div>
-        </div>
+   <section id="about-modern" class="about-modern">
+  <div class="about-terminal">
+    <div class="terminal-header">
+      <span class="dot red"></span>
+      <span class="dot yellow"></span>
+      <span class="dot green"></span>
+      <span class="terminal-title">bhumika-medical@secure-system</span>
+    </div>
+
+    <div class="terminal-body">
+      <p class="line">> Initializing Medical Service Protocol...</p>
+      <p class="line delay-1">> Verifying Trust & Authenticity ✔</p>
+      <p class="line delay-2">> Loading Bhumika Medical Profile</p>
+      <p class="line delay-3 highlight">✔ System Online</p>
+    </div>
+  </div>
+  
+
+  <div class="about-content">
+    <h2>About <span>Bhumika Medical</span></h2>
+
+    <p class="about-text">
+      Bhumika Medical is not just a pharmacy.  
+      It is a <b>secure, fast and customer-first medical service system</b>
+      designed for modern India.
+    </p>
+
+    <div class="about-stats">
+      <div class="stat">
+        <span class="count" data-count="15000">0</span>
+        <small>Orders Served</small>
       </div>
-    </section>
+      <div class="stat">
+        <span class="count" data-count="99">0</span>
+        <small>% Genuine Medicines</small>
+      </div>
+      <div class="stat">
+        <span class="count" data-count="24">0</span>
+        <small>Hours Support</small>
+      </div>
+      <div class="stat">
+        <span class="count" data-count="2026">0</span>
+        <small>Future Ready</small>
+      </div>
+    </div>
+
+    <div class="about-features">
+      <div>🔐 Secure Orders</div>
+      <div>⚡ Fast Processing</div>
+      <div>📦 Trusted Medicines</div>
+      <div>💬 WhatsApp Support</div>
+    </div>
+  </div>
+</section>
+<section id="code-check" class="code-check">
+  <h2>System Integrity Check</h2>
+  <p class="subtitle">Live verification of our medical service platform</p>
+
+  <div class="check-panel">
+    <div class="check-line">
+      <span class="label">Order Processing Engine</span>
+      <span class="status pending">Checking...</span>
+    </div>
+
+    <div class="check-line">
+      <span class="label">Payment Verification Layer</span>
+      <span class="status pending">Checking...</span>
+    </div>
+
+    <div class="check-line">
+      <span class="label">Prescription Handling Module</span>
+      <span class="status pending">Checking...</span>
+    </div>
+
+    <div class="check-line">
+      <span class="label">Customer Data Protection</span>
+      <span class="status pending">Checking...</span>
+    </div>
+
+    <div class="check-line">
+      <span class="label">WhatsApp Automation Service</span>
+      <span class="status pending">Checking...</span>
+    </div>
+  </div>
+</section>
+
 
     <!-- Contact -->
     <section id="contact" class="card contact expanded-contact">
@@ -306,50 +377,46 @@
           <option value="Paytm">Paytm</option>
           <option value="Bank Transfer">Bank Transfer</option>
           <option value="Cash on Delivery">Cash on Delivery</option>
-         
+
         </select>
         <div id="upiQrContainer" style="text-align:center; margin-top:20px;"></div>
 
-<!-- Your total amount should appear somewhere above -->
-<div id="qrCard" class="hidden" style="text-align:center; margin-top:15px;">
-  <div id="qrLabel"></div>
-  <img id="qrImage" src="" alt="UPI QR Code" style="width:150px;height:150px;">
-</div>
-<div id="paymentConfirm" style="text-align:center; margin-top:15px;">
-  <label for="txnIdInput"><b>Enter UPI Transaction ID:</b></label><br>
-  <input type="text" id="txnIdInput" placeholder="Example: 2314567890AB" 
-         style="padding:8px; width:250px; margin:5px;"><br>
-
-  <label for="screenshotUpload"><b>Upload Screenshot (optional):</b></label><br>
-  <input type="file" id="screenshotUpload" accept="image/*" style="margin:5px;"><br>
-
-  <button id="submitProofBtn" 
-          style="background:#0d6efd;color:#fff;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;">
-    Submit Payment Proof
-  </button>
-
-  <p id="proofMsg" style="margin-top:10px;"></p>
-</div>
-
-
-<button
-  id="send-order"
-  class="btn primary"
-  style="width:100%; margin-top:16px;"
->
-  ✅ Place Order
-</button>
-
-
-      
-          <button id="back-to-step-1" class="clear">← Back</button>
-         <button id="pay-with-gpay" class="btn full" type="button">
-  💳 Pay with Google Pay
-</button>
-
+        <!-- Your total amount should appear somewhere above -->
+        <div id="qrCard" class="hidden" style="text-align:center; margin-top:15px;">
+          <div id="qrLabel"></div>
+          <img id="qrImage" src="" alt="UPI QR Code" style="width:150px;height:150px;">
         </div>
+        <div id="paymentConfirm" style="text-align:center; margin-top:15px;">
+          <label for="txnIdInput"><b>Enter UPI Transaction ID:</b></label><br>
+          <input type="text" id="txnIdInput" placeholder="Example: 2314567890AB"
+            style="padding:8px; width:250px; margin:5px;"><br>
+
+          <label for="screenshotUpload"><b>Upload Screenshot (optional):</b></label><br>
+          <input type="file" id="screenshotUpload" accept="image/*" style="margin:5px;"><br>
+
+          <button id="submitProofBtn"
+            style="background:#0d6efd;color:#fff;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;">
+            Submit Payment Proof
+          </button>
+
+          <p id="proofMsg" style="margin-top:10px;"></p>
+        </div>
+
+
+        <button id="send-order" class="btn primary" style="width:100%; margin-top:16px;">
+          ✅ Place Order
+        </button>
+
+
+
+        <button id="back-to-step-1" class="clear">← Back</button>
+        <button id="pay-with-gpay" class="btn full" type="button">
+          💳 Pay with Google Pay
+        </button>
+
       </div>
     </div>
+  </div>
   </div>
 
   <!-- Result -->
@@ -368,7 +435,7 @@
   <!-- FLOATING WHATSAPP -->
   <a id="wa-float" class="wa-float" href="https://wa.me/918003929804" target="_blank" title="Chat on WhatsApp">💬</a>
   <!-- Floating Cart Button -->
-  
+
   <!-- ========== Mobile Floating Cart + Cart Bottom Sheet (green glass) ========== -->
   <button id="mobile-cart-btn" class="floating-cart-btn" aria-label="Open cart" title="Cart">
     🛒
@@ -401,8 +468,8 @@
   <div id="celebration" aria-hidden="true"></div>
   <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 
-  
-<div class="mobile-orders" id="mobileOrders"></div>
+
+  <div class="mobile-orders" id="mobileOrders"></div>
 
 
   <script src="script.js"></script>
