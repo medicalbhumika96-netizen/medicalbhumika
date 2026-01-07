@@ -441,11 +441,18 @@ navSearchInput && navSearchInput.addEventListener('input', e => {
 });
 
 const prescInput = document.getElementById("prescription-input");
-const uploadBtn = document.getElementById("upload-prescription-btn");
+const sendBtn = document.getElementById("send-prescription-btn");
 
-uploadBtn.addEventListener("click", async () => {
-  const file = prescInput.files[0];
-  if (!file) {
+let selectedFile = null;
+
+prescInput.addEventListener("change", (e) => {
+  selectedFile = e.target.files[0];
+  if (!selectedFile) return;
+  sendBtn.style.display = "block";
+});
+
+sendBtn.addEventListener("click", () => {
+  if (!selectedFile) {
     alert("Please select prescription image");
     return;
   }
@@ -454,43 +461,20 @@ uploadBtn.addEventListener("click", async () => {
   const phone = document.getElementById("presc-phone").value;
   const address = document.getElementById("presc-address").value;
 
-  const fd = new FormData();
-  fd.append("prescription", file);
-  fd.append("name", name);
-  fd.append("phone", phone);
-  fd.append("address", address);
+  const message =
+    `🧾 Prescription Order\n\n` +
+    `Name: ${name}\n` +
+    `Phone: ${phone}\n` +
+    `Address: ${address}\n\n` +
+    `📎 Prescription image will be attached`;
 
-  uploadBtn.disabled = true;
-  uploadBtn.textContent = "Uploading...";
+  window.open(
+    `https://wa.me/918003929804?text=${encodeURIComponent(message)}`,
+    "_blank"
+  );
 
-  try {
-    const res = await fetch(`${BACKEND_BASE}/upload-prescription`, {
-      method: "POST",
-      body: fd
-    });
-
-    const data = await res.json();
-
-    if (!data.success) throw new Error("Upload failed");
-
-    // 🔗 WhatsApp message WITH IMAGE LINK
-    const msg =
-      `🧾 Prescription Received\n\n` +
-      `Name: ${name}\nPhone: ${phone}\nAddress: ${address}\n\n` +
-      `📎 View Prescription:\n${data.imageUrl}`;
-
-    window.open(
-      `https://wa.me/918003929804?text=${encodeURIComponent(msg)}`,
-      "_blank"
-    );
-
-   
-  } finally {
-    uploadBtn.disabled = false;
-    uploadBtn.textContent = "Upload & Validate";
-  }
+  alert("WhatsApp opened. Please attach the prescription image and send.");
 });
-
 
 
 // ===== MODAL FLOW =====

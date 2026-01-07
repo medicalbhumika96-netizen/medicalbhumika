@@ -38,7 +38,7 @@
       <ul class="nav-links">
         <li><a href="#home" data-scroll>Home</a></li>
         <li><a href="#products" data-scroll>Products</a></li>
-        <li><a href="#about" data-scroll>About</a></li>
+        <li><a href="#about-modern" data-scroll>About</a></li>
         <li><a href="#contact" data-scroll>Contact</a></li>
       </ul>
 
@@ -144,7 +144,7 @@
                   <div class="muted">or click to select an image (jpg, png)</div>
                 </div>
               </div>
-              <input type="file" id="prescription-input" accept="image/*">
+              <input type="file" id="prescription-input" accept="image/*" class="dz-input" />
             </div>
 
             <div id="preview-wrap" class="preview-wrap hidden">
@@ -167,23 +167,16 @@
           </form>
         </div>
         <!-- My Orders -->
-       <div class="my-orders modern-track">
-  <h3>Track Your Order</h3>
-  <p class="subtitle">Secure order status lookup</p>
+        <section id="orders" class="card orders">
+          <h3>My Orders</h3>
+          <p>Enter your phone number to check your order status.</p>
 
-  <div class="track-fields">
-    <label>Order ID or Phone</label>
-    <input id="order-phone" placeholder="ORD-XXXX | 9XXXXXXXXX">
-  </div>
+          <input id="order-phone" placeholder="Enter Order ID or Phone Number">
+          <button id="check-order-btn">Check Order</button>
+          <div id="order-status-result"></div>
 
-  <button id="check-order-btn" class="track-btn">
-    Check Status
-  </button>
-
-  <div id="order-status-result" class="track-result"></div>
-</div>
-
-        <li><a href="#orders" data-scroll>My Orders</a></li>
+        </section>
+      
 
       </main>
 
@@ -305,7 +298,6 @@
     </div>
   </div>
 </section>
-
 
     <!-- Contact -->
     <section id="contact" class="card contact expanded-contact">

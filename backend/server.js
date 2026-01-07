@@ -241,19 +241,35 @@ app.get("/api/admin/orders", adminAuth, async (req, res) => {
   res.json({ success: true, orders });
 });
 
-app.post("/upload-prescription", upload.single("prescription"), (req, res) => {
-  if (!req.file) {
-    return res.json({ success: false });
+app.post(
+  "/api/orders/:orderId/prescription",
+  upload.single("prescription"),
+  async (req, res) => {
+    try {
+      const { orderId } = req.params;
+
+      const order = await Order.findOne({ orderId });
+      if (!order)
+        return res.status(404).json({ success: false });
+
+      order.prescription = {
+        file: `/uploads/${req.file.filename}`,
+        uploadedAt: new Date()
+      };
+
+      await order.save();
+
+      res.json({
+        success: true,
+        fileUrl: order.prescription.file
+      });
+
+    } catch (err) {
+      console.error("Prescription upload error:", err);
+      res.status(500).json({ success: false });
+    }
   }
-
-  const imageUrl =
-    `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
-
-  res.json({
-    success: true,
-    imageUrl
-  });
-});
+);
 
 /* ==================================================
    ROOT
