@@ -284,18 +284,43 @@ function render(){
 }
 
 /* STATUS */
-async function updateStatus(id,status){
-  const res=await fetch(`${BACKEND}/api/admin/orders/${id}/status`,{
-    method:"POST",
-    headers:{
-      "Content-Type":"application/json",
-      Authorization:"Bearer "+token
-    },
-    body:JSON.stringify({status})
-  });
-  if(!res.ok){alert("Failed");return;}
-  document.getElementById("status-"+id).textContent=status;
+async function updateStatus(id, status) {
+  try {
+    const res = await fetch(`${BACKEND}/api/admin/orders/${id}/status`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token
+      },
+      body: JSON.stringify({ status })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      alert("❌ Status update failed");
+      return;
+    }
+
+    // update status text in table (desktop)
+    const stEl = document.getElementById("status-" + id);
+    if (stEl) stEl.textContent = status;
+
+    // update status text in mobile card
+    const mstEl = document.getElementById("m-" + id);
+    if (mstEl) mstEl.textContent = status;
+
+    // 🔥 AUTO OPEN WHATSAPP
+    if (data.waLink) {
+      window.open(data.waLink, "_blank");
+    }
+
+  } catch (err) {
+    console.error(err);
+    alert("⚠️ Network error while updating status");
+  }
 }
+
 
 /* MODAL */
 function showImg(src){

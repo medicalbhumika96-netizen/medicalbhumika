@@ -72,7 +72,7 @@ let sliderTimer = null;
 // ===== STATE =====
 let PRODUCTS = [];
 let cart = {};
-let prescriptionData = null;
+
 window.LAST_FINAL_TOTAL = 0; // accessible globally for QR updates
 window.LAST_ORDER_ID = null; // set after server save
 // ===== BACKEND ORDER TRACK =====
@@ -380,60 +380,42 @@ navSearchInput && navSearchInput.addEventListener('input', e => {
   renderProducts(v);
 });
 
-// Prescription upload handler (uses your existing Render endpoint)
 const prescInput = document.getElementById("prescription-input");
-if (prescInput) {
-  prescInput.addEventListener("change", async (e) => {
-    const file = e.target.files[0];
-    if (!file) return alert("Select a file first.");
+const sendBtn = document.getElementById("send-prescription-btn");
 
-    const formData = new FormData();
-    formData.append("prescription", file);
-    formData.append("name", document.getElementById("cust-name").value);
-    formData.append("phone", document.getElementById("cust-phone").value);
-    formData.append("address", document.getElementById("cust-address").value);
+let selectedFile = null;
 
-    try {
-      const response = await fetch(`${BACKEND_BASE}/upload-prescription`, {
-        method: "POST",
-        body: formData,
-      });
-      const data = await response.json();
-      if (data.success) {
-        alert("✅ Uploaded successfully!");
-        document.getElementById("uploaded-url").value = data.fileUrl;
-        document.getElementById("send-prescription-btn").style.display = "block";
-        // Keep reference to last prescription
-        prescriptionData = { name: file.name, url: data.fileUrl };
-      } else alert("❌ Upload failed");
-    } catch (err) {
-      console.error(err);
-      alert("⚠️ Upload error.");
-    }
-  });
-}
+prescInput.addEventListener("change", (e) => {
+  selectedFile = e.target.files[0];
+  if (!selectedFile) return;
+  sendBtn.style.display = "block";
+});
 
-// Send prescription as WhatsApp message (two identical handlers were in original; keep one)
-const sendPrescBtn = document.getElementById("send-prescription-btn");
-if (sendPrescBtn) {
-  sendPrescBtn.addEventListener("click", () => {
-    const url = document.getElementById("uploaded-url").value;
-    const name = document.getElementById("presc-name").value;
-    const phone = document.getElementById("presc-phone").value;
-    const address = document.getElementById("presc-address").value;
+sendBtn.addEventListener("click", () => {
+  if (!selectedFile) {
+    alert("Please select prescription image");
+    return;
+  }
 
-    const message =
-      `Hello ${SHOP_NAME},\n\n` +
-      `Customer Name: ${name}\n` +
-      `Phone: ${phone}\n` +
-      `Address: ${address}\n` +
-      `Prescription: ${url}`;
-    window.open(
-      `https://wa.me/${MERCHANT_WHATSAPP_NUMBER.replace('+','')}?text=${encodeURIComponent(message)}`,
-      "_blank"
-    );
-  });
-}
+  const name = document.getElementById("presc-name").value;
+  const phone = document.getElementById("presc-phone").value;
+  const address = document.getElementById("presc-address").value;
+
+  const message =
+    `🧾 Prescription Order\n\n` +
+    `Name: ${name}\n` +
+    `Phone: ${phone}\n` +
+    `Address: ${address}\n\n` +
+    `📎 Prescription image will be attached`;
+
+  window.open(
+    `https://wa.me/918003929804?text=${encodeURIComponent(message)}`,
+    "_blank"
+  );
+
+  alert("WhatsApp opened. Please attach the prescription image and send.");
+});
+
 
 // ===== MODAL FLOW =====
 document.getElementById('checkout')?.addEventListener('click', () => {
@@ -616,10 +598,6 @@ sendOrderBtn?.addEventListener('click', () => {
   items.forEach(it => lines.push(`${it.qty} x ${it.name} — ₹${(it.price * it.qty).toFixed(2)}`));
   lines.push(`Total (after discount): ₹${finalTotal}`);
   if (discount > 0) lines.push(`💰 You saved ₹${discount.toFixed(2)}`);
-  if (prescriptionData) {
-    lines.push('');
-    lines.push(`📎 Prescription: ${prescriptionData.name} (uploaded)`);
-  }
   lines.push('');
   lines.push('🧍 Customer Details:');
   lines.push(`Name: ${custName}`);
@@ -1182,44 +1160,3 @@ document.addEventListener("DOMContentLoaded", () => {
 
 let lastCheck = new Date().toISOString();
 
-setInterval(async () => {
-  const res = await fetch(
-    `${BACKEND}/api/admin/orders?since=${lastCheck}`,
-    { headers: { Authorization: "Bearer " + token } }
-  );
-  const data = await res.json();
-
-  if (data.orders && data.orders.length > 0) {
-    document.getElementById("newOrderSound").play();
-    alert("🔔 New Order Received!");
-    loadOrders(); // refresh table
-  }
-
-  lastCheck = new Date().toISOString();
-}, 10000);
-
-
-app.post("/api/admin/orders/:orderId/status", adminAuth, async (req, res) => {
-  const { orderId } = req.params;
-  const { status } = req.body;
-
-  const order = await Order.findOneAndUpdate(
-    { orderId },
-    { status },
-    { new: true }
-  );
-
-  if (!order) return res.status(404).json({ success: false });
-
-  // 🔔 WhatsApp auto message link
-  const msg =
-    status === "Approved"
-      ? `✅ Your order ${orderId} is approved and will be delivered soon.`
-      : `❌ Your order ${orderId} has been rejected. Please contact shop.`;
-
-  const waLink = `https://wa.me/91${order.phone}?text=${encodeURIComponent(msg)}`;
-
-  console.log("Send this WhatsApp:", waLink);
-
-  res.json({ success: true, waLink });
-});
