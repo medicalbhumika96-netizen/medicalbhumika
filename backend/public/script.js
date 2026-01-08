@@ -214,18 +214,7 @@ window.addEventListener("scroll", () => {
   }
 
   // Reattach Add button event listeners
-  document.querySelectorAll('.add-to-cart').forEach(btn => {
-    btn.addEventListener('click', e => {
-      const id = Number(e.target.dataset.id);
-      const product = PRODUCTS.find(p => p.id == id);
-      if (!product) return;
-      addToCart(product.id);
-      const productEl = e.target.closest('.product');
-      const imgEl = productEl ? productEl.querySelector('img') : null;
-      animateAddToCart(e, imgEl);
-      if (isMobileViewport()) openMobileCartSheet();
-    });
-  });
+ 
 }
 
 // Use event delegation for Add buttons so they always work
@@ -629,7 +618,9 @@ sendOrderBtn?.addEventListener('click', () => {
 
   // Create unique EID tied to phone + timestamp
   const timestamp = Date.now();
-  const uniqueEID = `EID-${custPhone}-${timestamp}`;
+  // temporary client-side reference (NOT real order id)
+const tempClientRef = `TMP-${Date.now()}`;
+
 
   // SAVE ORDER LOCALLY (unchanged)
   const orderData = {
@@ -652,7 +643,8 @@ sendOrderBtn?.addEventListener('click', () => {
   // WHATSAPP MESSAGE
   const lines = [];
   lines.push(`🛒 Shop: ${SHOP_NAME}`);
-  lines.push(`🧾 Order ID: ${uniqueEID}`);
+  lines.push(`🧾 Order ID: ${window.LAST_ORDER_ID || 'Processing...'}`);
+
   lines.push('');
   lines.push('📦 Order Details:');
   items.forEach(it => lines.push(`${it.qty} x ${it.name} — ₹${(it.price * it.qty).toFixed(2)}`));
@@ -701,10 +693,12 @@ window.LAST_ORDER_ID = window.LAST_ORDER_ID || uniqueEID;
 enablePaymentProofBtn();
 
   closeModal();
+ setTimeout(() => {
   showResult(
-  true,
-  `✅ Your Order ID: ${window.LAST_ORDER_ID || uniqueEID}`
-);
+    true,
+    `✅ Your Order ID: ${window.LAST_ORDER_ID || 'Processing...'}`
+  );
+}, 300);
 
   cart = {};
   renderCart();
@@ -720,8 +714,16 @@ function showResult(success, message) {
 
 homeButton && homeButton.addEventListener('click', () => {
   resultScreen.classList.remove('active');
+
+  // ✅ Auto-fill Track Order field with SAME Order ID as Admin
+  const trackInput = document.getElementById('order-phone');
+  if (trackInput && window.LAST_ORDER_ID && custPhoneInput) {
+    trackInput.value = `${window.LAST_ORDER_ID} | ${custPhoneInput.value}`;
+  }
+
   window.scrollTo({ top: 0, behavior: 'smooth' });
 });
+
 
 retryButton && retryButton.addEventListener('click', () => {
   resultScreen.classList.remove('active');

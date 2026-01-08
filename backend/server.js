@@ -45,11 +45,23 @@ app.post("/api/orders", async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid order data" });
     }
 
+    // ✅ SINGLE SOURCE OF TRUTH — BACKEND ORDER ID
     const orderId = "ORD-" + Date.now();
 
     const order = new Order({
-      ...data,
       orderId,
+
+      // ✅ OPTIONAL: temporary client reference (NOT real order id)
+      clientRef: data.clientRef || null,
+
+      phone: data.phone,
+      name: data.name,
+      address: data.address,
+      pin: data.pin,
+      items: data.items,
+      total: data.total,
+      discount: data.discount || 0,
+      payment: data.payment || {},
       status: "Pending",
       createdAt: new Date()
     });
@@ -58,6 +70,7 @@ app.post("/api/orders", async (req, res) => {
     console.log("✅ Order saved:", orderId);
 
     res.json({ success: true, orderId });
+
   } catch (err) {
     console.error("❌ Order save error:", err);
     res.status(500).json({ success: false });
@@ -98,6 +111,7 @@ app.post("/api/payment-proof", upload.single("screenshot"), async (req, res) => 
 
     await order.save();
     console.log("✅ Payment proof saved:", orderId);
+
     res.json({ success: true });
 
   } catch (err) {
@@ -203,73 +217,6 @@ app.post("/api/orders/track-secure", async (req, res) => {
     res.status(500).json({ success: false });
   }
 });
-
-// ==================================================
-// ADMIN — FETCH ORDERS BY DATE RANGE 📅
-// ==================================================
-app.get("/api/admin/orders-by-date", adminAuth, async (req, res) => {
-  try {
-    const { from, to } = req.query;
-
-    let filter = {};
-
-    if (from && to) {
-      filter.createdAt = {
-        $gte: new Date(from + "T00:00:00"),
-        $lte: new Date(to + "T23:59:59")
-      };
-    }
-
-    const orders = await Order.find(filter).sort({ createdAt: -1 });
-
-    res.json({ success: true, orders });
-  } catch (err) {
-    console.error("❌ Date filter error:", err);
-    res.status(500).json({ success: false });
-  }
-});
-
-app.get("/api/admin/orders", adminAuth, async (req, res) => {
-  const { since } = req.query;
-
-  const query = since
-    ? { createdAt: { $gt: new Date(since) } }
-    : {};
-
-  const orders = await Order.find(query).sort({ createdAt: -1 });
-
-  res.json({ success: true, orders });
-});
-
-app.post(
-  "/api/orders/:orderId/prescription",
-  upload.single("prescription"),
-  async (req, res) => {
-    try {
-      const { orderId } = req.params;
-
-      const order = await Order.findOne({ orderId });
-      if (!order)
-        return res.status(404).json({ success: false });
-
-      order.prescription = {
-        file: `/uploads/${req.file.filename}`,
-        uploadedAt: new Date()
-      };
-
-      await order.save();
-
-      res.json({
-        success: true,
-        fileUrl: order.prescription.file
-      });
-
-    } catch (err) {
-      console.error("Prescription upload error:", err);
-      res.status(500).json({ success: false });
-    }
-  }
-);
 
 /* ==================================================
    ROOT
