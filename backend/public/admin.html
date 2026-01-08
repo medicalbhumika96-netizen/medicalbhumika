@@ -357,6 +357,26 @@
         <div>Payable: <b id="od-pay"></b></div>
         <div style="color:#22c55e">Savings: <span id="od-save"></span></div>
       </div>
+<div style="margin-top:14px">
+  <label style="font-size:13px">Update Order Status</label>
+
+  <select id="od-status"
+          style="width:100%;margin-top:6px;padding:8px;border-radius:8px">
+    <option>Pending</option>
+    <option>Approved</option>
+    <option>Packed</option>
+    <option>Out for Delivery</option>
+    <option>Delivered</option>
+    <option>Rejected</option>
+  </select>
+
+  <button onclick="saveOrderStatus()"
+          style="margin-top:8px;width:100%;
+                 background:#2563eb;border:none;color:#fff;
+                 padding:8px;border-radius:8px">
+    Save Status
+  </button>
+</div>
 
       <select id="od-status" style="width:100%;margin-top:10px"></select>
       <button onclick="saveOrderStatus()" style="width:100%;margin-top:6px">Save Status</button>

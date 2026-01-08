@@ -10,6 +10,9 @@ const odItems = document.getElementById("od-items");
 const odMrp = document.getElementById("od-mrp");
 const odSave = document.getElementById("od-save");
 const orderDetailModal = document.getElementById("orderDetailModal");
+const odStatus = document.getElementById("od-status");
+let CURRENT_MODAL_ORDER = null;
+
 
 
 let touchStartX = 0;
@@ -345,9 +348,10 @@ function onTouchEnd(e, orderId) {
     card.classList.remove("swipe-approve", "swipe-reject");
   }, 400);
 }
-
 function openOrderDetail(order){
   if (!order) return;
+
+  CURRENT_MODAL_ORDER = order;
 
   odId.textContent = "Order " + order.orderId;
   odCustomer.innerHTML = `👤 ${order.name}<br>📞 ${order.phone}`;
@@ -376,9 +380,24 @@ function openOrderDetail(order){
   odMrp.textContent = "₹" + mrp;
   odSave.textContent = "₹" + (mrp - order.total);
 
+  // 🔽 SET CURRENT STATUS
+  odStatus.value = order.status;
+
   orderDetailModal.classList.add("show");
+}
+async function saveOrderStatus(){
+  if (!CURRENT_MODAL_ORDER) return;
+
+  await updateStatus(
+    CURRENT_MODAL_ORDER.orderId,
+    odStatus.value
+  );
+
+  closeOrderDetail();
 }
 
 function closeOrderDetail(){
   orderDetailModal.classList.remove("show");
+  CURRENT_MODAL_ORDER = null;
 }
+
