@@ -420,7 +420,11 @@
     <tr>
       <td>${o.orderId}</td>
       <td>${o.name}<br><small>${o.phone}</small></td>
-      <td>${o.items.length}</td>
+      <td class="items"
+    onclick='viewItemsDesktop(${JSON.stringify(o.items)})'>
+  ${o.items.length}
+</td>
+
       <td>₹${o.total}</td>
       <td>${o.payment?.screenshot ? `<img src="${BACKEND}${o.payment.screenshot}" class="proof" onclick="showImg('${BACKEND}${o.payment.screenshot}')">` : "—"}</td>
       <td class="status ${o.status}">${o.status}</td>
@@ -464,14 +468,37 @@
 
     /* SWIPE */
     function touchEnd(e, id) {
-      const d = e.changedTouches[0].clientX - startX;
-      SWIPED = false;
-      if (Math.abs(d) < 30) return;
-      SWIPED = true;
-      const c = e.currentTarget;
-      if (d > 70) { c.classList.add("swipe-approve"); navigator.vibrate?.([40, 30, 40]); updateStatus(id, "Approved") }
-      if (d < -70) { c.classList.add("swipe-reject"); navigator.vibrate?.([100, 40, 100]); updateStatus(id, "Rejected") }
-    }
+  const diff = e.changedTouches[0].clientX - startX;
+
+  // default: tap
+  SWIPED = false;
+
+  // agar movement chhota hai → tap only
+  if (Math.abs(diff) < 30) {
+    return;
+  }
+
+  // ab ye swipe hai
+  SWIPED = true;
+  const card = e.currentTarget;
+
+  if (diff > 70) {
+    card.classList.add("swipe-approve");
+    navigator.vibrate?.([40, 30, 40]);
+    updateStatus(id, "Approved");
+  }
+  else if (diff < -70) {
+    card.classList.add("swipe-reject");
+    navigator.vibrate?.([100, 40, 100]);
+    updateStatus(id, "Rejected");
+  }
+
+  // ⭐ IMPORTANT: swipe ke baad reset
+  setTimeout(() => {
+    SWIPED = false;
+  }, 300);
+}
+
 
     /* ORDER DETAIL */
     function openOrderDetail(o) {
@@ -531,6 +558,15 @@
 
     search.oninput = statusFilter.onchange = render;
     loadOrders();
+
+    function viewItemsDesktop(items){
+  alert(
+    "📦 ORDER ITEMS\n\n" +
+    items.map(i=>`${i.qty} × ${i.name}`).join("\n")
+  );
+}
+
+
   </script>
 </body>
 

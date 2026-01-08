@@ -89,7 +89,11 @@ function renderOrders() {
     tr.innerHTML = `
       <td>${o.orderId}</td>
       <td>${o.name}<br><small>${o.phone}</small></td>
-      <td>${o.items.length}</td>
+     <td class="items"
+    onclick='viewItemsDesktop(${JSON.stringify(o.items)})'>
+  ${o.items.length}
+</td>
+
       <td>₹${o.total}</td>
       <td>
         ${o.payment?.screenshot
