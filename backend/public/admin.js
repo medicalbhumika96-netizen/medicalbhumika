@@ -4,6 +4,13 @@
 
 const BACKEND = "https://medicalbhumika-2.onrender.com";
 const token = localStorage.getItem("adminToken");
+const odId = document.getElementById("od-id");
+const odCustomer = document.getElementById("od-customer");
+const odItems = document.getElementById("od-items");
+const odMrp = document.getElementById("od-mrp");
+const odSave = document.getElementById("od-save");
+const orderDetailModal = document.getElementById("orderDetailModal");
+
 
 let touchStartX = 0;
 let touchMoved = false;
@@ -133,8 +140,11 @@ if (mobileWrap) {
 
   // ✅ TAP = ORDER DETAIL (optional)
   card.onclick = () => {
-    // future: open order detail modal
-  };
+  if (!touchMoved) {
+    openOrderDetail(o);
+  }
+};
+
 
   card.innerHTML = `
     <div class="wa-left">
@@ -336,3 +346,39 @@ function onTouchEnd(e, orderId) {
   }, 400);
 }
 
+function openOrderDetail(order){
+  if (!order) return;
+
+  odId.textContent = "Order " + order.orderId;
+  odCustomer.innerHTML = `👤 ${order.name}<br>📞 ${order.phone}`;
+
+  let mrp = 0;
+  let html = "";
+
+  order.items.forEach(i => {
+    const price = i.mrp || i.price || 0;
+    const qty = i.qty || 1;
+    const line = price * qty;
+    mrp += line;
+
+    html += `
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <div>
+          ${i.name}<br>
+          <small>${qty} × ₹${price}</small>
+        </div>
+        <div>₹${line}</div>
+      </div>
+    `;
+  });
+
+  odItems.innerHTML = html;
+  odMrp.textContent = "₹" + mrp;
+  odSave.textContent = "₹" + (mrp - order.total);
+
+  orderDetailModal.classList.add("show");
+}
+
+function closeOrderDetail(){
+  orderDetailModal.classList.remove("show");
+}
