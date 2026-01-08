@@ -139,11 +139,6 @@
       color: #ef4444
     }
 
-    .items {
-      cursor: pointer;
-      color: #38bdf8
-    }
-
     img.proof {
       width: 60px;
       height: 60px;
@@ -375,22 +370,25 @@
   <script>
     const BACKEND = "https://medicalbhumika-2.onrender.com";
     const token = localStorage.getItem("adminToken");
-    const odId = document.getElementById("od-id");
-const odCustomer = document.getElementById("od-customer");
-const odItems = document.getElementById("od-items");
-const odMrp = document.getElementById("od-mrp");
-const odPay = document.getElementById("od-pay");
-const odSave = document.getElementById("od-save");
-const odStatus = document.getElementById("od-status");
-const orderDetailModal = document.getElementById("orderDetailModal");
-
     if (!token) location.href = "admin-login.html";
+
+    /* DOM refs */
+    const odId = document.getElementById("od-id");
+    const odCustomer = document.getElementById("od-customer");
+    const odItems = document.getElementById("od-items");
+    const odMrp = document.getElementById("od-mrp");
+    const odPay = document.getElementById("od-pay");
+    const odSave = document.getElementById("od-save");
+    const odStatus = document.getElementById("od-status");
+    const orderDetailModal = document.getElementById("orderDetailModal");
 
     let ORDERS = [], CURRENT_ORDER = null, startX = 0, SWIPED = false;
 
     /* LOAD */
     async function loadOrders() {
-      const r = await fetch(`${BACKEND}/api/admin/orders`, { headers: { Authorization: "Bearer " + token } });
+      const r = await fetch(`${BACKEND}/api/admin/orders`, {
+        headers: { Authorization: "Bearer " + token }
+      });
       const d = await r.json();
       ORDERS = d.orders || [];
       render(); updateDashboard();
@@ -398,7 +396,8 @@ const orderDetailModal = document.getElementById("orderDetailModal");
 
     /* DASHBOARD */
     function updateDashboard() {
-      const t = new Date().toDateString(); let o = 0, r = 0, p = 0, c = new Set();
+      const t = new Date().toDateString();
+      let o = 0, r = 0, p = 0, c = new Set();
       ORDERS.forEach(x => {
         if (new Date(x.createdAt).toDateString() === t) { o++; r += +x.total }
         if (x.status === "Pending") p++;
@@ -459,6 +458,7 @@ const orderDetailModal = document.getElementById("orderDetailModal");
       alert("📦 ORDER ITEMS\n\n" + items.map(i => `${i.qty} × ${i.name}`).join("\n"));
     }
     function openOrderWA(p, id) {
+      if (!p) return;
       window.open(`https://wa.me/91${p}?text=Order ${id}`, "_blank");
     }
 
@@ -474,52 +474,29 @@ const orderDetailModal = document.getElementById("orderDetailModal");
     }
 
     /* ORDER DETAIL */
-   function openOrderDetail(o) {
-  CURRENT_ORDER = o;
-
-  odId.textContent = "Order " + o.orderId;
-
-  odCustomer.innerHTML = `
-    👤 <b>${o.name}</b><br>
-    📞 ${o.phone}<br>
-    📍 ${o.address || ""}
-  `;
-
-  let mrp = 0;
-  let html = "";
-
-  o.items.forEach(i => {
-    const price = Number(i.mrp || i.price || 0);
-    const qty = Number(i.qty || 1);
-    const line = price * qty;
-    mrp += line;
-
-    html += `
-      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-        <div>
-          ${i.name}<br>
-          <small>Qty: ${qty} × ₹${price}</small>
-        </div>
-        <div>₹${line}</div>
-      </div>
-    `;
-  });
-
-  odItems.innerHTML = html;
-
-  odMrp.textContent = "₹" + mrp;
-  odPay.textContent = "₹" + o.total;
-  odSave.textContent = "₹" + (mrp - o.total);
-
-  odStatus.innerHTML = [
-    "Pending","Approved","Packed",
-    "Out for Delivery","Delivered","Rejected"
-  ].map(s =>
-    `<option ${s === o.status ? "selected" : ""}>${s}</option>`
-  ).join("");
-
-  orderDetailModal.classList.add("show");
-}
+    function openOrderDetail(o) {
+      CURRENT_ORDER = o;
+      odId.textContent = "Order " + o.orderId;
+      odCustomer.innerHTML = `👤 ${o.name}<br>📞 ${o.phone}`;
+      let mrp = 0, html = "";
+      o.items.forEach(i => {
+        const p = i.mrp || i.price || 0, q = i.qty || 1, l = p * q; mrp += l;
+        html += `<div>${i.name} — ${q}×₹${p} = ₹${l}</div>`;
+      });
+      odItems.innerHTML = html;
+      odMrp.textContent = "₹" + mrp;
+      odPay.textContent = "₹" + o.total;
+      odSave.textContent = "₹" + (mrp - o.total);
+      odStatus.innerHTML = ["Pending", "Approved", "Packed", "Out for Delivery", "Delivered", "Rejected"]
+        .map(s => `<option ${s === o.status ? "selected" : ""}>${s}</option>`).join("");
+      orderDetailModal.classList.add("show");
+    }
+    function closeOrderDetail() { orderDetailModal.classList.remove("show"); CURRENT_ORDER = null }
+    async function saveOrderStatus() {
+      if (!CURRENT_ORDER) return;
+      await updateStatus(CURRENT_ORDER.orderId, odStatus.value);
+      closeOrderDetail();
+    }
 
     /* UPDATE STATUS */
     async function updateStatus(id, status) {
@@ -534,6 +511,14 @@ const orderDetailModal = document.getElementById("orderDetailModal");
     /* IMAGE */
     function showImg(src) { modalImg.src = src; modal.classList.add("show") }
     function closeModal() { modal.classList.remove("show") }
+
+    /* PRINT */
+    function printInvoice() {
+      if (!CURRENT_ORDER) return;
+      const w = window.open("", "_blank");
+      w.document.write(`<h2>Bhumika Medical</h2><pre>${JSON.stringify(CURRENT_ORDER, null, 2)}</pre>`);
+      w.print();
+    }
 
     /* UTILS */
     function exportCSV() {
