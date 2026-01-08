@@ -690,7 +690,7 @@ const tempClientRef = `TMP-${Date.now()}`;
       console.error('Order send to backend failed:', e);
     }
   })();
-window.LAST_ORDER_ID = window.LAST_ORDER_ID || uniqueEID;
+
 enablePaymentProofBtn();
 
   closeModal();
