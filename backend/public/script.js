@@ -623,19 +623,20 @@ const tempClientRef = `TMP-${Date.now()}`;
 
 
   // SAVE ORDER LOCALLY (unchanged)
-  const orderData = {
-    EID: uniqueEID,
-    phone: custPhone,
-    name: custName,
-    address: custAddress,
-    pin: custPin,
-    items: items,
-    total: finalTotal,
-    discount,
-    status: 'Placed',
-    date: new Date().toLocaleString(),
-    payment: { method, txn, amount: amtRaw }
-  };
+ const orderData = {
+  clientRef: tempClientRef, // ✅ temporary frontend ref
+  phone: custPhone,
+  name: custName,
+  address: custAddress,
+  pin: custPin,
+  items: items,
+  total: finalTotal,
+  discount,
+  status: 'Placed',
+  date: new Date().toLocaleString(),
+  payment: { method, txn, amount: amtRaw }
+};
+
   const existing = JSON.parse(localStorage.getItem('orders') || '[]');
   existing.push(orderData);
   localStorage.setItem('orders', JSON.stringify(existing));
