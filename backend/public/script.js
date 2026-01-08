@@ -672,26 +672,25 @@ const tempClientRef = `TMP-${Date.now()}`;
   // Send to backend (non-blocking)
   (async () => {
     try {
-      await submitOrderToServer({
-        EID: uniqueEID,
-        phone: custPhone,
-        name: custName,
-        address: custAddress,
-        pin: custPin,
-        items,
-        total: finalTotal,
-        discount,
-        status: 'Placed',
-        date: new Date().toISOString(),
-        payment: { method, txn, amount: amtRaw }
-      });
+     await submitOrderToServer({
+  clientRef: tempClientRef,
+  phone: custPhone,
+  name: custName,
+  address: custAddress,
+  pin: custPin,
+  items,
+  total: finalTotal,
+  discount,
+  status: 'Placed',
+  date: new Date().toISOString(),
+  payment: { method, txn, amount: amtRaw }
+});
+
       // if backend returns an order id, it will be stored in window.LAST_ORDER_ID
     } catch (e) {
       console.error('Order send to backend failed:', e);
     }
   })();
-
-enablePaymentProofBtn();
 
   closeModal();
  setTimeout(() => {
@@ -1073,7 +1072,7 @@ async function submitOrderToServer(orderData) {
       window.LAST_ORDER_ID = data.orderId;
 
       // ✅ ENABLE payment proof button now
-      enablePaymentProofBtn();
+      enablePaymentProofBtn()
     }
   } catch (err) {
     console.error("⚠️ Unable to connect to backend for order save:", err);
