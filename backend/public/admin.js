@@ -5,6 +5,9 @@
 const BACKEND = "https://medicalbhumika-2.onrender.com";
 const token = localStorage.getItem("adminToken");
 
+let touchStartX = 0;
+let touchMoved = false;
+
 // 🔐 Auth guard
 if (!token) {
   location.href = "admin-login.html";
@@ -119,40 +122,52 @@ function renderOrders() {
     tableBody.appendChild(tr);
 
     /* ---------- MOBILE CARD ---------- */
-    if (mobileWrap) {
-      const card = document.createElement("div");
-      card.className = "wa-order";
-      card.innerHTML = `
-        <div class="wa-left">
-          <div class="wa-name">${o.name}</div>
+if (mobileWrap) {
+  const card = document.createElement("div");
+  card.className = "wa-order";
 
-          <div class="wa-phone"
-               onclick="callNow('${o.phone}')">
-            📞 ${o.phone}
-          </div>
+  // ✅ SAFE SWIPE EVENTS
+  card.ontouchstart = onTouchStart;
+  card.ontouchmove = onTouchMove;
+  card.ontouchend = (e) => onTouchEnd(e, o.orderId);
 
-          <div class="wa-items"
-               onclick='viewItemsMobile(${JSON.stringify(o.items)})'>
-            📦 Items: ${o.items.length}
-          </div>
-        </div>
+  // ✅ TAP = ORDER DETAIL (optional)
+  card.onclick = () => {
+    // future: open order detail modal
+  };
 
-        <div class="wa-right">
-          <div class="wa-total">₹${o.total}</div>
-          <div class="wa-status status ${o.status}"
-               id="m-${o.orderId}">
-            ${o.status}
-          </div>
-          <div style="margin-top:6px;cursor:pointer"
-               onclick="openOrderWA('${o.phone}','${o.orderId}')">
-            💬
-          </div>
-        </div>
-      `;
-      mobileWrap.appendChild(card);
-    }
-  });
+  card.innerHTML = `
+    <div class="wa-left">
+      <div class="wa-name">${o.name}</div>
+
+      <div class="wa-phone"
+           onclick="event.stopPropagation(); callNow('${o.phone}')">
+        📞 ${o.phone}
+      </div>
+
+      <div class="wa-items"
+           onclick='event.stopPropagation(); viewItemsMobile(${JSON.stringify(o.items)})'>
+        📦 Items: ${o.items.length}
+      </div>
+    </div>
+
+    <div class="wa-right">
+      <div class="wa-total">₹${o.total}</div>
+      <div class="wa-status status ${o.status}"
+           id="m-${o.orderId}">
+        ${o.status}
+      </div>
+      <div style="margin-top:6px;cursor:pointer"
+           onclick="event.stopPropagation(); openOrderWA('${o.phone}','${o.orderId}')">
+        💬
+      </div>
+    </div>
+  `;
+  mobileWrap.appendChild(card);
 }
+}); // 👈 closes forEach
+}   // 👈 closes renderOrders
+
 
 /* =======================================
    ITEMS VIEW (DESKTOP + MOBILE)
@@ -280,3 +295,44 @@ document.getElementById("search").oninput = renderOrders;
 document.getElementById("statusFilter").onchange = renderOrders;
 
 loadOrders();
+
+function onTouchStart(e) {
+  touchStartX = e.changedTouches[0].clientX;
+  touchMoved = false;
+}
+
+function onTouchMove(e) {
+  const diff = Math.abs(e.changedTouches[0].clientX - touchStartX);
+  if (diff > 10) touchMoved = true;
+}
+
+function onTouchEnd(e, orderId) {
+  const diff = e.changedTouches[0].clientX - touchStartX;
+
+  // 👉 TAP (not swipe)
+  if (!touchMoved || Math.abs(diff) < 60) {
+    return; // tap behaviour handled separately
+  }
+
+  const card = e.currentTarget;
+
+  // 👉 SWIPE RIGHT = APPROVE
+  if (diff > 60) {
+    card.classList.add("swipe-approve");
+    navigator.vibrate?.([40, 30, 40]);
+    updateStatus(orderId, "Approved");
+  }
+
+  // 👉 SWIPE LEFT = REJECT
+  else if (diff < -60) {
+    card.classList.add("swipe-reject");
+    navigator.vibrate?.([100, 40, 100]);
+    updateStatus(orderId, "Rejected");
+  }
+
+  // 🔄 RESET visual state
+  setTimeout(() => {
+    card.classList.remove("swipe-approve", "swipe-reject");
+  }, 400);
+}
+
