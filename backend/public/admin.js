@@ -1,6 +1,6 @@
-// ================================
-// Bhumika Medical — Admin JS
-// ================================
+// =======================================
+// Bhumika Medical — Admin JS (FINAL)
+// =======================================
 
 const BACKEND = "https://medicalbhumika-2.onrender.com";
 const token = localStorage.getItem("adminToken");
@@ -12,9 +12,9 @@ if (!token) {
 
 let ORDERS = [];
 
-/* ================================
+/* =======================================
    LOAD ORDERS
-================================ */
+======================================= */
 async function loadOrders() {
   try {
     const res = await fetch(`${BACKEND}/api/admin/orders`, {
@@ -40,9 +40,9 @@ async function loadOrders() {
   }
 }
 
-/* ================================
+/* =======================================
    DASHBOARD METRICS
-================================ */
+======================================= */
 function updateDashboard() {
   const today = new Date().toDateString();
 
@@ -66,9 +66,9 @@ function updateDashboard() {
   document.getElementById("uniqueCustomers").textContent = customers.size;
 }
 
-/* ================================
-   RENDER ORDERS (TABLE + MOBILE)
-================================ */
+/* =======================================
+   RENDER ORDERS (DESKTOP + MOBILE)
+======================================= */
 function renderOrders() {
   const q = document.getElementById("search").value.toLowerCase();
   const st = document.getElementById("statusFilter").value;
@@ -84,17 +84,19 @@ function renderOrders() {
     (o.orderId.toLowerCase().includes(q) || o.phone.includes(q))
   ).forEach(o => {
 
-    // ===== DESKTOP ROW =====
+    /* ---------- DESKTOP ROW ---------- */
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${o.orderId}</td>
       <td>${o.name}<br><small>${o.phone}</small></td>
-     <td class="items"
-    onclick='viewItemsDesktop(${JSON.stringify(o.items)})'>
-  ${o.items.length}
-</td>
+
+      <td class="items"
+          onclick='viewItemsDesktop(${JSON.stringify(o.items)})'>
+        ${o.items.length}
+      </td>
 
       <td>₹${o.total}</td>
+
       <td>
         ${o.payment?.screenshot
           ? `<img src="${BACKEND}${o.payment.screenshot}"
@@ -102,9 +104,11 @@ function renderOrders() {
                  onclick="showImg('${BACKEND}${o.payment.screenshot}')">`
           : "—"}
       </td>
+
       <td class="status ${o.status}" id="status-${o.orderId}">
         ${o.status}
       </td>
+
       <td>
         <button class="approve"
           onclick="updateStatus('${o.orderId}','Approved')">✓</button>
@@ -114,25 +118,35 @@ function renderOrders() {
     `;
     tableBody.appendChild(tr);
 
-    // ===== MOBILE CARD =====
+    /* ---------- MOBILE CARD ---------- */
     if (mobileWrap) {
       const card = document.createElement("div");
-      card.className = "order-card";
+      card.className = "wa-order";
       card.innerHTML = `
-        <div class="order-top">
-          <span>${o.orderId}</span>
-          <span class="status ${o.status}"
-                id="m-${o.orderId}">${o.status}</span>
+        <div class="wa-left">
+          <div class="wa-name">${o.name}</div>
+
+          <div class="wa-phone"
+               onclick="callNow('${o.phone}')">
+            📞 ${o.phone}
+          </div>
+
+          <div class="wa-items"
+               onclick='viewItemsMobile(${JSON.stringify(o.items)})'>
+            📦 Items: ${o.items.length}
+          </div>
         </div>
-        👤 ${o.name}<br>
-        📞 ${o.phone}<br>
-        💰 ₹${o.total}<br>
-        📦 ${o.items.length} items
-        <div class="order-actions">
-          <button class="approve"
-            onclick="updateStatus('${o.orderId}','Approved')">Approve</button>
-          <button class="reject"
-            onclick="updateStatus('${o.orderId}','Rejected')">Reject</button>
+
+        <div class="wa-right">
+          <div class="wa-total">₹${o.total}</div>
+          <div class="wa-status status ${o.status}"
+               id="m-${o.orderId}">
+            ${o.status}
+          </div>
+          <div style="margin-top:6px;cursor:pointer"
+               onclick="openOrderWA('${o.phone}','${o.orderId}')">
+            💬
+          </div>
         </div>
       `;
       mobileWrap.appendChild(card);
@@ -140,10 +154,28 @@ function renderOrders() {
   });
 }
 
-/* ================================
-   UPDATE STATUS
-   + WHATSAPP AUTO OPEN
-================================ */
+/* =======================================
+   ITEMS VIEW (DESKTOP + MOBILE)
+======================================= */
+function viewItemsDesktop(items) {
+  if (!items || !items.length) {
+    alert("No items found");
+    return;
+  }
+
+  alert(
+    "📦 ORDER ITEMS\n\n" +
+    items.map(i => `${i.qty} × ${i.name}`).join("\n")
+  );
+}
+
+function viewItemsMobile(items) {
+  viewItemsDesktop(items);
+}
+
+/* =======================================
+   STATUS UPDATE + WHATSAPP AUTO OPEN
+======================================= */
 async function updateStatus(orderId, status) {
   try {
     const res = await fetch(
@@ -165,21 +197,21 @@ async function updateStatus(orderId, status) {
       return;
     }
 
-    // 🟢 INSTANT UI UPDATE (DESKTOP)
+    // 🟢 Desktop badge
     const badge = document.getElementById("status-" + orderId);
     if (badge) {
       badge.textContent = status;
       badge.className = "status " + status;
     }
 
-    // 🟢 MOBILE BADGE
+    // 🟢 Mobile badge
     const mb = document.getElementById("m-" + orderId);
     if (mb) {
       mb.textContent = status;
       mb.className = "status " + status;
     }
 
-    // 🔔 AUTO OPEN WHATSAPP
+    // 🔔 WhatsApp auto open
     if (data.waLink) {
       window.open(data.waLink, "_blank");
     }
@@ -190,22 +222,37 @@ async function updateStatus(orderId, status) {
   }
 }
 
-/* ================================
+/* =======================================
+   COMMUNICATION HELPERS
+======================================= */
+function openOrderWA(phone, orderId) {
+  if (!phone) return;
+  const msg = `Hello from Bhumika Medical\nOrder ID: ${orderId}`;
+  window.open(
+    `https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`,
+    "_blank"
+  );
+}
+
+function callNow(phone) {
+  if (phone) location.href = `tel:${phone}`;
+}
+
+/* =======================================
    IMAGE MODAL
-================================ */
+======================================= */
 function showImg(src) {
   document.getElementById("modalImg").src = src;
-  document.getElementById("downloadLink").href = src;
-  document.getElementById("modal").style.display = "flex";
+  document.getElementById("modal").classList.add("show");
 }
 
 function closeModal() {
-  document.getElementById("modal").style.display = "none";
+  document.getElementById("modal").classList.remove("show");
 }
 
-/* ================================
+/* =======================================
    EXPORT CSV
-================================ */
+======================================= */
 function exportCSV() {
   let csv = "OrderID,Name,Phone,Total,Status\n";
   ORDERS.forEach(o => {
@@ -218,17 +265,17 @@ function exportCSV() {
   a.click();
 }
 
-/* ================================
+/* =======================================
    LOGOUT
-================================ */
+======================================= */
 function logout() {
   localStorage.removeItem("adminToken");
   location.href = "admin-login.html";
 }
 
-/* ================================
+/* =======================================
    EVENTS + INIT
-================================ */
+======================================= */
 document.getElementById("search").oninput = renderOrders;
 document.getElementById("statusFilter").onchange = renderOrders;
 
