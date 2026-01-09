@@ -148,8 +148,8 @@ function renderProducts(filter = '') {
        loading="lazy">
 
   ${p.imageType === "real"
-    ? '<span class="badge verified">Actual Image</span>'
-    : '<span class="badge muted">Representative</span>'
+    ? '<span class="badge verified"></span>'
+    : '<span class="badge muted"></span>'
   }
 </div>
 
@@ -246,9 +246,10 @@ if (productList) {
   productList.addEventListener('click', function (e) {
     const btn = e.target.closest('.add, .add-to-cart');
     if (!btn) return;
-    const id = Number(btn.dataset.id);
-    if (!id) return console.warn('Add button missing data-id');
-    addToCart(id);
+   const id = btn.dataset.id; // MongoDB string ID
+if (!id) return console.warn('Add button missing data-id');
+addToCart(id);
+
     const productEl = btn.closest('.product');
     const imgEl = productEl ? productEl.querySelector('img') : null;
     animateAddToCart(e, imgEl);
@@ -258,21 +259,20 @@ if (productList) {
 
 // ===== CART =====
 function addToCart(id) {
-  const p = PRODUCTS.find(x => x.id === id) || (typeof id === 'object' ? id : null);
-  if (!p) return;
-  const pid = typeof id === 'object' ? p.id : id;
-  const prod = typeof id === 'object' ? p : PRODUCTS.find(x => x.id === pid);
-  if (!prod) return;
-  if (!cart[prod.id]) cart[prod.id] = { ...prod, qty: 0 };
+  const prod = PRODUCTS.find(p => String(p.id) === String(id));
+  if (!prod) {
+    console.warn("Product not found for ID:", id);
+    return;
+  }
+
+  if (!cart[prod.id]) {
+    cart[prod.id] = { ...prod, qty: 0 };
+  }
+
   cart[prod.id].qty++;
   renderCart();
 }
-function changeQty(id, delta) {
-  if (!cart[id]) return;
-  cart[id].qty += delta;
-  if (cart[id].qty <= 0) delete cart[id];
-  renderCart();
-}
+
 window.changeQty = changeQty;
 
 // ===== CART (with DISCOUNT LOGIC & mobile sync) =====
