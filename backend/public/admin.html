@@ -4,24 +4,17 @@
 <head>
   <meta charset="UTF-8">
   <title>Bhumika Medical — Admin Console</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <audio id="newOrderSound" src="new-order.mp3" preload="auto"></audio>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> <audio id="newOrderSound" src="new-order.mp3"
+    preload="auto"></audio>
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#0a7cff">
   <link rel="stylesheet" href="admin.css">
 </head>
 
 <body>
-
-  <!-- ================= HEADER ================= -->
   <div class="header">
-    <h2>📦 Admin Orders Console</h2>
-    <button class="logout" onclick="logout()">Logout</button>
+    <h2>📦 Admin Orders Console</h2> <button class="logout" onclick="logout()">Logout</button>
   </div>
-
-  <!-- ================= DASHBOARD ================= -->
   <div class="dashboard">
     <div class="card">
       <h4>Today Orders</h4>
@@ -40,11 +33,7 @@
       <div class="value" id="uniqueCustomers">0</div>
     </div>
   </div>
-
-  <!-- ================= ORDER TOOLBAR ================= -->
-  <div class="toolbar">
-    <input id="search" placeholder="Search Order / Phone">
-    <select id="statusFilter">
+  <div class="toolbar"> <input id="search" placeholder="Search Order / Phone"> <select id="statusFilter">
       <option value="">All</option>
       <option>Pending</option>
       <option>Approved</option>
@@ -52,11 +41,7 @@
       <option>Out for Delivery</option>
       <option>Delivered</option>
       <option>Rejected</option>
-    </select>
-    <button class="export" onclick="exportCSV()">⬇ Export CSV</button>
-  </div>
-
-  <!-- ================= ORDERS TABLE ================= -->
+    </select> <button class="export" onclick="exportCSV()">⬇ Export CSV</button> </div>
   <table>
     <thead>
       <tr>
@@ -71,128 +56,60 @@
     </thead>
     <tbody id="orders"></tbody>
   </table>
-
-  <div id="mobileOrders"></div>
-
-  <!-- ================= PRODUCT MANAGEMENT ================= -->
-
-  <!-- IMPORT PRODUCTS -->
-  <button
-    onclick="importProductsFromJSON()"
-    style="
-      background:#16a34a;
-      color:#fff;
-      padding:10px 14px;
-      border:none;
-      border-radius:10px;
-      margin:20px 0;
-      cursor:pointer;
-    "
-  >
+  <div id="mobileOrders"></div> <!-- IMAGE MODAL -->
+  <button onclick="importProductsFromJSON()" style="
+    background:#16a34a;
+    color:#fff;
+    padding:10px 14px;
+    border:none;
+    border-radius:10px;
+    margin-bottom:12px;
+    cursor:pointer;
+  ">
     🚀 Import Products from JSON (One Time)
   </button>
 
-  <!-- ADD PRODUCT -->
-  <div class="card" style="margin-bottom:16px">
-    <h3>➕ Add Product</h3>
+  <!-- ================= PRODUCTS IMAGE UPLOAD ================= -->
+  <div class="products-admin">
+    <h3 style="margin:20px 0 10px">🖼️ Product Image Manager</h3>
 
-    <input id="new-name" placeholder="Product name">
-    <input id="new-company" placeholder="Company">
-    <input id="new-mrp" type="number" placeholder="MRP">
+    <input id="productSearch" placeholder="Search product name..."
+      style="width:100%;padding:10px;border-radius:10px;margin-bottom:12px" />
 
-    <button onclick="addProduct()" style="margin-top:10px">
-      Add Product
-    </button>
+    <div id="productList"></div>
   </div>
 
-  <!-- PRODUCT MANAGER -->
-  <div class="card">
-    <h3 style="margin-bottom:10px">🧾 Product Manager</h3>
-
-    <input
-      id="productSearch"
-      placeholder="🔍 Search product name..."
-      style="width:100%;padding:10px;border-radius:10px;margin-bottom:12px"
-    >
-
-    <div id="productList" class="product-grid"></div>
-  </div>
-
-  <!-- ================= IMAGE MODAL ================= -->
   <div class="modal" id="modal" onclick="closeModal()">
-    <div class="modal-content" onclick="event.stopPropagation()">
-      <img id="modalImg">
-    </div>
-  </div>
-
-  <!-- ================= ORDER DETAIL MODAL ================= -->
+    <div class="modal-content" onclick="event.stopPropagation()"> <img id="modalImg"> </div>
+  </div> <!-- ORDER DETAIL MODAL -->
   <div id="orderDetailModal" class="modal" onclick="closeOrderDetail()">
-    <div
-      class="modal-content"
-      style="background:#020617;padding:16px;border-radius:14px;width:92vw"
-      onclick="event.stopPropagation()"
-    >
+    <div class="modal-content" style="background:#020617;padding:16px;border-radius:14px;width:92vw"
+      onclick="event.stopPropagation()">
       <h3 id="od-id"></h3>
       <div id="od-customer"></div>
-
       <div id="od-items" style="margin-top:10px"></div>
-
       <div style="margin-top:10px">
         <div>MRP Total: <b id="od-mrp"></b></div>
         <div>Payable: <b id="od-pay"></b></div>
-        <div style="color:#22c55e">
-          Savings: <span id="od-save"></span>
-        </div>
+        <div style="color:#22c55e">Savings: <span id="od-save"></span></div>
       </div>
-
-      <div style="margin-top:14px">
-        <label style="font-size:13px">Update Order Status</label>
-        <select
-          id="od-status"
-          style="width:100%;margin-top:6px;padding:8px;border-radius:8px"
-        >
+      <div style="margin-top:14px"> <label style="font-size:13px">Update Order Status</label> <select id="od-status"
+          style="width:100%;margin-top:6px;padding:8px;border-radius:8px">
           <option>Pending</option>
           <option>Approved</option>
           <option>Packed</option>
           <option>Out for Delivery</option>
           <option>Delivered</option>
           <option>Rejected</option>
-        </select>
-
-        <button
-          onclick="saveOrderStatus()"
-          style="
-            margin-top:8px;
-            width:100%;
-            background:#2563eb;
-            border:none;
-            color:#fff;
-            padding:8px;
-            border-radius:8px
-          "
-        >
-          Save Status
-        </button>
-      </div>
-
-      <button
-        onclick="printInvoice()"
-        style="width:100%;margin-top:8px"
-      >
-        🧾 Print / Invoice
-      </button>
-
-      <button
-        onclick="closeOrderDetail()"
-        style="width:100%;margin-top:6px;background:#dc2626;color:#fff"
-      >
-        Close
-      </button>
+        </select> <button onclick="saveOrderStatus()"
+          style="margin-top:8px;width:100%; background:#2563eb;border:none;color:#fff; padding:8px;border-radius:8px">
+          Save Status </button> </div> <select id="od-status" style="width:100%;margin-top:10px"></select> <button
+        onclick="saveOrderStatus()" style="width:100%;margin-top:6px">Save Status</button> <button
+        onclick="printInvoice()" style="width:100%;margin-top:8px">🧾 Print / Invoice</button> <button
+        onclick="closeOrderDetail()" style="width:100%;margin-top:6px;background:#dc2626;color:#fff">Close</button>
     </div>
   </div>
-
-  <!-- ================= SCRIPT ================= -->
   <script src="admin.js"></script>
-
 </body>
+
 </html>
