@@ -67,9 +67,7 @@
         <th>Action</th>
       </tr>
     </thead>
-    <tbody id="orders">
-    
-    </tbody>
+  
   </table>
 
   <div id="mobileOrders"></div>
@@ -77,33 +75,24 @@
   <!-- =================================================
        🧴 PRODUCTS — IMAGE UPLOAD SECTION (NEW)
   ================================================== -->
-  <h3 style="margin:20px 12px 10px">🧴 Products — Upload / Replace Image</h3>
+<!-- ================= PRODUCTS IMAGE UPLOAD ================= -->
+<h3 style="margin:20px 12px 10px">🧴 Products — Upload / Replace Image</h3>
 
-  <div id="productsAdmin" style="margin:0 12px 30px;
-              background:#020617;
-              border-radius:12px;
-              padding:12px">
+<div style="margin:0 12px 10px">
+  <input
+    id="productSearch"
+    placeholder="Search product name"
+    style="width:100%;padding:8px;border-radius:8px"
+  >
+</div>
 
-    <!-- SAMPLE PRODUCT ROW
-         🔴 NOTE:
-         - data-id = MongoDB Product _id
-         - p-name will be filled dynamically later
-    -->
-    <div class="product-row" data-id="REPLACE_WITH_PRODUCT_ID" style="display:flex;
-                align-items:center;
-                gap:10px;
-                margin-bottom:10px">
-
-      <span class="p-name" style="flex:1;font-size:14px">
-        Sample Product Name
-      </span>
-
-      <input type="file" class="img-input" accept="image/*">
-
-      <button class="upload-btn">
-        Upload Image
-      </button>
-    </div>
+<div
+  id="productList"
+  style="margin:0 12px 30px;
+         background:#020617;
+         border-radius:12px;
+         padding:12px">
+</div>
 
     <!-- 👉 Future:
          Ye rows backend se dynamically generate hongi
