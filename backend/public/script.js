@@ -96,7 +96,9 @@ async function loadProducts() {
       name: item.Product || `Product ${index+1}`,
       company: item.Company || 'Unknown',
       price: Number(item.MRP) || 0,
-      image: item.Image || 'img/logo.png'
+     image: item.Image || 'img/logo.png',
+     imageType: item.imageType || "representative"
+
     }));
   } catch (err) {
     console.warn('Could not load products_with_images.json — using fallback sample products.', err);
