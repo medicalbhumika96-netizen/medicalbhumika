@@ -273,7 +273,7 @@ function addToCart(id) {
   renderCart();
 }
 
-window.changeQty = changeQty;
+
 
 // ===== CART (with DISCOUNT LOGIC & mobile sync) =====
 function renderCart() {
