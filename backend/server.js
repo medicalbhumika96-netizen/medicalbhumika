@@ -183,22 +183,35 @@ app.get("/api/admin/products", adminAuth, async (req, res) => {
 app.post("/api/admin/products/import-json", adminAuth, async (req, res) => {
   try {
     const raw = fs.readFileSync("./public/products_with_images.json", "utf-8");
-    const json = JSON.parse(raw);
+    const parsed = JSON.parse(raw);
 
-    if (!json.data || !Array.isArray(json.data)) {
-      return res.status(400).json({ success: false, message: "Invalid JSON" });
+    // ✅ SUPPORT ALL JSON SHAPES
+    const list =
+      Array.isArray(parsed) ? parsed :
+      Array.isArray(parsed.data) ? parsed.data :
+      Array.isArray(parsed.products) ? parsed.products :
+      [];
+
+    if (!list.length) {
+      return res.json({
+        success: false,
+        message: "No products found in JSON"
+      });
     }
 
     let inserted = 0;
 
-    for (const item of json.data) {
-      const exists = await Product.findOne({ name: item.Product });
+    for (const item of list) {
+      const name = item.Product || item.name;
+      if (!name) continue;
+
+      const exists = await Product.findOne({ name });
       if (exists) continue;
 
       await Product.create({
-        name: item.Product,
-        company: item.Company || "",
-        mrp: Number(item.MRP) || 0,
+        name,
+        company: item.Company || item.company || "",
+        mrp: Number(item.MRP || item.mrp) || 0,
         image: item.Image || "/img/placeholders/medicine.png",
         imageType: item.Image ? "real" : "placeholder"
       });
@@ -213,6 +226,7 @@ app.post("/api/admin/products/import-json", adminAuth, async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
+
 
 /* ==================================================
    ADMIN — UPDATE ORDER STATUS
