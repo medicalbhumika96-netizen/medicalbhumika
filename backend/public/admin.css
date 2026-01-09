@@ -262,38 +262,39 @@
         opacity: .9
       }
     }
-    .badge {
-  font-size: 11px;
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-.badge.verified {
-  background: #2ecc71;
-  color: #fff;
-}
-.badge.muted {
-  background: #ccc;
-  color: #333;
-}
-.product-img-wrap {
-  position: relative;
+.products-admin {
+  margin-top: 30px;
+  background: #020617;
+  padding: 16px;
+  border-radius: 14px;
 }
 
-.badge {
-  position: absolute;
-  top: 6px;
-  left: 6px;
-  font-size: 11px;
-  padding: 3px 6px;
-  border-radius: 6px;
+.product-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-bottom: 1px solid #1f2937;
 }
 
-.badge.verified {
+.product-row:last-child {
+  border-bottom: none;
+}
+
+.p-name {
+  flex: 1;
+  font-weight: 600;
+}
+
+.img-input {
+  max-width: 160px;
+}
+
+.upload-btn {
   background: #16a34a;
   color: #fff;
-}
-
-.badge.muted {
-  background: rgba(0,0,0,0.6);
-  color: #fff;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
 }
