@@ -112,10 +112,10 @@ function renderOrders() {
 
       <td>
         ${o.payment?.screenshot
-          ? `<img src="${BACKEND}${o.payment.screenshot}"
+        ? `<img src="${BACKEND}${o.payment.screenshot}"
                  class="proof"
                  onclick="showImg('${BACKEND}${o.payment.screenshot}')">`
-          : "—"}
+        : "—"}
       </td>
 
       <td class="status ${o.status}" id="status-${o.orderId}">
@@ -131,25 +131,117 @@ function renderOrders() {
     `;
     tableBody.appendChild(tr);
 
+    /* =======================================
+   IMAGE UPLOAD (PRODUCTS) ✅ ADDED
+======================================= */
+    document.addEventListener("click", async (e) => {
+      const btn = e.target.closest(".upload-btn");
+      if (!btn) return;
+
+      const row = btn.closest(".product-row");
+      if (!row) return;
+
+      const fileInput = row.querySelector(".img-input");
+      const productId = row.dataset.id;
+
+      if (!productId) {
+        alert("Product ID missing");
+        return;
+      }
+
+      if (!fileInput || !fileInput.files[0]) {
+        alert("Select image first");
+        return;
+      }
+
+      const fd = new FormData();
+      fd.append("image", fileInput.files[0]);
+
+      try {
+        const res = await fetch(
+          `${BACKEND}/api/admin/products/${productId}/image`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`
+            },
+            body: fd
+          }
+        );
+
+        const data = await res.json();
+
+        if (data.success) {
+          alert("✅ Image uploaded successfully");
+        } else {
+          alert("❌ Upload failed");
+        }
+
+      } catch (err) {
+        console.error("Image upload error:", err);
+        alert("Server error during upload");
+      }
+    });
+
+    /* =======================================
+       ITEMS VIEW
+    ======================================= */
+    function viewItemsDesktop(items) {
+      if (!items || !items.length) return alert("No items");
+      alert(items.map(i => `${i.qty} × ${i.name}`).join("\n"));
+    }
+
+    /* =======================================
+       STATUS UPDATE
+    ======================================= */
+    async function updateStatus(orderId, status) {
+      const res = await fetch(`${BACKEND}/api/admin/orders/${orderId}/status`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + token
+        },
+        body: JSON.stringify({ status })
+      });
+
+      const data = await res.json();
+      if (!data.success) return alert("Update failed");
+
+      document.getElementById("status-" + orderId).textContent = status;
+    }
+
+    /* =======================================
+       IMAGE MODAL
+    ======================================= */
+    function showImg(src) {
+      document.getElementById("modalImg").src = src;
+      document.getElementById("modal").classList.add("show");
+    }
+    function closeModal() {
+      document.getElementById("modal").classList.remove("show");
+    }
+
+
+
     /* ---------- MOBILE CARD ---------- */
-if (mobileWrap) {
-  const card = document.createElement("div");
-  card.className = "wa-order";
+    if (mobileWrap) {
+      const card = document.createElement("div");
+      card.className = "wa-order";
 
-  // ✅ SAFE SWIPE EVENTS
-  card.ontouchstart = onTouchStart;
-  card.ontouchmove = onTouchMove;
-  card.ontouchend = (e) => onTouchEnd(e, o.orderId);
+      // ✅ SAFE SWIPE EVENTS
+      card.ontouchstart = onTouchStart;
+      card.ontouchmove = onTouchMove;
+      card.ontouchend = (e) => onTouchEnd(e, o.orderId);
 
-  // ✅ TAP = ORDER DETAIL (optional)
-  card.onclick = () => {
-  if (!touchMoved) {
-    openOrderDetail(o);
-  }
-};
+      // ✅ TAP = ORDER DETAIL (optional)
+      card.onclick = () => {
+        if (!touchMoved) {
+          openOrderDetail(o);
+        }
+      };
 
 
-  card.innerHTML = `
+      card.innerHTML = `
     <div class="wa-left">
       <div class="wa-name">${o.name}</div>
 
@@ -176,9 +268,9 @@ if (mobileWrap) {
       </div>
     </div>
   `;
-  mobileWrap.appendChild(card);
-}
-}); // 👈 closes forEach
+      mobileWrap.appendChild(card);
+    }
+  }); // 👈 closes forEach
 }   // 👈 closes renderOrders
 
 
@@ -200,6 +292,7 @@ function viewItemsDesktop(items) {
 function viewItemsMobile(items) {
   viewItemsDesktop(items);
 }
+
 
 /* =======================================
    STATUS UPDATE + WHATSAPP AUTO OPEN
@@ -348,7 +441,7 @@ function onTouchEnd(e, orderId) {
     card.classList.remove("swipe-approve", "swipe-reject");
   }, 400);
 }
-function openOrderDetail(order){
+function openOrderDetail(order) {
   if (!order) return;
 
   CURRENT_MODAL_ORDER = order;
@@ -385,7 +478,7 @@ function openOrderDetail(order){
 
   orderDetailModal.classList.add("show");
 }
-async function saveOrderStatus(){
+async function saveOrderStatus() {
   if (!CURRENT_MODAL_ORDER) return;
 
   await updateStatus(
@@ -396,7 +489,7 @@ async function saveOrderStatus(){
   closeOrderDetail();
 }
 
-function closeOrderDetail(){
+function closeOrderDetail() {
   orderDetailModal.classList.remove("show");
   CURRENT_MODAL_ORDER = null;
 }

@@ -128,7 +128,17 @@ function renderProducts(filter = '') {
     const el = document.createElement('div');
     el.className = 'product';
     el.innerHTML = `
-      <img src="${p.image}" alt="${escapeHtml(p.name)}" loading="lazy">
+      <div class="product-img-wrap">
+  <img src="${p.image}"
+       alt="${escapeHtml(p.name)}"
+       loading="lazy">
+
+  ${p.imageType === "real"
+    ? '<span class="badge verified">Actual Image</span>'
+    : '<span class="badge muted">Representative</span>'
+  }
+</div>
+
       <div style="flex:1">
         <div style="font-weight:700">${escapeHtml(p.name)}</div>
         <div class="small" style="margin-top:6px">${escapeHtml(p.company)}</div>

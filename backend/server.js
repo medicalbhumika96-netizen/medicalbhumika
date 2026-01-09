@@ -5,7 +5,9 @@ import multer from "multer";
 import dotenv from "dotenv";
 import fs from "fs";
 import jwt from "jsonwebtoken";
+
 import Order from "./models/Order.js";
+import Product from "./models/Product.js"; // ✅ REQUIRED
 
 dotenv.config();
 
@@ -18,6 +20,8 @@ app.use(express.urlencoded({ extended: true }));
 
 /* ================= STATIC ================= */
 if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
+if (!fs.existsSync("uploads/products")) fs.mkdirSync("uploads/products", { recursive: true });
+
 app.use("/uploads", express.static("uploads"));
 app.use(express.static("public"));
 
@@ -27,13 +31,23 @@ mongoose
   .then(() => console.log("✅ MongoDB connected"))
   .catch(err => console.error("❌ MongoDB error:", err));
 
-/* ================= MULTER ================= */
+/* ================= MULTER (ORDERS / PAYMENT) ================= */
 const storage = multer.diskStorage({
   destination: (_, __, cb) => cb(null, "uploads/"),
   filename: (_, file, cb) =>
     cb(null, Date.now() + "-" + file.originalname.replace(/\s+/g, "_"))
 });
 const upload = multer({ storage });
+
+/* ================= MULTER (PRODUCT IMAGES) ================= */
+const productStorage = multer.diskStorage({
+  destination: (_, __, cb) => cb(null, "uploads/products"),
+  filename: (_, file, cb) => {
+    const safe = file.originalname.toLowerCase().replace(/\s+/g, "-");
+    cb(null, Date.now() + "-" + safe);
+  }
+});
+const productUpload = multer({ storage: productStorage });
 
 /* ==================================================
    CUSTOMER — PLACE ORDER
@@ -42,18 +56,14 @@ app.post("/api/orders", async (req, res) => {
   try {
     const data = req.body;
     if (!data || !data.phone) {
-      return res.status(400).json({ success: false, message: "Invalid order data" });
+      return res.status(400).json({ success: false });
     }
 
-    // ✅ SINGLE SOURCE OF TRUTH — BACKEND ORDER ID
     const orderId = "ORD-" + Date.now();
 
     const order = new Order({
       orderId,
-
-      // ✅ OPTIONAL: temporary client reference (NOT real order id)
       clientRef: data.clientRef || null,
-
       phone: data.phone,
       name: data.name,
       address: data.address,
@@ -67,27 +77,10 @@ app.post("/api/orders", async (req, res) => {
     });
 
     await order.save();
-    console.log("✅ Order saved:", orderId);
-
     res.json({ success: true, orderId });
 
   } catch (err) {
     console.error("❌ Order save error:", err);
-    res.status(500).json({ success: false });
-  }
-});
-
-/* ==================================================
-   CUSTOMER — TRACK ORDERS (PHONE)
-================================================== */
-app.get("/api/orders/track/:phone", async (req, res) => {
-  try {
-    const orders = await Order.find({ phone: req.params.phone })
-      .sort({ createdAt: -1 });
-
-    res.json({ success: true, orders });
-  } catch (err) {
-    console.error("❌ Track error:", err);
     res.status(500).json({ success: false });
   }
 });
@@ -110,8 +103,6 @@ app.post("/api/payment-proof", upload.single("screenshot"), async (req, res) => 
     };
 
     await order.save();
-    console.log("✅ Payment proof saved:", orderId);
-
     res.json({ success: true });
 
   } catch (err) {
@@ -161,62 +152,54 @@ app.post("/api/admin/login", (req, res) => {
    ADMIN — FETCH ORDERS
 ================================================== */
 app.get("/api/admin/orders", adminAuth, async (_, res) => {
-  try {
-    const orders = await Order.find().sort({ createdAt: -1 });
-    res.json({ success: true, orders });
-  } catch (err) {
-    console.error("❌ Fetch orders error:", err);
-    res.status(500).json({ success: false });
-  }
+  const orders = await Order.find().sort({ createdAt: -1 });
+  res.json({ success: true, orders });
 });
 
 /* ==================================================
-   ADMIN — UPDATE STATUS
+   ADMIN — UPDATE ORDER STATUS
 ================================================== */
 app.post("/api/admin/orders/:orderId/status", adminAuth, async (req, res) => {
-  try {
-    const { orderId } = req.params;
-    const { status } = req.body;
+  const { orderId } = req.params;
+  const { status } = req.body;
 
-    if (!["Pending", "Approved", "Rejected"].includes(status))
-      return res.status(400).json({ success: false });
+  if (!["Pending", "Approved", "Rejected", "Packed", "Out for Delivery", "Delivered"].includes(status))
+    return res.status(400).json({ success: false });
 
-    const order = await Order.findOneAndUpdate(
-      { orderId },
-      { status },
-      { new: true }
-    );
+  const order = await Order.findOneAndUpdate(
+    { orderId },
+    { status },
+    { new: true }
+  );
 
-    if (!order) return res.status(404).json({ success: false });
-
-    console.log(`✅ Order ${orderId} → ${status}`);
-    res.json({ success: true });
-
-  } catch (err) {
-    console.error("❌ Status update error:", err);
-    res.status(500).json({ success: false });
-  }
+  if (!order) return res.status(404).json({ success: false });
+  res.json({ success: true });
 });
 
 /* ==================================================
-   CUSTOMER — TRACK (ORDER ID + PHONE)
+   ADMIN — UPLOAD / REPLACE PRODUCT IMAGE ✅
 ================================================== */
-app.post("/api/orders/track-secure", async (req, res) => {
-  try {
-    const { orderId, phone } = req.body;
-    if (!orderId || !phone)
-      return res.status(400).json({ success: false });
+app.post(
+  "/api/admin/products/:id/image",
+  adminAuth,
+  productUpload.single("image"),
+  async (req, res) => {
+    try {
+      const product = await Product.findById(req.params.id);
+      if (!product) return res.status(404).json({ success: false });
 
-    const order = await Order.findOne({ orderId, phone });
-    if (!order)
-      return res.json({ success: false, message: "No order found" });
+      product.image = `/uploads/products/${req.file.filename}`;
+      product.imageType = "real";
+      await product.save();
 
-    res.json({ success: true, order });
-  } catch (err) {
-    console.error("❌ Secure track error:", err);
-    res.status(500).json({ success: false });
+      res.json({ success: true, image: product.image });
+
+    } catch (err) {
+      console.error("❌ Image upload error:", err);
+      res.status(500).json({ success: false });
+    }
   }
-});
+);
 
 /* ==================================================
    ROOT
