@@ -1,6 +1,7 @@
 // =======================================
 // Bhumika Medical — Admin JS (FINAL)
-// Orders + Products Add / Edit / Delete + Image Upload + UI Polish
+// Orders + Products Add / Edit / Delete + Image Upload
+// FAST LOAD + MOBILE SAFE
 // =======================================
 
 const BACKEND = "https://medicalbhumika-2.onrender.com";
@@ -15,8 +16,10 @@ if (!token) location.href = "admin-login.html";
 let ORDERS = [];
 let PRODUCTS = [];
 let CURRENT_MODAL_ORDER = null;
-let touchStartX = 0;
-let touchMoved = false;
+
+// 🔥 PERFORMANCE
+let PRODUCT_PAGE = 1;
+const PAGE_SIZE = 20;
 
 /* =======================
    DOM REFERENCES
@@ -31,14 +34,6 @@ const newName = document.getElementById("new-name");
 const newCompany = document.getElementById("new-company");
 const newMrp = document.getElementById("new-mrp");
 
-const odId = document.getElementById("od-id");
-const odCustomer = document.getElementById("od-customer");
-const odItems = document.getElementById("od-items");
-const odMrp = document.getElementById("od-mrp");
-const odSave = document.getElementById("od-save");
-const odStatus = document.getElementById("od-status");
-const orderDetailModal = document.getElementById("orderDetailModal");
-
 /* =======================
    LOAD ORDERS
 ======================= */
@@ -48,48 +43,21 @@ async function loadOrders() {
       headers: { Authorization: "Bearer " + token }
     });
     const data = await res.json();
-    if (!data.success) return alert("Failed to load orders");
+    if (!data.success) return;
 
     ORDERS = data.orders || [];
-    updateDashboard();
     renderOrders();
-  } catch {
-    alert("Server error while loading orders");
-  }
+  } catch {}
 }
 
 /* =======================
-   DASHBOARD
-======================= */
-function updateDashboard() {
-  const today = new Date().toDateString();
-  let todayOrders = 0, todayRevenue = 0, pending = 0;
-  const customers = new Set();
-
-  ORDERS.forEach(o => {
-    if (new Date(o.createdAt).toDateString() === today) {
-      todayOrders++;
-      todayRevenue += Number(o.total || 0);
-    }
-    if (o.status === "Pending") pending++;
-    if (o.phone) customers.add(o.phone);
-  });
-
-  document.getElementById("todayOrders").textContent = todayOrders;
-  document.getElementById("todayRevenue").textContent = "₹" + todayRevenue;
-  document.getElementById("pendingOrders").textContent = pending;
-  document.getElementById("uniqueCustomers").textContent = customers.size;
-}
-
-/* =======================
-   RENDER ORDERS
+   RENDER ORDERS (DESKTOP)
 ======================= */
 function renderOrders() {
   const q = document.getElementById("search").value.toLowerCase();
   const st = document.getElementById("statusFilter").value;
 
   ordersTable.innerHTML = "";
-  mobileOrders.innerHTML = "";
 
   ORDERS.filter(o =>
     (!st || o.status === st) &&
@@ -107,9 +75,7 @@ function renderOrders() {
                onclick="showImg('${BACKEND}${o.payment.screenshot}')">`
           : "—"}
       </td>
-      <td class="status ${o.status}">
-        ${o.status}
-      </td>
+      <td>${o.status}</td>
       <td>
         <button onclick="updateStatus('${o.orderId}','Approved')">✓</button>
         <button onclick="updateStatus('${o.orderId}','Rejected')">✕</button>
@@ -120,10 +86,10 @@ function renderOrders() {
 }
 
 /* =======================
-   ORDER ACTIONS
+   ORDER STATUS
 ======================= */
 async function updateStatus(orderId, status) {
-  const res = await fetch(`${BACKEND}/api/admin/orders/${orderId}/status`, {
+  await fetch(`${BACKEND}/api/admin/orders/${orderId}/status`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -131,8 +97,6 @@ async function updateStatus(orderId, status) {
     },
     body: JSON.stringify({ status })
   });
-  const data = await res.json();
-  if (!data.success) alert("Update failed");
 }
 
 /* =======================
@@ -147,32 +111,60 @@ function closeModal() {
 }
 
 /* =======================
-   PRODUCTS — LOAD
+   LOAD PRODUCTS (FAST)
 ======================= */
 async function loadProducts() {
   const res = await fetch(`${BACKEND}/api/admin/products`, {
     headers: { Authorization: "Bearer " + token }
   });
   const data = await res.json();
-  if (!data.success) return alert("Products load failed");
+  if (!data.success) return;
 
   PRODUCTS = data.products;
-  renderProductsAdmin(PRODUCTS);
+  renderProductsPage(true);
 }
 
 /* =======================
-   PRODUCTS — RENDER (UI POLISHED)
+   PAGINATED RENDER
+======================= */
+function renderProductsPage(reset = false) {
+  if (reset) {
+    PRODUCT_PAGE = 1;
+    productListEl.innerHTML = "";
+  }
+
+  const start = (PRODUCT_PAGE - 1) * PAGE_SIZE;
+  const end = start + PAGE_SIZE;
+
+  const pageItems = PRODUCTS.slice(start, end);
+  renderProductsAdmin(pageItems);
+
+  if (end < PRODUCTS.length) {
+    const btn = document.createElement("button");
+    btn.textContent = "⬇ Load more";
+    btn.style.margin = "12px auto";
+    btn.style.display = "block";
+    btn.onclick = () => {
+      PRODUCT_PAGE++;
+      btn.remove();
+      renderProductsPage(false);
+    };
+    productListEl.appendChild(btn);
+  }
+}
+
+/* =======================
+   RENDER PRODUCTS (LIGHT)
 ======================= */
 function renderProductsAdmin(list) {
-  productListEl.innerHTML = "";
-
   list.forEach(p => {
     const row = document.createElement("div");
     row.className = "product-row";
     row.dataset.id = p._id;
 
     row.innerHTML = `
-      <img class="thumb" src="${BACKEND}${p.image || '/img/placeholders/medicine.png'}">
+      <img class="thumb" loading="lazy"
+        src="${BACKEND}${p.image || '/img/placeholders/medicine.png'}">
 
       <input class="edit-name" value="${p.name}">
       <input class="edit-company" value="${p.company || ""}">
@@ -185,12 +177,12 @@ function renderProductsAdmin(list) {
       <button class="del-btn">🗑️</button>
     `;
 
-    // 🔍 Live preview before upload
+    // 🔍 Preview
     const imgInput = row.querySelector(".img-input");
     const imgEl = row.querySelector(".thumb");
     imgInput.addEventListener("change", e => {
-      const file = e.target.files[0];
-      if (file) imgEl.src = URL.createObjectURL(file);
+      const f = e.target.files[0];
+      if (f) imgEl.src = URL.createObjectURL(f);
     });
 
     productListEl.appendChild(row);
@@ -198,11 +190,17 @@ function renderProductsAdmin(list) {
 }
 
 /* =======================
-   PRODUCT SEARCH
+   PRODUCT SEARCH (FAST)
 ======================= */
 productSearchInput?.addEventListener("input", e => {
   const q = e.target.value.toLowerCase();
-  renderProductsAdmin(PRODUCTS.filter(p => p.name.toLowerCase().includes(q)));
+  const filtered = PRODUCTS.filter(p =>
+    p.name.toLowerCase().includes(q)
+  );
+  PRODUCT_PAGE = 1;
+  productListEl.innerHTML = "";
+  PRODUCTS = filtered;
+  renderProductsPage(true);
 });
 
 /* =======================
@@ -213,54 +211,48 @@ productListEl.addEventListener("click", async e => {
   if (!row) return;
   const id = row.dataset.id;
 
-  // 📸 IMAGE UPLOAD
+  // 📸 UPLOAD
   if (e.target.classList.contains("upload-btn")) {
     const file = row.querySelector(".img-input").files[0];
-    if (!file) return alert("Select image");
+    if (!file) return;
 
     const fd = new FormData();
     fd.append("image", file);
 
-    const res = await fetch(`${BACKEND}/api/admin/products/${id}/image`, {
+    await fetch(`${BACKEND}/api/admin/products/${id}/image`, {
       method: "POST",
       headers: { Authorization: "Bearer " + token },
       body: fd
     });
-    const data = await res.json();
-    alert(data.success ? "✅ Image uploaded" : "❌ Upload failed");
   }
 
   // 💾 SAVE
   if (e.target.classList.contains("save-btn")) {
-    const name = row.querySelector(".edit-name").value;
-    const company = row.querySelector(".edit-company").value;
-    const mrp = row.querySelector(".edit-mrp").value;
+    const body = {
+      name: row.querySelector(".edit-name").value,
+      company: row.querySelector(".edit-company").value,
+      mrp: row.querySelector(".edit-mrp").value
+    };
 
-    const res = await fetch(`${BACKEND}/api/admin/products/${id}`, {
+    await fetch(`${BACKEND}/api/admin/products/${id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
         Authorization: "Bearer " + token
       },
-      body: JSON.stringify({ name, company, mrp })
+      body: JSON.stringify(body)
     });
-    const data = await res.json();
-    alert(data.success ? "✅ Updated" : "❌ Update failed");
   }
 
   // 🗑️ DELETE
   if (e.target.classList.contains("del-btn")) {
-    if (!confirm("Delete this product?")) return;
+    if (!confirm("Delete product?")) return;
 
-    const res = await fetch(`${BACKEND}/api/admin/products/${id}`, {
+    await fetch(`${BACKEND}/api/admin/products/${id}`, {
       method: "DELETE",
       headers: { Authorization: "Bearer " + token }
     });
-    const data = await res.json();
-    if (data.success) {
-      row.remove();
-      alert("🗑️ Deleted");
-    }
+    row.remove();
   }
 });
 
@@ -268,29 +260,25 @@ productListEl.addEventListener("click", async e => {
    ADD PRODUCT
 ======================= */
 async function addProduct() {
-  const name = newName.value.trim();
-  const company = newCompany.value.trim();
-  const mrp = newMrp.value;
+  if (!newName.value.trim()) return alert("Product name required");
 
-  if (!name) return alert("Product name required");
-
-  const res = await fetch(`${BACKEND}/api/admin/products`, {
+  await fetch(`${BACKEND}/api/admin/products`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: "Bearer " + token
     },
-    body: JSON.stringify({ name, company, mrp })
+    body: JSON.stringify({
+      name: newName.value,
+      company: newCompany.value,
+      mrp: newMrp.value
+    })
   });
-
-  const data = await res.json();
-  if (!data.success) return alert(data.message || "Add failed");
 
   newName.value = "";
   newCompany.value = "";
   newMrp.value = "";
 
-  alert("✅ Product added");
   loadProducts();
 }
 
