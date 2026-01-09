@@ -494,3 +494,88 @@ function closeOrderDetail() {
   CURRENT_MODAL_ORDER = null;
 }
 
+const productListEl = document.getElementById("productList");
+const productSearchInput = document.getElementById("productSearch");
+let PRODUCTS = [];
+
+// LOAD PRODUCTS
+async function loadProducts() {
+  try {
+    const res = await fetch(`${BACKEND}/api/admin/products`, {
+      headers: { Authorization: "Bearer " + token }
+    });
+    const data = await res.json();
+    if (!data.success) return;
+
+    PRODUCTS = data.products;
+    renderProductsAdmin(PRODUCTS);
+  } catch (e) {
+    console.error("Product load error", e);
+  }
+}
+
+// RENDER PRODUCTS
+function renderProductsAdmin(list) {
+  productListEl.innerHTML = "";
+
+  list.forEach(p => {
+    const row = document.createElement("div");
+    row.className = "product-row";
+    row.dataset.id = p._id;
+
+    row.innerHTML = `
+      <span class="p-name">${p.name}</span>
+
+      <input type="file" class="img-input" accept="image/*">
+
+      <button class="upload-btn">Upload Image</button>
+    `;
+
+    productListEl.appendChild(row);
+  });
+}
+
+// SEARCH
+productSearchInput?.addEventListener("input", e => {
+  const q = e.target.value.toLowerCase();
+  renderProductsAdmin(
+    PRODUCTS.filter(p => p.name.toLowerCase().includes(q))
+  );
+});
+
+// UPLOAD HANDLER (EVENT DELEGATION)
+productListEl?.addEventListener("click", async e => {
+  const btn = e.target.closest(".upload-btn");
+  if (!btn) return;
+
+  const row = btn.closest(".product-row");
+  const fileInput = row.querySelector(".img-input");
+  const productId = row.dataset.id;
+
+  if (!fileInput.files[0]) {
+    alert("Select image first");
+    return;
+  }
+
+  const fd = new FormData();
+  fd.append("image", fileInput.files[0]);
+
+  const res = await fetch(
+    `${BACKEND}/api/admin/products/${productId}/image`,
+    {
+      method: "POST",
+      headers: { Authorization: "Bearer " + token },
+      body: fd
+    }
+  );
+
+  const data = await res.json();
+  if (data.success) {
+    alert("✅ Image uploaded");
+  } else {
+    alert("❌ Upload failed");
+  }
+});
+
+// INIT
+loadProducts();

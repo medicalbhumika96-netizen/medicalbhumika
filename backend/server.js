@@ -151,11 +151,15 @@ app.post("/api/admin/login", (req, res) => {
 /* ==================================================
    ADMIN — FETCH ORDERS
 ================================================== */
-app.get("/api/admin/orders", adminAuth, async (_, res) => {
-  const orders = await Order.find().sort({ createdAt: -1 });
-  res.json({ success: true, orders });
+app.get("/api/admin/products", adminAuth, async (req, res) => {
+  try {
+    const products = await Product.find().sort({ name: 1 });
+    res.json({ success: true, products });
+  } catch (err) {
+    console.error("❌ Fetch products error:", err);
+    res.status(500).json({ success: false });
+  }
 });
-
 /* ==================================================
    ADMIN — UPDATE ORDER STATUS
 ================================================== */
