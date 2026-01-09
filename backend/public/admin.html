@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
   <title>Bhumika Medical — Admin Console</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- 🔔 New Order Sound -->
   <audio id="newOrderSound" src="new-order.mp3" preload="auto"></audio>
 
   <link rel="manifest" href="/manifest.json">
@@ -14,6 +15,7 @@
 
 <body>
 
+  <!-- ================= HEADER ================= -->
   <div class="header">
     <h2>📦 Admin Orders Console</h2>
     <button class="logout" onclick="logout()">Logout</button>
@@ -67,37 +69,33 @@
         <th>Action</th>
       </tr>
     </thead>
-  
+
+    <!-- 🔴 REQUIRED FOR admin.js -->
+    <tbody id="orders"></tbody>
   </table>
 
+  <!-- ================= MOBILE ORDERS ================= -->
   <div id="mobileOrders"></div>
 
   <!-- =================================================
-       🧴 PRODUCTS — IMAGE UPLOAD SECTION (NEW)
+       🧴 PRODUCTS — IMAGE UPLOAD SECTION
   ================================================== -->
-<!-- ================= PRODUCTS IMAGE UPLOAD ================= -->
-<h3 style="margin:20px 12px 10px">🧴 Products — Upload / Replace Image</h3>
+  <h3 style="margin:20px 12px 10px">🧴 Products — Upload / Replace Image</h3>
 
-<div style="margin:0 12px 10px">
-  <input
-    id="productSearch"
-    placeholder="Search product name"
-    style="width:100%;padding:8px;border-radius:8px"
-  >
-</div>
+  <div style="margin:0 12px 10px">
+    <input
+      id="productSearch"
+      placeholder="Search product name"
+      style="width:100%;padding:8px;border-radius:8px"
+    >
+  </div>
 
-<div
-  id="productList"
-  style="margin:0 12px 30px;
-         background:#020617;
-         border-radius:12px;
-         padding:12px">
-</div>
-
-    <!-- 👉 Future:
-         Ye rows backend se dynamically generate hongi
-         (product list API ke through)
-    -->
+  <div
+    id="productList"
+    style="margin:0 12px 30px;
+           background:#020617;
+           border-radius:12px;
+           padding:12px">
   </div>
 
   <!-- ================= IMAGE MODAL ================= -->
@@ -109,10 +107,12 @@
 
   <!-- ================= ORDER DETAIL MODAL ================= -->
   <div id="orderDetailModal" class="modal" onclick="closeOrderDetail()">
-    <div class="modal-content" style="background:#020617;
+    <div class="modal-content"
+         style="background:#020617;
                 padding:16px;
                 border-radius:14px;
-                width:92vw" onclick="event.stopPropagation()">
+                width:92vw"
+         onclick="event.stopPropagation()">
 
       <h3 id="od-id"></h3>
       <div id="od-customer"></div>
@@ -129,7 +129,8 @@
       <div style="margin-top:14px">
         <label style="font-size:13px">Update Order Status</label>
 
-        <select id="od-status" style="width:100%;
+        <select id="od-status"
+                style="width:100%;
                        margin-top:6px;
                        padding:8px;
                        border-radius:8px">
@@ -141,7 +142,8 @@
           <option>Rejected</option>
         </select>
 
-        <button onclick="saveOrderStatus()" style="margin-top:8px;
+        <button onclick="saveOrderStatus()"
+                style="margin-top:8px;
                        width:100%;
                        background:#2563eb;
                        border:none;
@@ -151,25 +153,18 @@
           Save Status
         </button>
 
-        <button onclick="closeOrderDetail()" style="width:100%;
+        <button onclick="closeOrderDetail()"
+                style="width:100%;
                        margin-top:8px;
                        background:#dc2626;
                        color:#fff">
           Close
         </button>
       </div>
-
     </div>
   </div>
-<h3 style="margin:20px 0">📦 Products — Upload / Replace Image</h3>
 
-<input id="productSearch"
-       placeholder="Search product name"
-       style="width:100%;padding:8px;margin-bottom:10px">
-
-<div id="productList"></div>
-
+  <!-- ================= SCRIPT ================= -->
   <script src="admin.js"></script>
 </body>
-
 </html>
