@@ -278,6 +278,34 @@ productListEl?.addEventListener("click", async e => {
   alert(data.success ? "✅ Image uploaded" : "❌ Upload failed");
 });
 
+async function importProductsFromJSON() {
+  if (!confirm("⚠️ One-time import. Continue?")) return;
+
+  try {
+    const res = await fetch(
+      `${BACKEND}/api/admin/products/import-json`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer " + token
+        }
+      }
+    );
+
+    const data = await res.json();
+
+    if (data.success) {
+      alert(`✅ Products imported: ${data.inserted}`);
+      loadProducts(); // refresh product list
+    } else {
+      alert("❌ Import failed");
+    }
+  } catch (e) {
+    console.error(e);
+    alert("⚠️ Server error during import");
+  }
+}
+
 /* =======================
    LOGOUT + INIT
 ======================= */
