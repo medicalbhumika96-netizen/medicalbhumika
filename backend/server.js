@@ -7,7 +7,7 @@ import fs from "fs";
 import jwt from "jsonwebtoken";
 
 import Order from "./models/Order.js";
-import Product from "./models/Product.js"; // ✅ REQUIRED
+import Product from "./models/Product.js";
 
 dotenv.config();
 
@@ -20,7 +20,9 @@ app.use(express.urlencoded({ extended: true }));
 
 /* ================= STATIC ================= */
 if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
-if (!fs.existsSync("uploads/products")) fs.mkdirSync("uploads/products", { recursive: true });
+if (!fs.existsSync("uploads/products")) {
+  fs.mkdirSync("uploads/products", { recursive: true });
+}
 
 app.use("/uploads", express.static("uploads"));
 app.use(express.static("public"));
@@ -116,8 +118,9 @@ app.post("/api/payment-proof", upload.single("screenshot"), async (req, res) => 
 ================================================== */
 function adminAuth(req, res, next) {
   const auth = req.headers.authorization;
-  if (!auth || !auth.startsWith("Bearer "))
+  if (!auth || !auth.startsWith("Bearer ")) {
     return res.status(401).json({ success: false });
+  }
 
   try {
     jwt.verify(auth.split(" ")[1], process.env.ADMIN_JWT_SECRET);
@@ -149,7 +152,20 @@ app.post("/api/admin/login", (req, res) => {
 });
 
 /* ==================================================
-   ADMIN — FETCH ORDERS
+   ADMIN — FETCH ORDERS ✅ (FIXED)
+================================================== */
+app.get("/api/admin/orders", adminAuth, async (req, res) => {
+  try {
+    const orders = await Order.find().sort({ createdAt: -1 });
+    res.json({ success: true, orders });
+  } catch (err) {
+    console.error("❌ Fetch orders error:", err);
+    res.status(500).json({ success: false });
+  }
+});
+
+/* ==================================================
+   ADMIN — FETCH PRODUCTS
 ================================================== */
 app.get("/api/admin/products", adminAuth, async (req, res) => {
   try {
@@ -160,6 +176,7 @@ app.get("/api/admin/products", adminAuth, async (req, res) => {
     res.status(500).json({ success: false });
   }
 });
+
 /* ==================================================
    ADMIN — UPDATE ORDER STATUS
 ================================================== */
@@ -167,8 +184,9 @@ app.post("/api/admin/orders/:orderId/status", adminAuth, async (req, res) => {
   const { orderId } = req.params;
   const { status } = req.body;
 
-  if (!["Pending", "Approved", "Rejected", "Packed", "Out for Delivery", "Delivered"].includes(status))
+  if (!["Pending","Approved","Rejected","Packed","Out for Delivery","Delivered"].includes(status)) {
     return res.status(400).json({ success: false });
+  }
 
   const order = await Order.findOneAndUpdate(
     { orderId },
@@ -189,6 +207,10 @@ app.post(
   productUpload.single("image"),
   async (req, res) => {
     try {
+      if (!req.file) {
+        return res.status(400).json({ success: false });
+      }
+
       const product = await Product.findById(req.params.id);
       if (!product) return res.status(404).json({ success: false });
 
