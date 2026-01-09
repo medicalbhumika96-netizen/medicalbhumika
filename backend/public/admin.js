@@ -1,6 +1,6 @@
 // =======================================
 // Bhumika Medical — Admin JS (FINAL)
-// Orders + Products Add / Edit / Delete + Image Upload
+// Orders + Products Add / Edit / Delete + Image Upload + UI Polish
 // =======================================
 
 const BACKEND = "https://medicalbhumika-2.onrender.com";
@@ -27,7 +27,6 @@ const mobileOrders = document.getElementById("mobileOrders");
 const productListEl = document.getElementById("productList");
 const productSearchInput = document.getElementById("productSearch");
 
-// ADD PRODUCT inputs (admin.html me hone chahiye)
 const newName = document.getElementById("new-name");
 const newCompany = document.getElementById("new-company");
 const newMrp = document.getElementById("new-mrp");
@@ -54,7 +53,7 @@ async function loadOrders() {
     ORDERS = data.orders || [];
     updateDashboard();
     renderOrders();
-  } catch (err) {
+  } catch {
     alert("Server error while loading orders");
   }
 }
@@ -108,7 +107,7 @@ function renderOrders() {
                onclick="showImg('${BACKEND}${o.payment.screenshot}')">`
           : "—"}
       </td>
-      <td class="status ${o.status}" id="status-${o.orderId}">
+      <td class="status ${o.status}">
         ${o.status}
       </td>
       <td>
@@ -162,7 +161,7 @@ async function loadProducts() {
 }
 
 /* =======================
-   PRODUCTS — RENDER (CRUD)
+   PRODUCTS — RENDER (UI POLISHED)
 ======================= */
 function renderProductsAdmin(list) {
   productListEl.innerHTML = "";
@@ -173,16 +172,27 @@ function renderProductsAdmin(list) {
     row.dataset.id = p._id;
 
     row.innerHTML = `
+      <img class="thumb" src="${BACKEND}${p.image || '/img/placeholders/medicine.png'}">
+
       <input class="edit-name" value="${p.name}">
       <input class="edit-company" value="${p.company || ""}">
       <input class="edit-mrp" type="number" value="${p.mrp || 0}">
 
       <input type="file" class="img-input" accept="image/*">
-      <button class="upload-btn">📸</button>
 
+      <button class="upload-btn">📸</button>
       <button class="save-btn">💾</button>
       <button class="del-btn">🗑️</button>
     `;
+
+    // 🔍 Live preview before upload
+    const imgInput = row.querySelector(".img-input");
+    const imgEl = row.querySelector(".thumb");
+    imgInput.addEventListener("change", e => {
+      const file = e.target.files[0];
+      if (file) imgEl.src = URL.createObjectURL(file);
+    });
+
     productListEl.appendChild(row);
   });
 }
@@ -220,7 +230,7 @@ productListEl.addEventListener("click", async e => {
     alert(data.success ? "✅ Image uploaded" : "❌ Upload failed");
   }
 
-  // 💾 SAVE (EDIT)
+  // 💾 SAVE
   if (e.target.classList.contains("save-btn")) {
     const name = row.querySelector(".edit-name").value;
     const company = row.querySelector(".edit-company").value;

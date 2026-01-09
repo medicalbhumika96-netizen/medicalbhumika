@@ -298,3 +298,87 @@
   border-radius: 8px;
   cursor: pointer;
 }
+/* ===============================
+   PRODUCT MANAGER UI
+================================ */
+
+.add-product {
+  display: grid;
+  grid-template-columns: 2fr 1.5fr 1fr auto;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.add-product input {
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background: #020617;
+  color: #fff;
+}
+
+.add-product button {
+  background: #16a34a;
+  border: none;
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.product-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.product-row {
+  display: grid;
+  grid-template-columns: 60px 2fr 1.5fr 1fr auto auto auto;
+  gap: 10px;
+  align-items: center;
+  background: #020617;
+  padding: 10px;
+  border-radius: 12px;
+}
+
+.product-row img {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid #334155;
+}
+
+.product-row input {
+  padding: 6px;
+  border-radius: 6px;
+  border: 1px solid #334155;
+  background: #020617;
+  color: #fff;
+}
+
+.product-row button {
+  border: none;
+  border-radius: 8px;
+  padding: 6px 8px;
+  cursor: pointer;
+}
+
+.product-row .upload-btn {
+  background: #2563eb;
+  color: #fff;
+}
+
+.product-row .save-btn {
+  background: #16a34a;
+  color: #fff;
+}
+
+.product-row .del-btn {
+  background: #dc2626;
+  color: #fff;
+}
+
+.product-row:hover {
+  outline: 1px solid #2563eb;
+}
