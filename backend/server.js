@@ -178,6 +178,19 @@ app.get("/api/admin/products", adminAuth, async (req, res) => {
 });
 
 /* ==================================================
+   PUBLIC — FETCH PRODUCTS (FOR CUSTOMER SITE) ✅
+================================================== */
+app.get("/api/products", async (req, res) => {
+  try {
+    const products = await Product.find().sort({ name: 1 });
+    res.json({ success: true, products });
+  } catch (err) {
+    console.error("❌ Public products error:", err);
+    res.status(500).json({ success: false });
+  }
+});
+
+/* ==================================================
    ADMIN — IMPORT PRODUCTS FROM JSON (ONE TIME)
 ================================================== */
 app.post("/api/admin/products/import-json", adminAuth, async (req, res) => {
@@ -185,7 +198,6 @@ app.post("/api/admin/products/import-json", adminAuth, async (req, res) => {
     const raw = fs.readFileSync("./public/products_with_images.json", "utf-8");
     const parsed = JSON.parse(raw);
 
-    // ✅ SUPPORT ALL JSON SHAPES
     const list =
       Array.isArray(parsed) ? parsed :
       Array.isArray(parsed.data) ? parsed.data :
@@ -193,10 +205,7 @@ app.post("/api/admin/products/import-json", adminAuth, async (req, res) => {
       [];
 
     if (!list.length) {
-      return res.json({
-        success: false,
-        message: "No products found in JSON"
-      });
+      return res.json({ success: false, message: "No products found" });
     }
 
     let inserted = 0;
@@ -226,7 +235,6 @@ app.post("/api/admin/products/import-json", adminAuth, async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
-
 
 /* ==================================================
    ADMIN — UPDATE ORDER STATUS

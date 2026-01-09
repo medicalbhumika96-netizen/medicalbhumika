@@ -87,29 +87,41 @@ function escapeHtml(s) { return String(s).replace(/[&<>"']/g, function(m){return
 function isMobileViewport() { return window.innerWidth < 768; }
 
 // ===== LOAD PRODUCTS (from JSON or fallback) =====
+// ===== LOAD PRODUCTS (FROM BACKEND / MONGODB) =====
 async function loadProducts() {
   try {
-    const res = await fetch('products_with_images.json');
+    const res = await fetch(`${BACKEND_BASE}/api/products`);
     const data = await res.json();
-    PRODUCTS = data.data.map((item, index) => ({
-      id: index + 1,
-      name: item.Product || `Product ${index+1}`,
-      company: item.Company || 'Unknown',
-      price: Number(item.MRP) || 0,
-     image: item.Image || 'img/logo.png',
-     imageType: item.imageType || "representative"
 
+    if (!data.success) throw new Error("Products API failed");
+
+    PRODUCTS = data.products.map((p, index) => ({
+      id: p._id,                // MongoDB ID
+      name: p.name,
+      company: p.company || "Unknown",
+      price: Number(p.mrp) || 0,
+      image: p.image || "img/logo.png",
+      imageType: p.imageType || "placeholder"
     }));
+
   } catch (err) {
-    console.warn('Could not load products_with_images.json — using fallback sample products.', err);
+    console.warn("⚠️ Backend products failed, using fallback", err);
+
     PRODUCTS = [
-      {id:1,name:'Paracetamol 500mg (10 tablets)',company:'Generic',price:40,image:'https://source.unsplash.com/400x300/?tablet,medicine'},
-      {id:2,name:'Cough Syrup 100ml',company:'HealthCo',price:120,image:'https://source.unsplash.com/400x300/?syrup,medicine'},
-      {id:3,name:'Vitamin C 500mg',company:'NutriLife',price:220,image:'https://source.unsplash.com/400x300/?vitamin,health'}
+      {
+        id: 1,
+        name: "Paracetamol 500mg",
+        company: "Generic",
+        price: 40,
+        image: "img/logo.png",
+        imageType: "placeholder"
+      }
     ];
   }
+
   renderProducts();
 }
+
 
 function renderProducts(filter = '') {
   if (!productList) return;
