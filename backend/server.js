@@ -178,14 +178,84 @@ app.get("/api/admin/products", adminAuth, async (req, res) => {
 });
 
 /* ==================================================
-   PUBLIC — FETCH PRODUCTS (FOR CUSTOMER SITE) ✅
+   PUBLIC — FETCH PRODUCTS (CUSTOMER)
 ================================================== */
 app.get("/api/products", async (req, res) => {
   try {
     const products = await Product.find().sort({ name: 1 });
     res.json({ success: true, products });
   } catch (err) {
-    console.error("❌ Public products error:", err);
+    res.status(500).json({ success: false });
+  }
+});
+
+/* ==================================================
+   ADMIN — ADD PRODUCT ➕
+================================================== */
+app.post("/api/admin/products", adminAuth, async (req, res) => {
+  try {
+    const { name, company, mrp } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ success: false, message: "Name required" });
+    }
+
+    const exists = await Product.findOne({ name });
+    if (exists) {
+      return res.status(409).json({ success: false, message: "Already exists" });
+    }
+
+    const product = await Product.create({
+      name,
+      company: company || "",
+      mrp: Number(mrp) || 0,
+      image: "/img/placeholders/medicine.png",
+      imageType: "placeholder"
+    });
+
+    res.json({ success: true, product });
+
+  } catch (err) {
+    console.error("❌ Add product error:", err);
+    res.status(500).json({ success: false });
+  }
+});
+
+/* ==================================================
+   ADMIN — UPDATE PRODUCT ✏️
+================================================== */
+app.put("/api/admin/products/:id", adminAuth, async (req, res) => {
+  try {
+    const { name, company, mrp } = req.body;
+
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ success: false });
+
+    if (name !== undefined) product.name = name;
+    if (company !== undefined) product.company = company;
+    if (mrp !== undefined) product.mrp = Number(mrp);
+
+    await product.save();
+    res.json({ success: true, product });
+
+  } catch (err) {
+    console.error("❌ Update product error:", err);
+    res.status(500).json({ success: false });
+  }
+});
+
+/* ==================================================
+   ADMIN — DELETE PRODUCT 🗑️
+================================================== */
+app.delete("/api/admin/products/:id", adminAuth, async (req, res) => {
+  try {
+    const product = await Product.findByIdAndDelete(req.params.id);
+    if (!product) return res.status(404).json({ success: false });
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error("❌ Delete product error:", err);
     res.status(500).json({ success: false });
   }
 });
@@ -204,10 +274,6 @@ app.post("/api/admin/products/import-json", adminAuth, async (req, res) => {
       Array.isArray(parsed.products) ? parsed.products :
       [];
 
-    if (!list.length) {
-      return res.json({ success: false, message: "No products found" });
-    }
-
     let inserted = 0;
 
     for (const item of list) {
@@ -219,8 +285,8 @@ app.post("/api/admin/products/import-json", adminAuth, async (req, res) => {
 
       await Product.create({
         name,
-        company: item.Company || item.company || "",
-        mrp: Number(item.MRP || item.mrp) || 0,
+        company: item.Company || "",
+        mrp: Number(item.MRP) || 0,
         image: item.Image || "/img/placeholders/medicine.png",
         imageType: item.Image ? "real" : "placeholder"
       });
@@ -231,8 +297,7 @@ app.post("/api/admin/products/import-json", adminAuth, async (req, res) => {
     res.json({ success: true, inserted });
 
   } catch (err) {
-    console.error("❌ Import error:", err);
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ success: false });
   }
 });
 
@@ -266,9 +331,7 @@ app.post(
   productUpload.single("image"),
   async (req, res) => {
     try {
-      if (!req.file) {
-        return res.status(400).json({ success: false });
-      }
+      if (!req.file) return res.status(400).json({ success: false });
 
       const product = await Product.findById(req.params.id);
       if (!product) return res.status(404).json({ success: false });
@@ -280,7 +343,6 @@ app.post(
       res.json({ success: true, image: product.image });
 
     } catch (err) {
-      console.error("❌ Image upload error:", err);
       res.status(500).json({ success: false });
     }
   }

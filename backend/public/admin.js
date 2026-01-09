@@ -1,6 +1,6 @@
 // =======================================
-// Bhumika Medical — Admin JS (CLEAN FINAL)
-// Orders + Products Image Upload
+// Bhumika Medical — Admin JS (FINAL)
+// Orders + Products Add / Edit / Delete + Image Upload
 // =======================================
 
 const BACKEND = "https://medicalbhumika-2.onrender.com";
@@ -27,6 +27,11 @@ const mobileOrders = document.getElementById("mobileOrders");
 const productListEl = document.getElementById("productList");
 const productSearchInput = document.getElementById("productSearch");
 
+// ADD PRODUCT inputs (admin.html me hone chahiye)
+const newName = document.getElementById("new-name");
+const newCompany = document.getElementById("new-company");
+const newMrp = document.getElementById("new-mrp");
+
 const odId = document.getElementById("od-id");
 const odCustomer = document.getElementById("od-customer");
 const odItems = document.getElementById("od-items");
@@ -50,7 +55,6 @@ async function loadOrders() {
     updateDashboard();
     renderOrders();
   } catch (err) {
-    console.error(err);
     alert("Server error while loading orders");
   }
 }
@@ -88,59 +92,32 @@ function renderOrders() {
   ordersTable.innerHTML = "";
   mobileOrders.innerHTML = "";
 
-  ORDERS
-    .filter(o =>
-      (!st || o.status === st) &&
-      (o.orderId.toLowerCase().includes(q) || o.phone.includes(q))
-    )
-    .forEach(o => {
-      // DESKTOP
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${o.orderId}</td>
-        <td>${o.name}<br><small>${o.phone}</small></td>
-        <td>${o.items.length}</td>
-        <td>₹${o.total}</td>
-        <td>
-          ${o.payment?.screenshot
-            ? `<img src="${BACKEND}${o.payment.screenshot}" class="proof"
-                 onclick="showImg('${BACKEND}${o.payment.screenshot}')">`
-            : "—"}
-        </td>
-        <td class="status ${o.status}" id="status-${o.orderId}">
-          ${o.status}
-        </td>
-        <td>
-          <button onclick="updateStatus('${o.orderId}','Approved')">✓</button>
-          <button onclick="updateStatus('${o.orderId}','Rejected')">✕</button>
-        </td>
-      `;
-      ordersTable.appendChild(tr);
-
-      // MOBILE
-      const card = document.createElement("div");
-      card.className = "wa-order";
-      card.ontouchstart = e => { touchStartX = e.changedTouches[0].clientX; touchMoved = false; };
-      card.ontouchmove = e => { if (Math.abs(e.changedTouches[0].clientX - touchStartX) > 10) touchMoved = true; };
-      card.ontouchend = e => handleSwipe(e, o.orderId);
-
-      card.onclick = () => { if (!touchMoved) openOrderDetail(o); };
-
-      card.innerHTML = `
-        <div class="wa-left">
-          <b>${o.name}</b>
-          <div>${o.phone}</div>
-          <div>Items: ${o.items.length}</div>
-        </div>
-        <div class="wa-right">
-          ₹${o.total}
-          <div class="status ${o.status}" id="m-${o.orderId}">
-            ${o.status}
-          </div>
-        </div>
-      `;
-      mobileOrders.appendChild(card);
-    });
+  ORDERS.filter(o =>
+    (!st || o.status === st) &&
+    (o.orderId.toLowerCase().includes(q) || o.phone.includes(q))
+  ).forEach(o => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${o.orderId}</td>
+      <td>${o.name}<br><small>${o.phone}</small></td>
+      <td>${o.items.length}</td>
+      <td>₹${o.total}</td>
+      <td>
+        ${o.payment?.screenshot
+          ? `<img src="${BACKEND}${o.payment.screenshot}" class="proof"
+               onclick="showImg('${BACKEND}${o.payment.screenshot}')">`
+          : "—"}
+      </td>
+      <td class="status ${o.status}" id="status-${o.orderId}">
+        ${o.status}
+      </td>
+      <td>
+        <button onclick="updateStatus('${o.orderId}','Approved')">✓</button>
+        <button onclick="updateStatus('${o.orderId}','Rejected')">✕</button>
+      </td>
+    `;
+    ordersTable.appendChild(tr);
+  });
 }
 
 /* =======================
@@ -156,50 +133,7 @@ async function updateStatus(orderId, status) {
     body: JSON.stringify({ status })
   });
   const data = await res.json();
-  if (!data.success) return alert("Update failed");
-
-  document.getElementById("status-" + orderId).textContent = status;
-  const m = document.getElementById("m-" + orderId);
-  if (m) m.textContent = status;
-}
-
-function handleSwipe(e, orderId) {
-  const diff = e.changedTouches[0].clientX - touchStartX;
-  if (!touchMoved || Math.abs(diff) < 60) return;
-  if (diff > 0) updateStatus(orderId, "Approved");
-  else updateStatus(orderId, "Rejected");
-}
-
-/* =======================
-   ORDER DETAIL MODAL
-======================= */
-function openOrderDetail(order) {
-  CURRENT_MODAL_ORDER = order;
-  odId.textContent = order.orderId;
-  odCustomer.innerHTML = `${order.name}<br>${order.phone}`;
-
-  let mrp = 0;
-  odItems.innerHTML = order.items.map(i => {
-    const price = i.price || 0;
-    mrp += price * i.qty;
-    return `<div>${i.qty} × ${i.name} — ₹${price * i.qty}</div>`;
-  }).join("");
-
-  odMrp.textContent = "₹" + mrp;
-  odSave.textContent = "₹" + (mrp - order.total);
-  odStatus.value = order.status;
-  orderDetailModal.classList.add("show");
-}
-
-function saveOrderStatus() {
-  if (!CURRENT_MODAL_ORDER) return;
-  updateStatus(CURRENT_MODAL_ORDER.orderId, odStatus.value);
-  closeOrderDetail();
-}
-
-function closeOrderDetail() {
-  orderDetailModal.classList.remove("show");
-  CURRENT_MODAL_ORDER = null;
+  if (!data.success) alert("Update failed");
 }
 
 /* =======================
@@ -214,96 +148,140 @@ function closeModal() {
 }
 
 /* =======================
-   PRODUCTS (IMAGE UPLOAD)
+   PRODUCTS — LOAD
 ======================= */
 async function loadProducts() {
-  try {
-    const res = await fetch(`${BACKEND}/api/admin/products`, {
-      headers: { Authorization: "Bearer " + token }
-    });
+  const res = await fetch(`${BACKEND}/api/admin/products`, {
+    headers: { Authorization: "Bearer " + token }
+  });
+  const data = await res.json();
+  if (!data.success) return alert("Products load failed");
 
-    const data = await res.json();
-    console.log("🧪 PRODUCTS API RESPONSE:", data); // 👈 ADD THIS
-
-    if (!data.success) {
-      alert("Products load failed");
-      return;
-    }
-
-    PRODUCTS = data.products;
-    renderProductsAdmin(PRODUCTS);
-
-  } catch (e) {
-    console.error("❌ Product load error", e);
-  }
+  PRODUCTS = data.products;
+  renderProductsAdmin(PRODUCTS);
 }
 
-
+/* =======================
+   PRODUCTS — RENDER (CRUD)
+======================= */
 function renderProductsAdmin(list) {
   productListEl.innerHTML = "";
+
   list.forEach(p => {
     const row = document.createElement("div");
     row.className = "product-row";
     row.dataset.id = p._id;
+
     row.innerHTML = `
-      <span class="p-name">${p.name}</span>
+      <input class="edit-name" value="${p.name}">
+      <input class="edit-company" value="${p.company || ""}">
+      <input class="edit-mrp" type="number" value="${p.mrp || 0}">
+
       <input type="file" class="img-input" accept="image/*">
-      <button class="upload-btn">Upload</button>
+      <button class="upload-btn">📸</button>
+
+      <button class="save-btn">💾</button>
+      <button class="del-btn">🗑️</button>
     `;
     productListEl.appendChild(row);
   });
 }
 
+/* =======================
+   PRODUCT SEARCH
+======================= */
 productSearchInput?.addEventListener("input", e => {
   const q = e.target.value.toLowerCase();
   renderProductsAdmin(PRODUCTS.filter(p => p.name.toLowerCase().includes(q)));
 });
 
-productListEl?.addEventListener("click", async e => {
-  const btn = e.target.closest(".upload-btn");
-  if (!btn) return;
+/* =======================
+   PRODUCT ACTIONS
+======================= */
+productListEl.addEventListener("click", async e => {
+  const row = e.target.closest(".product-row");
+  if (!row) return;
+  const id = row.dataset.id;
 
-  const row = btn.closest(".product-row");
-  const file = row.querySelector(".img-input").files[0];
-  if (!file) return alert("Select image first");
+  // 📸 IMAGE UPLOAD
+  if (e.target.classList.contains("upload-btn")) {
+    const file = row.querySelector(".img-input").files[0];
+    if (!file) return alert("Select image");
 
-  const fd = new FormData();
-  fd.append("image", file);
+    const fd = new FormData();
+    fd.append("image", file);
 
-  const res = await fetch(
-    `${BACKEND}/api/admin/products/${row.dataset.id}/image`,
-    { method: "POST", headers: { Authorization: "Bearer " + token }, body: fd }
-  );
-  const data = await res.json();
-  alert(data.success ? "✅ Image uploaded" : "❌ Upload failed");
+    const res = await fetch(`${BACKEND}/api/admin/products/${id}/image`, {
+      method: "POST",
+      headers: { Authorization: "Bearer " + token },
+      body: fd
+    });
+    const data = await res.json();
+    alert(data.success ? "✅ Image uploaded" : "❌ Upload failed");
+  }
+
+  // 💾 SAVE (EDIT)
+  if (e.target.classList.contains("save-btn")) {
+    const name = row.querySelector(".edit-name").value;
+    const company = row.querySelector(".edit-company").value;
+    const mrp = row.querySelector(".edit-mrp").value;
+
+    const res = await fetch(`${BACKEND}/api/admin/products/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token
+      },
+      body: JSON.stringify({ name, company, mrp })
+    });
+    const data = await res.json();
+    alert(data.success ? "✅ Updated" : "❌ Update failed");
+  }
+
+  // 🗑️ DELETE
+  if (e.target.classList.contains("del-btn")) {
+    if (!confirm("Delete this product?")) return;
+
+    const res = await fetch(`${BACKEND}/api/admin/products/${id}`, {
+      method: "DELETE",
+      headers: { Authorization: "Bearer " + token }
+    });
+    const data = await res.json();
+    if (data.success) {
+      row.remove();
+      alert("🗑️ Deleted");
+    }
+  }
 });
 
-async function importProductsFromJSON() {
-  if (!confirm("⚠️ One-time import. Continue?")) return;
+/* =======================
+   ADD PRODUCT
+======================= */
+async function addProduct() {
+  const name = newName.value.trim();
+  const company = newCompany.value.trim();
+  const mrp = newMrp.value;
 
-  try {
-    const res = await fetch(
-      `${BACKEND}/api/admin/products/import-json`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: "Bearer " + token
-        }
-      }
-    );
+  if (!name) return alert("Product name required");
 
-    const data = await res.json();
+  const res = await fetch(`${BACKEND}/api/admin/products`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + token
+    },
+    body: JSON.stringify({ name, company, mrp })
+  });
 
-    if (data.success) {
-      alert(`✅ Products imported: ${data.inserted}`);
-      loadProducts(); // refresh product list
-    } else {
-      alert("❌ Import failed");
-    }
-  } catch (e) {
-    console.error(e);
-    alert("⚠️ Server error during import");
-  }
+  const data = await res.json();
+  if (!data.success) return alert(data.message || "Add failed");
+
+  newName.value = "";
+  newCompany.value = "";
+  newMrp.value = "";
+
+  alert("✅ Product added");
+  loadProducts();
 }
 
 /* =======================
