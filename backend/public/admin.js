@@ -1,7 +1,6 @@
 // =======================================
-// Bhumika Medical — Admin JS (FINAL)
-// Orders + Products Add / Edit / Delete + Image Upload
-// FAST LOAD + MOBILE SAFE
+// Bhumika Medical — Admin JS (CLEAN FINAL)
+// Orders + Products Image Upload
 // =======================================
 
 const BACKEND = "https://medicalbhumika-2.onrender.com";
@@ -16,10 +15,8 @@ if (!token) location.href = "admin-login.html";
 let ORDERS = [];
 let PRODUCTS = [];
 let CURRENT_MODAL_ORDER = null;
-
-// 🔥 PERFORMANCE
-let PRODUCT_PAGE = 1;
-const PAGE_SIZE = 20;
+let touchStartX = 0;
+let touchMoved = false;
 
 /* =======================
    DOM REFERENCES
@@ -30,9 +27,13 @@ const mobileOrders = document.getElementById("mobileOrders");
 const productListEl = document.getElementById("productList");
 const productSearchInput = document.getElementById("productSearch");
 
-const newName = document.getElementById("new-name");
-const newCompany = document.getElementById("new-company");
-const newMrp = document.getElementById("new-mrp");
+const odId = document.getElementById("od-id");
+const odCustomer = document.getElementById("od-customer");
+const odItems = document.getElementById("od-items");
+const odMrp = document.getElementById("od-mrp");
+const odSave = document.getElementById("od-save");
+const odStatus = document.getElementById("od-status");
+const orderDetailModal = document.getElementById("orderDetailModal");
 
 /* =======================
    LOAD ORDERS
@@ -43,53 +44,110 @@ async function loadOrders() {
       headers: { Authorization: "Bearer " + token }
     });
     const data = await res.json();
-    if (!data.success) return;
+    if (!data.success) return alert("Failed to load orders");
 
     ORDERS = data.orders || [];
+    updateDashboard();
     renderOrders();
-  } catch {}
+  } catch (err) {
+    console.error(err);
+    alert("Server error while loading orders");
+  }
 }
 
 /* =======================
-   RENDER ORDERS (DESKTOP)
+   DASHBOARD
+======================= */
+function updateDashboard() {
+  const today = new Date().toDateString();
+  let todayOrders = 0, todayRevenue = 0, pending = 0;
+  const customers = new Set();
+
+  ORDERS.forEach(o => {
+    if (new Date(o.createdAt).toDateString() === today) {
+      todayOrders++;
+      todayRevenue += Number(o.total || 0);
+    }
+    if (o.status === "Pending") pending++;
+    if (o.phone) customers.add(o.phone);
+  });
+
+  document.getElementById("todayOrders").textContent = todayOrders;
+  document.getElementById("todayRevenue").textContent = "₹" + todayRevenue;
+  document.getElementById("pendingOrders").textContent = pending;
+  document.getElementById("uniqueCustomers").textContent = customers.size;
+}
+
+/* =======================
+   RENDER ORDERS
 ======================= */
 function renderOrders() {
   const q = document.getElementById("search").value.toLowerCase();
   const st = document.getElementById("statusFilter").value;
 
   ordersTable.innerHTML = "";
+  mobileOrders.innerHTML = "";
 
-  ORDERS.filter(o =>
-    (!st || o.status === st) &&
-    (o.orderId.toLowerCase().includes(q) || o.phone.includes(q))
-  ).forEach(o => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${o.orderId}</td>
-      <td>${o.name}<br><small>${o.phone}</small></td>
-      <td>${o.items.length}</td>
-      <td>₹${o.total}</td>
-      <td>
-        ${o.payment?.screenshot
-          ? `<img src="${BACKEND}${o.payment.screenshot}" class="proof"
-               onclick="showImg('${BACKEND}${o.payment.screenshot}')">`
-          : "—"}
-      </td>
-      <td>${o.status}</td>
-      <td>
-        <button onclick="updateStatus('${o.orderId}','Approved')">✓</button>
-        <button onclick="updateStatus('${o.orderId}','Rejected')">✕</button>
-      </td>
-    `;
-    ordersTable.appendChild(tr);
-  });
+  ORDERS
+    .filter(o =>
+      (!st || o.status === st) &&
+      (o.orderId.toLowerCase().includes(q) || o.phone.includes(q))
+    )
+    .forEach(o => {
+      // DESKTOP
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${o.orderId}</td>
+        <td>${o.name}<br><small>${o.phone}</small></td>
+        <td>${o.items.length}</td>
+        <td>₹${o.total}</td>
+        <td>
+          ${o.payment?.screenshot
+            ? `<img src="${BACKEND}${o.payment.screenshot}" class="proof"
+                 onclick="showImg('${BACKEND}${o.payment.screenshot}')">`
+            : "—"}
+        </td>
+        <td class="status ${o.status}" id="status-${o.orderId}">
+          ${o.status}
+        </td>
+        <td>
+          <button onclick="updateStatus('${o.orderId}','Approved')">✓</button>
+          <button onclick="updateStatus('${o.orderId}','Rejected')">✕</button>
+        </td>
+      `;
+      ordersTable.appendChild(tr);
+
+      // MOBILE
+      const card = document.createElement("div");
+      card.className = "wa-order";
+      card.ontouchstart = e => { touchStartX = e.changedTouches[0].clientX; touchMoved = false; };
+      card.ontouchmove = e => { if (Math.abs(e.changedTouches[0].clientX - touchStartX) > 10) touchMoved = true; };
+      card.ontouchend = e => handleSwipe(e, o.orderId);
+
+      card.onclick = () => { if (!touchMoved) openOrderDetail(o); };
+
+      card.innerHTML = `
+        <div class="wa-left">
+          <b>${o.name}</b>
+          <div>${o.phone}</div>
+          <div>Items: ${o.items.length}</div>
+        </div>
+        <div class="wa-right">
+          ₹${o.total}
+          <div class="status ${o.status}" id="m-${o.orderId}">
+            ${o.status}
+          </div>
+        </div>
+      `;
+      mobileOrders.appendChild(card);
+    });
 }
 
 /* =======================
-   ORDER STATUS
+   ORDER ACTIONS
 ======================= */
 async function updateStatus(orderId, status) {
-  await fetch(`${BACKEND}/api/admin/orders/${orderId}/status`, {
+  const res = await fetch(`${BACKEND}/api/admin/orders/${orderId}/status`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -97,6 +155,51 @@ async function updateStatus(orderId, status) {
     },
     body: JSON.stringify({ status })
   });
+  const data = await res.json();
+  if (!data.success) return alert("Update failed");
+
+  document.getElementById("status-" + orderId).textContent = status;
+  const m = document.getElementById("m-" + orderId);
+  if (m) m.textContent = status;
+}
+
+function handleSwipe(e, orderId) {
+  const diff = e.changedTouches[0].clientX - touchStartX;
+  if (!touchMoved || Math.abs(diff) < 60) return;
+  if (diff > 0) updateStatus(orderId, "Approved");
+  else updateStatus(orderId, "Rejected");
+}
+
+/* =======================
+   ORDER DETAIL MODAL
+======================= */
+function openOrderDetail(order) {
+  CURRENT_MODAL_ORDER = order;
+  odId.textContent = order.orderId;
+  odCustomer.innerHTML = `${order.name}<br>${order.phone}`;
+
+  let mrp = 0;
+  odItems.innerHTML = order.items.map(i => {
+    const price = i.price || 0;
+    mrp += price * i.qty;
+    return `<div>${i.qty} × ${i.name} — ₹${price * i.qty}</div>`;
+  }).join("");
+
+  odMrp.textContent = "₹" + mrp;
+  odSave.textContent = "₹" + (mrp - order.total);
+  odStatus.value = order.status;
+  orderDetailModal.classList.add("show");
+}
+
+function saveOrderStatus() {
+  if (!CURRENT_MODAL_ORDER) return;
+  updateStatus(CURRENT_MODAL_ORDER.orderId, odStatus.value);
+  closeOrderDetail();
+}
+
+function closeOrderDetail() {
+  orderDetailModal.classList.remove("show");
+  CURRENT_MODAL_ORDER = null;
 }
 
 /* =======================
@@ -111,175 +214,96 @@ function closeModal() {
 }
 
 /* =======================
-   LOAD PRODUCTS (FAST)
+   PRODUCTS (IMAGE UPLOAD)
 ======================= */
 async function loadProducts() {
-  const res = await fetch(`${BACKEND}/api/admin/products`, {
-    headers: { Authorization: "Bearer " + token }
-  });
-  const data = await res.json();
-  if (!data.success) return;
+  try {
+    const res = await fetch(`${BACKEND}/api/admin/products`, {
+      headers: { Authorization: "Bearer " + token }
+    });
 
-  PRODUCTS = data.products;
-  renderProductsPage(true);
-}
+    const data = await res.json();
+    console.log("🧪 PRODUCTS API RESPONSE:", data); // 👈 ADD THIS
 
-/* =======================
-   PAGINATED RENDER
-======================= */
-function renderProductsPage(reset = false) {
-  if (reset) {
-    PRODUCT_PAGE = 1;
-    productListEl.innerHTML = "";
-  }
+    if (!data.success) {
+      alert("Products load failed");
+      return;
+    }
 
-  const start = (PRODUCT_PAGE - 1) * PAGE_SIZE;
-  const end = start + PAGE_SIZE;
+    PRODUCTS = data.products;
+    renderProductsAdmin(PRODUCTS);
 
-  const pageItems = PRODUCTS.slice(start, end);
-  renderProductsAdmin(pageItems);
-
-  if (end < PRODUCTS.length) {
-    const btn = document.createElement("button");
-    btn.textContent = "⬇ Load more";
-    btn.style.margin = "12px auto";
-    btn.style.display = "block";
-    btn.onclick = () => {
-      PRODUCT_PAGE++;
-      btn.remove();
-      renderProductsPage(false);
-    };
-    productListEl.appendChild(btn);
+  } catch (e) {
+    console.error("❌ Product load error", e);
   }
 }
 
-/* =======================
-   RENDER PRODUCTS (LIGHT)
-======================= */
+
 function renderProductsAdmin(list) {
+  productListEl.innerHTML = "";
   list.forEach(p => {
     const row = document.createElement("div");
     row.className = "product-row";
     row.dataset.id = p._id;
-
     row.innerHTML = `
-      <img class="thumb" loading="lazy"
-        src="${BACKEND}${p.image || '/img/placeholders/medicine.png'}">
-
-      <input class="edit-name" value="${p.name}">
-      <input class="edit-company" value="${p.company || ""}">
-      <input class="edit-mrp" type="number" value="${p.mrp || 0}">
-
+      <span class="p-name">${p.name}</span>
       <input type="file" class="img-input" accept="image/*">
-
-      <button class="upload-btn">📸</button>
-      <button class="save-btn">💾</button>
-      <button class="del-btn">🗑️</button>
+      <button class="upload-btn">Upload</button>
     `;
-
-    // 🔍 Preview
-    const imgInput = row.querySelector(".img-input");
-    const imgEl = row.querySelector(".thumb");
-    imgInput.addEventListener("change", e => {
-      const f = e.target.files[0];
-      if (f) imgEl.src = URL.createObjectURL(f);
-    });
-
     productListEl.appendChild(row);
   });
 }
 
-/* =======================
-   PRODUCT SEARCH (FAST)
-======================= */
 productSearchInput?.addEventListener("input", e => {
   const q = e.target.value.toLowerCase();
-  const filtered = PRODUCTS.filter(p =>
-    p.name.toLowerCase().includes(q)
+  renderProductsAdmin(PRODUCTS.filter(p => p.name.toLowerCase().includes(q)));
+});
+
+productListEl?.addEventListener("click", async e => {
+  const btn = e.target.closest(".upload-btn");
+  if (!btn) return;
+
+  const row = btn.closest(".product-row");
+  const file = row.querySelector(".img-input").files[0];
+  if (!file) return alert("Select image first");
+
+  const fd = new FormData();
+  fd.append("image", file);
+
+  const res = await fetch(
+    `${BACKEND}/api/admin/products/${row.dataset.id}/image`,
+    { method: "POST", headers: { Authorization: "Bearer " + token }, body: fd }
   );
-  PRODUCT_PAGE = 1;
-  productListEl.innerHTML = "";
-  PRODUCTS = filtered;
-  renderProductsPage(true);
+  const data = await res.json();
+  alert(data.success ? "✅ Image uploaded" : "❌ Upload failed");
 });
 
-/* =======================
-   PRODUCT ACTIONS
-======================= */
-productListEl.addEventListener("click", async e => {
-  const row = e.target.closest(".product-row");
-  if (!row) return;
-  const id = row.dataset.id;
+async function importProductsFromJSON() {
+  if (!confirm("⚠️ One-time import. Continue?")) return;
 
-  // 📸 UPLOAD
-  if (e.target.classList.contains("upload-btn")) {
-    const file = row.querySelector(".img-input").files[0];
-    if (!file) return;
+  try {
+    const res = await fetch(
+      `${BACKEND}/api/admin/products/import-json`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer " + token
+        }
+      }
+    );
 
-    const fd = new FormData();
-    fd.append("image", file);
+    const data = await res.json();
 
-    await fetch(`${BACKEND}/api/admin/products/${id}/image`, {
-      method: "POST",
-      headers: { Authorization: "Bearer " + token },
-      body: fd
-    });
+    if (data.success) {
+      alert(`✅ Products imported: ${data.inserted}`);
+      loadProducts(); // refresh product list
+    } else {
+      alert("❌ Import failed");
+    }
+  } catch (e) {
+    console.error(e);
+    alert("⚠️ Server error during import");
   }
-
-  // 💾 SAVE
-  if (e.target.classList.contains("save-btn")) {
-    const body = {
-      name: row.querySelector(".edit-name").value,
-      company: row.querySelector(".edit-company").value,
-      mrp: row.querySelector(".edit-mrp").value
-    };
-
-    await fetch(`${BACKEND}/api/admin/products/${id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + token
-      },
-      body: JSON.stringify(body)
-    });
-  }
-
-  // 🗑️ DELETE
-  if (e.target.classList.contains("del-btn")) {
-    if (!confirm("Delete product?")) return;
-
-    await fetch(`${BACKEND}/api/admin/products/${id}`, {
-      method: "DELETE",
-      headers: { Authorization: "Bearer " + token }
-    });
-    row.remove();
-  }
-});
-
-/* =======================
-   ADD PRODUCT
-======================= */
-async function addProduct() {
-  if (!newName.value.trim()) return alert("Product name required");
-
-  await fetch(`${BACKEND}/api/admin/products`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer " + token
-    },
-    body: JSON.stringify({
-      name: newName.value,
-      company: newCompany.value,
-      mrp: newMrp.value
-    })
-  });
-
-  newName.value = "";
-  newCompany.value = "";
-  newMrp.value = "";
-
-  loadProducts();
 }
 
 /* =======================
