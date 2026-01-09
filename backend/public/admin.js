@@ -131,58 +131,7 @@ function renderOrders() {
     `;
     tableBody.appendChild(tr);
 
-    /* =======================================
-   IMAGE UPLOAD (PRODUCTS) ✅ ADDED
-======================================= */
-    document.addEventListener("click", async (e) => {
-      const btn = e.target.closest(".upload-btn");
-      if (!btn) return;
-
-      const row = btn.closest(".product-row");
-      if (!row) return;
-
-      const fileInput = row.querySelector(".img-input");
-      const productId = row.dataset.id;
-
-      if (!productId) {
-        alert("Product ID missing");
-        return;
-      }
-
-      if (!fileInput || !fileInput.files[0]) {
-        alert("Select image first");
-        return;
-      }
-
-      const fd = new FormData();
-      fd.append("image", fileInput.files[0]);
-
-      try {
-        const res = await fetch(
-          `${BACKEND}/api/admin/products/${productId}/image`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${token}`
-            },
-            body: fd
-          }
-        );
-
-        const data = await res.json();
-
-        if (data.success) {
-          alert("✅ Image uploaded successfully");
-        } else {
-          alert("❌ Upload failed");
-        }
-
-      } catch (err) {
-        console.error("Image upload error:", err);
-        alert("Server error during upload");
-      }
-    });
-
+    
     /* =======================================
        ITEMS VIEW
     ======================================= */
