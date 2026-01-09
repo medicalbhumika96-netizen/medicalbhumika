@@ -567,3 +567,28 @@
     text-align: left;
   }
 }
+/* ======================================
+   FIX: MOBILE ORDERS NOT SHOWING
+====================================== */
+
+#mobileOrders {
+  display: none; /* default desktop */
+}
+
+@media (max-width: 900px) {
+
+  /* Desktop table off */
+  table {
+    display: none !important;
+  }
+
+  /* ✅ MOBILE ORDERS FORCE ON */
+  #mobileOrders {
+    display: block !important;
+    padding: 10px;
+  }
+
+  .wa-order {
+    display: flex !important;
+  }
+}

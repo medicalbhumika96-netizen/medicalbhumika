@@ -47,7 +47,9 @@ async function loadOrders() {
 
     ORDERS = data.orders || [];
     renderOrders();
-  } catch {}
+  } catch (e) {
+    console.error(e);
+  }
 }
 
 /* =======================
@@ -58,11 +60,13 @@ function renderOrders() {
   const st = document.getElementById("statusFilter").value;
 
   ordersTable.innerHTML = "";
+  mobileOrders.innerHTML = "";
 
   ORDERS.filter(o =>
     (!st || o.status === st) &&
     (o.orderId.toLowerCase().includes(q) || o.phone.includes(q))
   ).forEach(o => {
+    // DESKTOP
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${o.orderId}</td>
@@ -82,6 +86,22 @@ function renderOrders() {
       </td>
     `;
     ordersTable.appendChild(tr);
+
+    // MOBILE
+    const card = document.createElement("div");
+    card.className = "wa-order";
+    card.innerHTML = `
+      <div>
+        <b>${o.name}</b>
+        <div>${o.phone}</div>
+        <div>Items: ${o.items.length}</div>
+      </div>
+      <div style="text-align:right">
+        ₹${o.total}
+        <div>${o.status}</div>
+      </div>
+    `;
+    mobileOrders.appendChild(card);
   });
 }
 
@@ -97,6 +117,7 @@ async function updateStatus(orderId, status) {
     },
     body: JSON.stringify({ status })
   });
+  loadOrders();
 }
 
 /* =======================
@@ -154,7 +175,7 @@ function renderProductsPage(reset = false) {
 }
 
 /* =======================
-   RENDER PRODUCTS (LIGHT)
+   RENDER PRODUCTS
 ======================= */
 function renderProductsAdmin(list) {
   list.forEach(p => {
@@ -177,7 +198,6 @@ function renderProductsAdmin(list) {
       <button class="del-btn">🗑️</button>
     `;
 
-    // 🔍 Preview
     const imgInput = row.querySelector(".img-input");
     const imgEl = row.querySelector(".thumb");
     imgInput.addEventListener("change", e => {
@@ -190,7 +210,7 @@ function renderProductsAdmin(list) {
 }
 
 /* =======================
-   PRODUCT SEARCH (FAST)
+   PRODUCT SEARCH
 ======================= */
 productSearchInput?.addEventListener("input", e => {
   const q = e.target.value.toLowerCase();
@@ -211,7 +231,6 @@ productListEl.addEventListener("click", async e => {
   if (!row) return;
   const id = row.dataset.id;
 
-  // 📸 UPLOAD
   if (e.target.classList.contains("upload-btn")) {
     const file = row.querySelector(".img-input").files[0];
     if (!file) return;
@@ -226,25 +245,21 @@ productListEl.addEventListener("click", async e => {
     });
   }
 
-  // 💾 SAVE
   if (e.target.classList.contains("save-btn")) {
-    const body = {
-      name: row.querySelector(".edit-name").value,
-      company: row.querySelector(".edit-company").value,
-      mrp: row.querySelector(".edit-mrp").value
-    };
-
     await fetch(`${BACKEND}/api/admin/products/${id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
         Authorization: "Bearer " + token
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify({
+        name: row.querySelector(".edit-name").value,
+        company: row.querySelector(".edit-company").value,
+        mrp: row.querySelector(".edit-mrp").value
+      })
     });
   }
 
-  // 🗑️ DELETE
   if (e.target.classList.contains("del-btn")) {
     if (!confirm("Delete product?")) return;
 
@@ -280,6 +295,29 @@ async function addProduct() {
   newMrp.value = "";
 
   loadProducts();
+}
+
+/* =======================
+   EXPORT ORDERS CSV  ✅ FIX
+======================= */
+function exportCSV() {
+  if (!ORDERS.length) {
+    alert("No orders to export");
+    return;
+  }
+
+  const rows = [["Order ID", "Name", "Phone", "Total", "Status"]];
+  ORDERS.forEach(o => {
+    rows.push([o.orderId, o.name, o.phone, o.total, o.status]);
+  });
+
+  const csv = rows.map(r => r.join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "orders.csv";
+  a.click();
 }
 
 /* =======================
