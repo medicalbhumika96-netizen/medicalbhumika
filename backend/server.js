@@ -167,6 +167,7 @@ app.get("/api/admin/orders", adminAuth, async (req, res) => {
 /* ==================================================
    ADMIN — FETCH PRODUCTS
 ================================================== */
+// ================= ADMIN — FETCH PRODUCTS =================
 app.get("/api/admin/products", adminAuth, async (req, res) => {
   try {
     const products = await Product.find().sort({ name: 1 });
@@ -176,6 +177,7 @@ app.get("/api/admin/products", adminAuth, async (req, res) => {
     res.status(500).json({ success: false });
   }
 });
+
 
 /* ==================================================
    ADMIN — UPDATE ORDER STATUS

@@ -217,14 +217,27 @@ function closeModal() {
    PRODUCTS (IMAGE UPLOAD)
 ======================= */
 async function loadProducts() {
-  const res = await fetch(`${BACKEND}/api/admin/products`, {
-    headers: { Authorization: "Bearer " + token }
-  });
-  const data = await res.json();
-  if (!data.success) return;
-  PRODUCTS = data.products;
-  renderProductsAdmin(PRODUCTS);
+  try {
+    const res = await fetch(`${BACKEND}/api/admin/products`, {
+      headers: { Authorization: "Bearer " + token }
+    });
+
+    const data = await res.json();
+    console.log("🧪 PRODUCTS API RESPONSE:", data); // 👈 ADD THIS
+
+    if (!data.success) {
+      alert("Products load failed");
+      return;
+    }
+
+    PRODUCTS = data.products;
+    renderProductsAdmin(PRODUCTS);
+
+  } catch (e) {
+    console.error("❌ Product load error", e);
+  }
 }
+
 
 function renderProductsAdmin(list) {
   productListEl.innerHTML = "";
