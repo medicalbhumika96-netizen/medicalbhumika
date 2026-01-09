@@ -182,11 +182,11 @@ app.get("/api/admin/products", adminAuth, async (req, res) => {
 ================================================== */
 app.post("/api/admin/products/import-json", adminAuth, async (req, res) => {
   try {
-    const raw = fs.readFileSync("products_with_images.json", "utf-8");
+    const raw = fs.readFileSync("./public/products_with_images.json", "utf-8");
     const json = JSON.parse(raw);
 
     if (!json.data || !Array.isArray(json.data)) {
-      return res.status(400).json({ success: false });
+      return res.status(400).json({ success: false, message: "Invalid JSON" });
     }
 
     let inserted = 0;
@@ -198,9 +198,9 @@ app.post("/api/admin/products/import-json", adminAuth, async (req, res) => {
       await Product.create({
         name: item.Product,
         company: item.Company || "",
-        price: Number(item.MRP) || 0,
-        image: item.Image || "",
-        imageType: item.Image ? "real" : "representative"
+        mrp: Number(item.MRP) || 0,
+        image: item.Image || "/img/placeholders/medicine.png",
+        imageType: item.Image ? "real" : "placeholder"
       });
 
       inserted++;
@@ -210,7 +210,7 @@ app.post("/api/admin/products/import-json", adminAuth, async (req, res) => {
 
   } catch (err) {
     console.error("❌ Import error:", err);
-    res.status(500).json({ success: false });
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
