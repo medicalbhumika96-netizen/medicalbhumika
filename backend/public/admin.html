@@ -4,167 +4,99 @@
   <meta charset="UTF-8">
   <title>Bhumika Medical — Admin Console</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- 🔔 New Order Sound -->
   <audio id="newOrderSound" src="new-order.mp3" preload="auto"></audio>
-
-  <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#0a7cff">
   <link rel="stylesheet" href="admin.css">
 </head>
 
 <body>
 
-  <!-- ================= HEADER ================= -->
-  <div class="header">
-    <h2>📦 Admin Orders Console</h2>
-    <button class="logout" onclick="logout()">Logout</button>
-  </div>
+<div class="header">
+  <h2>📦 Admin Orders Console</h2>
+  <button class="logout" onclick="logout()">Logout</button>
+</div>
 
-  <!-- ================= DASHBOARD ================= -->
-  <div class="dashboard">
-    <div class="card">
-      <h4>Today Orders</h4>
-      <div class="value" id="todayOrders">0</div>
+<!-- ================= DASHBOARD ================= -->
+<div class="dashboard">
+  <div class="card"><h4>Today Orders</h4><div id="todayOrders">0</div></div>
+  <div class="card"><h4>Today Revenue</h4><div id="todayRevenue">₹0</div></div>
+  <div class="card"><h4>Pending Orders</h4><div id="pendingOrders">0</div></div>
+  <div class="card"><h4>Unique Customers</h4><div id="uniqueCustomers">0</div></div>
+</div>
+
+<!-- ================= TOOLBAR ================= -->
+<div class="toolbar">
+  <input id="search" placeholder="Search Order / Phone">
+  <select id="statusFilter">
+    <option value="">All</option>
+    <option>Pending</option>
+    <option>Approved</option>
+    <option>Packed</option>
+    <option>Out for Delivery</option>
+    <option>Delivered</option>
+    <option>Rejected</option>
+  </select>
+  <button onclick="exportCSV()">⬇ Export CSV</button>
+</div>
+
+<!-- ================= ORDERS TABLE ================= -->
+<table>
+  <thead>
+    <tr>
+      <th>Order ID</th>
+      <th>Customer</th>
+      <th>Items</th>
+      <th>Total</th>
+      <th>Proof</th>
+      <th>Status</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody id="orders"></tbody>
+</table>
+
+<div id="mobileOrders"></div>
+
+<!-- ================= PRODUCTS IMAGE UPLOAD ================= -->
+<h3 style="margin:20px 12px 10px">🧴 Products — Upload / Replace Image</h3>
+
+<div style="margin:0 12px 10px">
+  <input
+    id="productSearch"
+    placeholder="Search product name"
+    style="width:100%;padding:8px;border-radius:8px">
+</div>
+
+<div
+  id="productList"
+  style="margin:0 12px 30px;
+         background:#020617;
+         border-radius:12px;
+         padding:12px">
+</div>
+
+<!-- ================= IMAGE MODAL ================= -->
+<div class="modal" id="modal" onclick="closeModal()">
+  <div class="modal-content" onclick="event.stopPropagation()">
+    <img id="modalImg">
+  </div>
+</div>
+
+<!-- ================= ORDER DETAIL MODAL ================= -->
+<div id="orderDetailModal" class="modal" onclick="closeOrderDetail()">
+  <div class="modal-content" onclick="event.stopPropagation()">
+    <h3 id="od-id"></h3>
+    <div id="od-customer"></div>
+    <div id="od-items"></div>
+    <div>
+      MRP: <b id="od-mrp"></b><br>
+      Savings: <span id="od-save"></span>
     </div>
-    <div class="card">
-      <h4>Today Revenue</h4>
-      <div class="value" id="todayRevenue">₹0</div>
-    </div>
-    <div class="card">
-      <h4>Pending Orders</h4>
-      <div class="value" id="pendingOrders">0</div>
-    </div>
-    <div class="card">
-      <h4>Unique Customers</h4>
-      <div class="value" id="uniqueCustomers">0</div>
-    </div>
+    <select id="od-status"></select>
+    <button onclick="saveOrderStatus()">Save</button>
+    <button onclick="closeOrderDetail()">Close</button>
   </div>
+</div>
 
-  <!-- ================= TOOLBAR ================= -->
-  <div class="toolbar">
-    <input id="search" placeholder="Search Order / Phone">
-    <select id="statusFilter">
-      <option value="">All</option>
-      <option>Pending</option>
-      <option>Approved</option>
-      <option>Packed</option>
-      <option>Out for Delivery</option>
-      <option>Delivered</option>
-      <option>Rejected</option>
-    </select>
-    <button class="export" onclick="exportCSV()">⬇ Export CSV</button>
-  </div>
-
-  <!-- ================= ORDERS TABLE ================= -->
-  <table>
-    <thead>
-      <tr>
-        <th>Order ID</th>
-        <th>Customer</th>
-        <th>Items</th>
-        <th>Total</th>
-        <th>Proof</th>
-        <th>Status</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-
-    <!-- 🔴 REQUIRED FOR admin.js -->
-    <tbody id="orders"></tbody>
-  </table>
-
-  <!-- ================= MOBILE ORDERS ================= -->
-  <div id="mobileOrders"></div>
-
-  <!-- =================================================
-       🧴 PRODUCTS — IMAGE UPLOAD SECTION
-  ================================================== -->
-  <h3 style="margin:20px 12px 10px">🧴 Products — Upload / Replace Image</h3>
-
-  <div style="margin:0 12px 10px">
-    <input
-      id="productSearch"
-      placeholder="Search product name"
-      style="width:100%;padding:8px;border-radius:8px"
-    >
-  </div>
-
-  <div
-    id="productList"
-    style="margin:0 12px 30px;
-           background:#020617;
-           border-radius:12px;
-           padding:12px">
-  </div>
-
-  <!-- ================= IMAGE MODAL ================= -->
-  <div class="modal" id="modal" onclick="closeModal()">
-    <div class="modal-content" onclick="event.stopPropagation()">
-      <img id="modalImg">
-    </div>
-  </div>
-
-  <!-- ================= ORDER DETAIL MODAL ================= -->
-  <div id="orderDetailModal" class="modal" onclick="closeOrderDetail()">
-    <div class="modal-content"
-         style="background:#020617;
-                padding:16px;
-                border-radius:14px;
-                width:92vw"
-         onclick="event.stopPropagation()">
-
-      <h3 id="od-id"></h3>
-      <div id="od-customer"></div>
-
-      <div id="od-items" style="margin-top:10px"></div>
-
-      <div style="margin-top:10px">
-        <div>MRP Total: <b id="od-mrp"></b></div>
-        <div style="color:#22c55e">
-          Savings: <span id="od-save"></span>
-        </div>
-      </div>
-
-      <div style="margin-top:14px">
-        <label style="font-size:13px">Update Order Status</label>
-
-        <select id="od-status"
-                style="width:100%;
-                       margin-top:6px;
-                       padding:8px;
-                       border-radius:8px">
-          <option>Pending</option>
-          <option>Approved</option>
-          <option>Packed</option>
-          <option>Out for Delivery</option>
-          <option>Delivered</option>
-          <option>Rejected</option>
-        </select>
-
-        <button onclick="saveOrderStatus()"
-                style="margin-top:8px;
-                       width:100%;
-                       background:#2563eb;
-                       border:none;
-                       color:#fff;
-                       padding:8px;
-                       border-radius:8px">
-          Save Status
-        </button>
-
-        <button onclick="closeOrderDetail()"
-                style="width:100%;
-                       margin-top:8px;
-                       background:#dc2626;
-                       color:#fff">
-          Close
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ================= SCRIPT ================= -->
-  <script src="admin.js"></script>
+<script src="admin.js"></script>
 </body>
 </html>
