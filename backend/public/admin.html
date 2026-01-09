@@ -1,33 +1,367 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <title>Bhumika Medical — Admin Console</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <audio id="newOrderSound" src="new-order.mp3" preload="auto"></audio>
-  <link rel="stylesheet" href="admin.css">
+
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0a7cff">
+
+  <style>
+    * {
+      box-sizing: border-box
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, Arial;
+      background: #0c1117;
+      color: #e6edf3;
+      padding: 16px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px
+    }
+
+    .logout {
+      background: #dc3545;
+      border: none;
+      color: #fff;
+      padding: 6px 12px;
+      cursor: pointer
+    }
+
+    /* DASHBOARD */
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .card {
+      background: #020617;
+      border: 1px solid #1f2937;
+      padding: 14px;
+      border-radius: 8px;
+    }
+
+    .card h4 {
+      margin: 0;
+      font-size: 13px;
+      color: #94a3b8
+    }
+
+    .card .value {
+      margin-top: 6px;
+      font-size: 22px;
+      font-weight: 700
+    }
+
+    /* TOOLBAR */
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+      flex-wrap: wrap
+    }
+
+    select,
+    input,
+    button {
+      padding: 6px 10px;
+      border-radius: 4px;
+      border: 1px solid #333;
+      background: #111827;
+      color: #e6edf3
+    }
+
+    button.export {
+      background: #1f2937
+    }
+
+    button.approve {
+      background: #16a34a
+    }
+
+    button.reject {
+      background: #dc2626
+    }
+
+    /* DESKTOP TABLE */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #020617
+    }
+
+    th,
+    td {
+      border: 1px solid #1f2937;
+      padding: 8px;
+      font-size: 13px;
+      vertical-align: top
+    }
+
+    th {
+      background: #0a7cff;
+      color: #fff
+    }
+
+    .status.Pending {
+      color: #facc15
+    }
+
+    .status.Approved {
+      color: #22c55e
+    }
+
+    .status.Packed {
+      color: #38bdf8
+    }
+
+    .status.Out\ for\ Delivery {
+      color: #a855f7
+    }
+
+    .status.Delivered {
+      color: #10b981
+    }
+
+    .status.Rejected {
+      color: #ef4444
+    }
+
+    img.proof {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 1px solid #334155;
+    }
+
+    /* MODAL */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .85);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 999
+    }
+
+    .modal.show {
+      display: flex
+    }
+
+    .modal-content {
+      position: relative
+    }
+
+    .modal img {
+      max-width: 90vw;
+      max-height: 80vh;
+      border-radius: 8px
+    }
+
+    /* MOBILE */
+    #mobileOrders {
+      display: none
+    }
+
+    /* ===== MOBILE WHATSAPP UI ===== */
+    @media (max-width:768px) {
+      table {
+        display: none
+      }
+
+      #mobileOrders {
+        display: flex;
+        flex-direction: column;
+        gap: 10px
+      }
+
+      .wa-order {
+        background: #020617;
+        border: 1px solid #1f2937;
+        border-radius: 14px;
+        padding: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        touch-action: pan-y;
+        position: relative;
+        overflow: hidden;
+        transition: .2s;
+      }
+
+      .wa-left {
+        flex: 1
+      }
+
+      .wa-name {
+        font-weight: 600;
+        font-size: 15px
+      }
+
+      .wa-phone {
+        font-size: 13px;
+        color: #cbd5f5;
+        cursor: pointer;
+        word-break: break-all
+      }
+
+      .wa-items {
+        font-size: 12px;
+        color: #94a3b8;
+        cursor: pointer
+      }
+
+      .wa-right {
+        text-align: right;
+        min-width: 90px
+      }
+
+      .wa-total {
+        font-weight: 700
+      }
+
+      .wa-status {
+        font-size: 12px;
+        margin-top: 4px
+      }
+
+      .swipe-approve {
+        background: #052e16;
+        transform: translateX(40px)
+      }
+
+      .swipe-reject {
+        background: #450a0a;
+        transform: translateX(-40px)
+      }
+
+      .wa-order::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 48px;
+        font-weight: 800;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .wa-order.swipe-approve::after {
+        content: "✔";
+        color: #22c55e;
+        opacity: .9
+      }
+
+      .wa-order.swipe-reject::after {
+        content: "✖";
+        color: #ef4444;
+        opacity: .9
+      }
+    }
+  </style>
 </head>
 
 <body>
 
-<div class="header">
-  <h2>📦 Admin Orders Console</h2>
-  <button class="logout" onclick="logout()">Logout</button>
-</div>
+  <div class="header">
+    <h2>📦 Admin Orders Console</h2>
+    <button class="logout" onclick="logout()">Logout</button>
+  </div>
 
-<!-- ================= DASHBOARD ================= -->
-<div class="dashboard">
-  <div class="card"><h4>Today Orders</h4><div id="todayOrders">0</div></div>
-  <div class="card"><h4>Today Revenue</h4><div id="todayRevenue">₹0</div></div>
-  <div class="card"><h4>Pending Orders</h4><div id="pendingOrders">0</div></div>
-  <div class="card"><h4>Unique Customers</h4><div id="uniqueCustomers">0</div></div>
-</div>
+  <div class="dashboard">
+    <div class="card">
+      <h4>Today Orders</h4>
+      <div class="value" id="todayOrders">0</div>
+    </div>
+    <div class="card">
+      <h4>Today Revenue</h4>
+      <div class="value" id="todayRevenue">₹0</div>
+    </div>
+    <div class="card">
+      <h4>Pending Orders</h4>
+      <div class="value" id="pendingOrders">0</div>
+    </div>
+    <div class="card">
+      <h4>Unique Customers</h4>
+      <div class="value" id="uniqueCustomers">0</div>
+    </div>
+  </div>
 
-<!-- ================= TOOLBAR ================= -->
-<div class="toolbar">
-  <input id="search" placeholder="Search Order / Phone">
-  <select id="statusFilter">
-    <option value="">All</option>
+  <div class="toolbar">
+    <input id="search" placeholder="Search Order / Phone">
+    <select id="statusFilter">
+      <option value="">All</option>
+      <option>Pending</option>
+      <option>Approved</option>
+      <option>Packed</option>
+      <option>Out for Delivery</option>
+      <option>Delivered</option>
+      <option>Rejected</option>
+    </select>
+    <button class="export" onclick="exportCSV()">⬇ Export CSV</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Order ID</th>
+        <th>Customer</th>
+        <th>Items</th>
+        <th>Total</th>
+        <th>Proof</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="orders"></tbody>
+  </table>
+
+  <div id="mobileOrders"></div>
+
+  <!-- IMAGE MODAL -->
+  <div class="modal" id="modal" onclick="closeModal()">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <img id="modalImg">
+    </div>
+  </div>
+
+  <!-- ORDER DETAIL MODAL -->
+  <div id="orderDetailModal" class="modal" onclick="closeOrderDetail()">
+    <div class="modal-content" style="background:#020617;padding:16px;border-radius:14px;width:92vw"
+      onclick="event.stopPropagation()">
+
+      <h3 id="od-id"></h3>
+      <div id="od-customer"></div>
+
+      <div id="od-items" style="margin-top:10px"></div>
+
+      <div style="margin-top:10px">
+        <div>MRP Total: <b id="od-mrp"></b></div>
+        <div>Payable: <b id="od-pay"></b></div>
+        <div style="color:#22c55e">Savings: <span id="od-save"></span></div>
+      </div>
+<div style="margin-top:14px">
+  <label style="font-size:13px">Update Order Status</label>
+
+  <select id="od-status"
+          style="width:100%;margin-top:6px;padding:8px;border-radius:8px">
     <option>Pending</option>
     <option>Approved</option>
     <option>Packed</option>
@@ -35,68 +369,25 @@
     <option>Delivered</option>
     <option>Rejected</option>
   </select>
-  <button onclick="exportCSV()">⬇ Export CSV</button>
+
+  <button onclick="saveOrderStatus()"
+          style="margin-top:8px;width:100%;
+                 background:#2563eb;border:none;color:#fff;
+                 padding:8px;border-radius:8px">
+    Save Status
+  </button>
 </div>
 
-<!-- ================= ORDERS TABLE ================= -->
-<table>
-  <thead>
-    <tr>
-      <th>Order ID</th>
-      <th>Customer</th>
-      <th>Items</th>
-      <th>Total</th>
-      <th>Proof</th>
-      <th>Status</th>
-      <th>Action</th>
-    </tr>
-  </thead>
-  <tbody id="orders"></tbody>
-</table>
+      <select id="od-status" style="width:100%;margin-top:10px"></select>
+      <button onclick="saveOrderStatus()" style="width:100%;margin-top:6px">Save Status</button>
 
-<div id="mobileOrders"></div>
-
-<!-- ================= PRODUCTS IMAGE UPLOAD ================= -->
-<h3 style="margin:20px 12px 10px">🧴 Products — Upload / Replace Image</h3>
-
-<div style="margin:0 12px 10px">
-  <input
-    id="productSearch"
-    placeholder="Search product name"
-    style="width:100%;padding:8px;border-radius:8px">
-</div>
-
-<div
-  id="productList"
-  style="margin:0 12px 30px;
-         background:#020617;
-         border-radius:12px;
-         padding:12px">
-</div>
-
-<!-- ================= IMAGE MODAL ================= -->
-<div class="modal" id="modal" onclick="closeModal()">
-  <div class="modal-content" onclick="event.stopPropagation()">
-    <img id="modalImg">
-  </div>
-</div>
-
-<!-- ================= ORDER DETAIL MODAL ================= -->
-<div id="orderDetailModal" class="modal" onclick="closeOrderDetail()">
-  <div class="modal-content" onclick="event.stopPropagation()">
-    <h3 id="od-id"></h3>
-    <div id="od-customer"></div>
-    <div id="od-items"></div>
-    <div>
-      MRP: <b id="od-mrp"></b><br>
-      Savings: <span id="od-save"></span>
+      <button onclick="printInvoice()" style="width:100%;margin-top:8px">🧾 Print / Invoice</button>
+      <button onclick="closeOrderDetail()"
+        style="width:100%;margin-top:6px;background:#dc2626;color:#fff">Close</button>
     </div>
-    <select id="od-status"></select>
-    <button onclick="saveOrderStatus()">Save</button>
-    <button onclick="closeOrderDetail()">Close</button>
   </div>
-</div>
 
-<script src="admin.js"></script>
+  <script src="admin.js"></script>
 </body>
+
 </html>
