@@ -152,7 +152,7 @@ app.post("/api/admin/login", (req, res) => {
 });
 
 /* ==================================================
-   ADMIN — FETCH ORDERS ✅ (FIXED)
+   ADMIN — FETCH ORDERS
 ================================================== */
 app.get("/api/admin/orders", adminAuth, async (req, res) => {
   try {
@@ -167,7 +167,6 @@ app.get("/api/admin/orders", adminAuth, async (req, res) => {
 /* ==================================================
    ADMIN — FETCH PRODUCTS
 ================================================== */
-// ================= ADMIN — FETCH PRODUCTS =================
 app.get("/api/admin/products", adminAuth, async (req, res) => {
   try {
     const products = await Product.find().sort({ name: 1 });
@@ -178,6 +177,42 @@ app.get("/api/admin/products", adminAuth, async (req, res) => {
   }
 });
 
+/* ==================================================
+   ADMIN — IMPORT PRODUCTS FROM JSON (ONE TIME)
+================================================== */
+app.post("/api/admin/products/import-json", adminAuth, async (req, res) => {
+  try {
+    const raw = fs.readFileSync("products_with_images.json", "utf-8");
+    const json = JSON.parse(raw);
+
+    if (!json.data || !Array.isArray(json.data)) {
+      return res.status(400).json({ success: false });
+    }
+
+    let inserted = 0;
+
+    for (const item of json.data) {
+      const exists = await Product.findOne({ name: item.Product });
+      if (exists) continue;
+
+      await Product.create({
+        name: item.Product,
+        company: item.Company || "",
+        price: Number(item.MRP) || 0,
+        image: item.Image || "",
+        imageType: item.Image ? "real" : "representative"
+      });
+
+      inserted++;
+    }
+
+    res.json({ success: true, inserted });
+
+  } catch (err) {
+    console.error("❌ Import error:", err);
+    res.status(500).json({ success: false });
+  }
+});
 
 /* ==================================================
    ADMIN — UPDATE ORDER STATUS
@@ -201,7 +236,7 @@ app.post("/api/admin/orders/:orderId/status", adminAuth, async (req, res) => {
 });
 
 /* ==================================================
-   ADMIN — UPLOAD / REPLACE PRODUCT IMAGE ✅
+   ADMIN — UPLOAD / REPLACE PRODUCT IMAGE
 ================================================== */
 app.post(
   "/api/admin/products/:id/image",
