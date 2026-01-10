@@ -1,13 +1,14 @@
 import mongoose from "mongoose";
 
 const OrderSchema = new mongoose.Schema({
+
   orderId: {
     type: String,
     required: true,
     unique: true
   },
 
-  // ✅ OPTIONAL client-side reference (NOT real order id)
+  // optional client-side reference
   clientRef: {
     type: String,
     default: null
@@ -53,6 +54,16 @@ const OrderSchema = new mongoose.Schema({
     default: "Pending"
   },
 
+  // ✅ AUDIT LOG (PHASE 3)
+  statusLogs: [
+    {
+      from: { type: String },
+      to: { type: String },
+      by: { type: String, default: "admin" },
+      at: { type: Date, default: Date.now }
+    }
+  ],
+
   payment: {
     txn: String,
     screenshot: String,
@@ -74,6 +85,7 @@ const OrderSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   }
+
 });
 
 // auto-update updatedAt
@@ -83,4 +95,3 @@ OrderSchema.pre("save", function (next) {
 });
 
 export default mongoose.model("Order", OrderSchema);
-  
