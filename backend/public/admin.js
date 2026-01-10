@@ -75,22 +75,82 @@ async function loadOrders() {
 ======================= */
 function updateDashboard() {
   const today = new Date().toDateString();
-  let todayOrders = 0, todayRevenue = 0, pending = 0;
+  const month = new Date().getMonth();
+  const year = new Date().getFullYear();
+
+  let todayOrders = 0;
+  let todayRevenue = 0;
+  let monthRevenue = 0;
+
+  let pending = 0;
+  let rejected = 0;
+  let cod = 0;
+  let online = 0;
+
+  let totalOrders = 0;
+  let totalRevenue = 0;
+
   const customers = new Set();
+  const productMap = {};
 
   ORDERS.forEach(o => {
-    if (new Date(o.createdAt).toDateString() === today) {
+    const d = new Date(o.createdAt);
+
+    // ===== TODAY =====
+    if (d.toDateString() === today) {
       todayOrders++;
       todayRevenue += Number(o.total || 0);
     }
+
+    // ===== MONTH =====
+    if (d.getMonth() === month && d.getFullYear() === year) {
+      monthRevenue += Number(o.total || 0);
+    }
+
+    // ===== STATUS =====
     if (o.status === "Pending") pending++;
+    if (o.status === "Rejected") rejected++;
+
+    // ===== PAYMENT TYPE =====
+    if (o.payment?.method?.toLowerCase().includes("cash")) cod++;
+    else online++;
+
+    // ===== GLOBAL =====
+    totalOrders++;
+    totalRevenue += Number(o.total || 0);
+
+    // ===== CUSTOMERS =====
     if (o.phone) customers.add(o.phone);
+
+    // ===== PRODUCT COUNT =====
+    (o.items || []).forEach(i => {
+      if (!productMap[i.name]) productMap[i.name] = 0;
+      productMap[i.name] += i.qty;
+    });
   });
 
+  const avgOrder = totalOrders
+    ? Math.round(totalRevenue / totalOrders)
+    : 0;
+
+  // ===== UPDATE UI =====
   document.getElementById("todayOrders").textContent = todayOrders;
   document.getElementById("todayRevenue").textContent = "₹" + todayRevenue;
+
   document.getElementById("pendingOrders").textContent = pending;
   document.getElementById("uniqueCustomers").textContent = customers.size;
+
+  document.getElementById("codOrders").textContent = cod;
+  document.getElementById("onlineOrders").textContent = online;
+  document.getElementById("avgOrder").textContent = "₹" + avgOrder;
+  document.getElementById("rejectedOrders").textContent = rejected;
+
+  // ===== TOP PRODUCTS (console for now) =====
+  const topProducts = Object.entries(productMap)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+
+  console.table(topProducts.map(([name, qty]) => ({ Product: name, Qty: qty })));
 }
 
 const WHATSAPP_TEMPLATES = {
