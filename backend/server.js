@@ -4,36 +4,47 @@ import cors from "cors";
 import multer from "multer";
 import path from "path";
 import dotenv from "dotenv";
+import { fileURLToPath } from "url";
 
 import Order from "./models/Order.js";
-import adminAuth from "./middleware/adminAuth.js";
-
 import Product from "./models/Product.js";
-
+import adminAuth from "./middleware/adminAuth.js";
 
 dotenv.config();
 const app = express();
+
+/* =======================
+   PATH SETUP (ESM SAFE)
+======================= */
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /* =======================
    BASIC SETUP
 ======================= */
 app.use(cors());
 app.use(express.json());
-app.use("/uploads", express.static("uploads"));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+/* =======================
+   SERVE ADMIN (STATIC)
+======================= */
+app.use(express.static(path.join(__dirname, "public")));
+
+app.get("/admin", (req, res) => {
+  res.sendFile(path.join(__dirname, "public/admin.html"));
+});
 
 /* =======================
    DB CONNECT
 ======================= */
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-}).then(() => {
-  console.log("MongoDB connected");
-}).catch(err => {
-  console.error("Mongo error:", err);
-});
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("MongoDB connected"))
+  .catch(err => console.error("Mongo error:", err));
 
-
+/* =======================
+   HEALTH CHECK
+======================= */
 app.get("/", (req, res) => {
   res.json({
     success: true,
@@ -47,7 +58,7 @@ app.get("/", (req, res) => {
    MULTER (IMAGES)
 ======================= */
 const storage = multer.diskStorage({
-  destination: "uploads/",
+  destination: path.join(__dirname, "uploads"),
   filename: (req, file, cb) => {
     cb(null, Date.now() + "-" + file.originalname);
   }
@@ -55,9 +66,8 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 /* =======================
-   ADMIN AUTH (SAMPLE)
+   ADMIN LOGIN
 ======================= */
-// NOTE: replace with real login later
 app.post("/api/admin/login", (req, res) => {
   const { username, password } = req.body;
   if (
@@ -84,33 +94,29 @@ app.get("/api/admin/orders", adminAuth, async (req, res) => {
 /* =======================
    ADMIN: UPDATE ORDER STATUS (PHASE 3)
 ======================= */
-app.post(
-  "/api/admin/orders/:orderId/status",
-  adminAuth,
-  async (req, res) => {
-    try {
-      const { status } = req.body;
-      const order = await Order.findOne({ orderId: req.params.orderId });
-      if (!order) return res.json({ success: false });
+app.post("/api/admin/orders/:orderId/status", adminAuth, async (req, res) => {
+  try {
+    const { status } = req.body;
+    const order = await Order.findOne({ orderId: req.params.orderId });
+    if (!order) return res.json({ success: false });
 
-      order.statusLogs = order.statusLogs || [];
-      order.statusLogs.push({
-        from: order.status,
-        to: status,
-        by: "admin",
-        at: new Date()
-      });
+    order.statusLogs = order.statusLogs || [];
+    order.statusLogs.push({
+      from: order.status,
+      to: status,
+      by: "admin",
+      at: new Date()
+    });
 
-      order.status = status;
-      await order.save();
+    order.status = status;
+    await order.save();
 
-      res.json({ success: true });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ success: false });
-    }
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false });
   }
-);
+});
 
 /* =======================
    ADMIN: GET PRODUCTS
@@ -137,6 +143,7 @@ app.post(
       if (!product) return res.json({ success: false });
 
       product.image = `/uploads/${req.file.filename}`;
+      product.imageType = "real";
       await product.save();
 
       res.json({ success: true });
@@ -155,21 +162,13 @@ app.post(
   adminAuth,
   async (req, res) => {
     try {
-      const { stock } = req.body;
-
-      if (stock === undefined) {
-        return res.status(400).json({ success: false });
-      }
-
-      const qty = Number(stock);
+      const qty = Number(req.body.stock);
       if (Number.isNaN(qty) || qty < 0) {
         return res.status(400).json({ success: false });
       }
 
       const product = await Product.findById(req.params.id);
-      if (!product) {
-        return res.status(404).json({ success: false });
-      }
+      if (!product) return res.status(404).json({ success: false });
 
       product.stock = qty;
       product.isActive = qty > 0;
