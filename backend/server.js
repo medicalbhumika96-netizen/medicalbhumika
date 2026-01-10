@@ -6,6 +6,7 @@ import path from "path";
 import dotenv from "dotenv";
 
 import Order from "./models/Order.js";
+import adminAuth from "./middleware/adminAuth.js";
 
 import Product from "./models/Product.js";
 
