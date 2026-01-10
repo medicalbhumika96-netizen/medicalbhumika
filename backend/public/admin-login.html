@@ -6,7 +6,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-/* =============== BASE =============== */
 *{margin:0;padding:0;box-sizing:border-box;font-family:Courier New, monospace}
 body{
   height:100vh;
@@ -17,15 +16,7 @@ body{
   justify-content:center;
   overflow:hidden;
 }
-
-/* =============== MATRIX BACKGROUND =============== */
-canvas{
-  position:fixed;
-  inset:0;
-  z-index:-1;
-}
-
-/* =============== TERMINAL BOX =============== */
+canvas{position:fixed;inset:0;z-index:-1}
 .terminal{
   width:380px;
   max-width:94%;
@@ -33,29 +24,9 @@ canvas{
   border:1px solid #00ffcc;
   box-shadow:0 0 45px #00ffcc55;
   padding:20px;
-  animation:glow 3s infinite alternate;
 }
-
-@keyframes glow{
-  from{box-shadow:0 0 15px #00ffcc33}
-  to{box-shadow:0 0 50px #00ffccaa}
-}
-
-.header{
-  font-size:13px;
-  margin-bottom:10px;
-  color:#00ffaa;
-}
-
-.output{
-  font-size:12px;
-  height:120px;
-  overflow:hidden;
-  margin-bottom:12px;
-  line-height:1.4;
-}
-
-/* =============== FORM =============== */
+.header{font-size:13px;margin-bottom:10px;color:#00ffaa}
+.output{font-size:12px;height:120px;margin-bottom:12px}
 label{font-size:11px;margin-top:8px;display:block;color:#00ffaa}
 input{
   width:100%;
@@ -63,11 +34,8 @@ input{
   background:#000;
   border:1px solid #00ffcc;
   color:#00ffcc;
-  outline:none;
   margin-top:4px;
 }
-input:focus{box-shadow:0 0 10px #00ffcc}
-
 button{
   width:100%;
   margin-top:14px;
@@ -78,56 +46,8 @@ button{
   font-weight:bold;
   cursor:pointer;
 }
-button:hover{background:#00ffaa}
-
-/* =============== BIOMETRIC =============== */
-.biometric{
-  height:90px;
-  border:1px dashed #00ffcc;
-  margin-top:10px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:11px;
-  position:relative;
-  overflow:hidden;
-}
-.scan{
-  position:absolute;
-  width:100%;
-  height:3px;
-  background:#00ffcc;
-  animation:scan 2s linear infinite;
-}
-@keyframes scan{
-  from{top:0}
-  to{top:100%}
-}
-
-/* =============== ERROR & LOCK =============== */
 .error{color:#ff5555;font-size:11px;margin-top:8px;display:none}
-.lock{
-  text-align:center;
-  font-size:14px;
-  color:red;
-  animation:blink 1s infinite;
-}
-@keyframes blink{
-  50%{opacity:.3}
-}
-
-/* =============== FOOTER =============== */
-.footer{
-  margin-top:8px;
-  font-size:10px;
-  text-align:center;
-  color:#00ffcc88;
-}
-
-/* MOBILE */
-@media(max-width:480px){
-  .terminal{padding:16px}
-}
+.footer{margin-top:8px;font-size:10px;text-align:center;color:#00ffcc88}
 </style>
 </head>
 
@@ -137,20 +57,14 @@ button:hover{background:#00ffaa}
 
 <div class="terminal" id="terminal">
   <div class="header">BHUMIKA MEDICAL - ADMIN</div>
-
   <div class="output" id="output"></div>
 
   <form id="loginForm">
-    <label>ADMIN EMAIL</label>
+    <label>ADMIN USERNAME</label>
     <input id="email" required>
 
     <label>ACCESS KEY</label>
     <input id="password" type="password" required>
-
-    <div class="biometric">
-      BIOMETRIC SCAN
-      <div class="scan"></div>
-    </div>
 
     <button type="submit">INITIALIZE ACCESS</button>
   </form>
@@ -158,99 +72,55 @@ button:hover{background:#00ffaa}
   <div class="error" id="error"></div>
 
   <div class="footer">
-    IP: <span id="ip"></span> • Location: <span id="loc"></span>
+    Secure Backend Login
   </div>
 </div>
 
 <script>
-/* ================= BACKEND ================= */
-const BACKEND="https://medicalbhumika-2.onrender.com";
+const BACKEND = "https://medicalbhumika-2.onrender.com";
 
 /* AUTO REDIRECT */
-if(localStorage.getItem("adminToken")){
-  location.href="admin.html";
+if (localStorage.getItem("adminToken")) {
+  location.href = "admin.html";
 }
 
-/* ================= MATRIX ================= */
-// const c=document.getElementById("matrix"),ctx=c.getContext("2d");
-// c.width=innerWidth;c.height=innerHeight;
-// const letters="01ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-// const font=14;const cols=c.width/font;
-// const drops=Array(cols).fill(1);
-// function matrix(){
-//   ctx.fillStyle="rgba(0,0,0,0.05)";
-//   ctx.fillRect(0,0,c.width,c.height);
-//   ctx.fillStyle="#00ffcc";
-//   ctx.font=font+"px monospace";
-//   drops.forEach((y,i)=>{
-//     const text=letters[Math.floor(Math.random()*letters.length)];
-//     ctx.fillText(text,i*font,y*font);
-//     if(y*font>c.height&&Math.random()>0.975)drops[i]=0;
-//     drops[i]++;
-//   });
-// }
-// setInterval(matrix,50);
+/* TERMINAL TEXT */
+const out = document.getElementById("output");
+["Initializing secure kernel...",
+ "Loading biometric module...",
+ "Firewall: ACTIVE",
+ "Awaiting credentials..."]
+.forEach((l,i)=>setTimeout(()=>out.innerHTML+=l+"<br>",i*500));
 
-/* ================= TERMINAL TEXT ================= */
-const out=document.getElementById("output");
-const lines=[
-  "Initializing secure kernel...",
-  "Loading biometric module...",
-  "Firewall: ACTIVE",
-  "IP trace complete",
-  "Awaiting credentials..."
-];
-let l=0,cx=0;
-(function type(){
-  if(l>=lines.length)return;
-  if(cx<lines[l].length){
-    out.innerHTML+=lines[l][cx++];
-    setTimeout(type,20);
-  }else{
-    out.innerHTML+="<br>";
-    l++;cx=0;setTimeout(type,300);
-  }
-})();
-
-/* ================= FAKE IP & LOCATION ================= */
-function randIP(){return`${r()}.${r()}.${r()}.${r()}`}
-function r(){return Math.floor(Math.random()*255)}
-document.getElementById("ip").textContent=randIP();
-document.getElementById("loc").textContent=["India","Singapore","Germany","USA","Japan"][Math.floor(Math.random()*5)];
-
-/* ================= LOGIN ================= */
-let attempts=0;
-document.getElementById("loginForm").addEventListener("submit",async e=>{
+/* LOGIN */
+let attempts = 0;
+document.getElementById("loginForm").addEventListener("submit", async e => {
   e.preventDefault();
-  const error=document.getElementById("error");
+  const error = document.getElementById("error");
 
-  try{
-    const res=await fetch(`${BACKEND}/api/admin/login`,{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({
-        email:email.value.trim(),
-        password:password.value.trim()
+  try {
+    const res = await fetch(`${BACKEND}/api/admin/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: email.value.trim(),   // ✅ FIXED
+        password: password.value.trim()
       })
     });
-    const data=await res.json();
 
-    if(data.success){
-      localStorage.setItem("adminToken",data.token);
-      location.href="admin.html";
-    }else{
+    const data = await res.json();
+
+    if (data.success) {
+      localStorage.setItem("adminToken", data.token);
+      location.href = "admin.html";
+    } else {
       attempts++;
-      error.style.display="block";
-      error.textContent="ACCESS DENIED ("+attempts+"/3)";
+      error.style.display = "block";
+      error.textContent = `ACCESS DENIED (${attempts}/3)`;
     }
-  }catch{
-    error.textContent="NETWORK ERROR";
-    error.style.display="block";
-  }
-
-  if(attempts>=3){
-    document.getElementById("terminal").innerHTML=
-      `<div class="lock">SYSTEM LOCKED<br>INTRUSION LOGGED</div>`;
+  } catch {
+    error.style.display = "block";
+    error.textContent = "NETWORK ERROR";
   }
 });
 </script>
