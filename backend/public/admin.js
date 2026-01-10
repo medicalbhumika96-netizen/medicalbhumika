@@ -1,6 +1,6 @@
 // =======================================
 // Bhumika Medical — Admin JS (ENTERPRISE FINAL)
-// Orders Workflow + WhatsApp + Timeline + Audit Log
+// Orders + WhatsApp + Timeline + Audit + Stock
 // =======================================
 
 const BACKEND = "https://medicalbhumika-2.onrender.com";
@@ -17,12 +17,10 @@ let PRODUCTS = [];
 let CURRENT_MODAL_ORDER = null;
 let touchStartX = 0;
 let touchMoved = false;
-
-// 🔒 status update lock
 const STATUS_LOCK = new Set();
 
 /* =======================
-   STATUS FLOW (PRO)
+   STATUS FLOW
 ======================= */
 const STATUS_FLOW = {
   Pending: ["Approved", "Rejected"],
@@ -54,20 +52,14 @@ const orderDetailModal = document.getElementById("orderDetailModal");
    LOAD ORDERS
 ======================= */
 async function loadOrders() {
-  try {
-    const res = await fetch(`${BACKEND}/api/admin/orders`, {
-      headers: { Authorization: "Bearer " + token }
-    });
-    const data = await res.json();
-    if (!data.success) return alert("Failed to load orders");
-
-    ORDERS = data.orders || [];
-    updateDashboard();
-    renderOrders();
-  } catch (err) {
-    console.error(err);
-    alert("Server error while loading orders");
-  }
+  const res = await fetch(`${BACKEND}/api/admin/orders`, {
+    headers: { Authorization: "Bearer " + token }
+  });
+  const data = await res.json();
+  if (!data.success) return alert("Failed to load orders");
+  ORDERS = data.orders || [];
+  updateDashboard();
+  renderOrders();
 }
 
 /* =======================
@@ -87,14 +79,14 @@ function updateDashboard() {
     if (o.phone) customers.add(o.phone);
   });
 
-  document.getElementById("todayOrders").textContent = todayOrders;
-  document.getElementById("todayRevenue").textContent = "₹" + todayRevenue;
-  document.getElementById("pendingOrders").textContent = pending;
-  document.getElementById("uniqueCustomers").textContent = customers.size;
+  todayOrdersEl.textContent = todayOrders;
+  todayRevenueEl.textContent = "₹" + todayRevenue;
+  pendingOrdersEl.textContent = pending;
+  uniqueCustomersEl.textContent = customers.size;
 }
 
 /* =======================
-   WHATSAPP TEMPLATES
+   WHATSAPP
 ======================= */
 const WHATSAPP_TEMPLATES = {
   Approved: o => `✅ Your order ${o.orderId} has been APPROVED.\n\n– Bhumika Medical`,
@@ -134,7 +126,8 @@ function renderOrders() {
       <td>${o.items.length}</td>
       <td>₹${o.total}</td>
       <td>${o.payment?.screenshot
-        ? `<img src="${BACKEND}${o.payment.screenshot}" class="proof" onclick="showImg('${BACKEND}${o.payment.screenshot}')">`
+        ? `<img src="${BACKEND}${o.payment.screenshot}" class="proof"
+           onclick="showImg('${BACKEND}${o.payment.screenshot}')">`
         : "—"}</td>
       <td class="status ${o.status}">${o.status}</td>
       <td>
@@ -143,28 +136,18 @@ function renderOrders() {
       </td>
     `;
     ordersTable.appendChild(tr);
-
-    const card = document.createElement("div");
-    card.className = "wa-order";
-    card.onclick = () => openOrderDetail(o);
-    card.innerHTML = `
-      <b>${o.name}</b>
-      <div>${o.phone}</div>
-      <div>${o.status}</div>
-    `;
-    mobileOrders.appendChild(card);
   });
 }
 
 /* =======================
-   SAFE STATUS UPDATE + AUDIT
+   STATUS UPDATE
 ======================= */
 async function updateStatus(orderId, nextStatus) {
   const order = ORDERS.find(o => o.orderId === orderId);
   if (!order) return;
 
-  const allowed = STATUS_FLOW[order.status] || [];
-  if (!allowed.includes(nextStatus)) return alert("Invalid status");
+  if (!STATUS_FLOW[order.status]?.includes(nextStatus))
+    return alert("Invalid status");
 
   if (STATUS_LOCK.has(orderId)) return;
   STATUS_LOCK.add(orderId);
@@ -186,7 +169,6 @@ async function updateStatus(orderId, nextStatus) {
     const data = await res.json();
     if (!data.success) throw new Error();
 
-    order.status = nextStatus;
     order.statusLogs = order.statusLogs || [];
     order.statusLogs.push({
       from: order.status,
@@ -195,6 +177,7 @@ async function updateStatus(orderId, nextStatus) {
       at: new Date()
     });
 
+    order.status = nextStatus;
     sendWhatsAppUpdate(order, nextStatus);
     renderOrders();
   } catch {
@@ -205,7 +188,7 @@ async function updateStatus(orderId, nextStatus) {
 }
 
 /* =======================
-   STATUS TIME HELPER
+   TIMELINE TIME
 ======================= */
 function getStatusTime(order, status) {
   if (status === "Pending") {
@@ -216,76 +199,72 @@ function getStatusTime(order, status) {
 }
 
 /* =======================
-   ORDER DETAIL MODAL
+   PRODUCT STOCK (PHASE 4)
 ======================= */
-function openOrderDetail(order) {
-  CURRENT_MODAL_ORDER = order;
-  odId.textContent = order.orderId;
-  odCustomer.innerHTML = `${order.name}<br>${order.phone}`;
-
-  let mrp = 0;
-  odItems.innerHTML = order.items.map(i => {
-    mrp += (i.price || 0) * i.qty;
-    return `<div>${i.qty} × ${i.name}</div>`;
-  }).join("");
-
-  odMrp.textContent = "₹" + mrp;
-  odSave.textContent = "₹" + (mrp - order.total);
-
-  odStatus.innerHTML = "";
-  [order.status, ...(STATUS_FLOW[order.status] || [])].forEach(s => {
-    const opt = document.createElement("option");
-    opt.textContent = s;
-    opt.value = s;
-    odStatus.appendChild(opt);
+async function loadProducts() {
+  const res = await fetch(`${BACKEND}/api/admin/products`, {
+    headers: { Authorization: "Bearer " + token }
   });
-
-  const timelineEl = document.getElementById("od-timeline");
-  if (timelineEl) {
-    const steps = ["Pending", "Approved", "Packed", "Out for Delivery", "Delivered"];
-    const idx = steps.indexOf(order.status);
-    timelineEl.innerHTML = `
-      <div class="timeline">
-        ${steps.map((s, i) => `
-          <div class="timeline-step ${i <= idx ? "done" : ""}">
-            <div class="timeline-dot"></div>
-            <div class="timeline-label">${s}</div>
-            <div class="timeline-time">${getStatusTime(order, s)}</div>
-          </div>
-        `).join("")}
-      </div>`;
-  }
-
-  const audit = document.getElementById("od-audit");
-  if (audit) {
-    audit.innerHTML = order.statusLogs?.length
-      ? order.statusLogs.map(l => `${l.from} → ${l.to} (${new Date(l.at).toLocaleString()})`).join("<br>")
-      : "<i>No status changes yet</i>";
-  }
-
-  orderDetailModal.classList.add("show");
+  const data = await res.json();
+  if (!data.success) return;
+  PRODUCTS = data.products;
+  renderProductsAdmin(PRODUCTS);
 }
 
-function saveOrderStatus() {
-  if (!CURRENT_MODAL_ORDER) return;
-  updateStatus(CURRENT_MODAL_ORDER.orderId, odStatus.value);
-  closeOrderDetail();
+function renderProductsAdmin(list) {
+  productListEl.innerHTML = "";
+
+  list.forEach(p => {
+    const row = document.createElement("div");
+    row.className = "product-row";
+    row.dataset.id = p._id;
+
+    row.innerHTML = `
+      <span class="p-name">${p.name}</span>
+      <input type="number" class="stock-input" min="0" value="${p.stock || 0}" style="width:70px">
+      <span class="stock-badge ${p.stock > 0 ? "in" : "out"}">
+        ${p.stock > 0 ? "In Stock" : "Out"}
+      </span>
+      <button class="upload-btn">Save</button>
+    `;
+    productListEl.appendChild(row);
+  });
 }
 
-function closeOrderDetail() {
-  orderDetailModal.classList.remove("show");
-  CURRENT_MODAL_ORDER = null;
-}
+productSearchInput?.addEventListener("input", e => {
+  const q = e.target.value.toLowerCase();
+  renderProductsAdmin(PRODUCTS.filter(p => p.name.toLowerCase().includes(q)));
+});
+
+productListEl?.addEventListener("click", async e => {
+  const btn = e.target.closest(".upload-btn");
+  if (!btn) return;
+
+  const row = btn.closest(".product-row");
+  const stock = row.querySelector(".stock-input").value;
+
+  const res = await fetch(
+    `${BACKEND}/api/admin/products/${row.dataset.id}/stock`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token
+      },
+      body: JSON.stringify({ stock })
+    }
+  );
+
+  const data = await res.json();
+  alert(data.success ? "Stock updated" : "Update failed");
+});
 
 /* =======================
-   IMAGE MODAL
+   LOGOUT
 ======================= */
-function showImg(src) {
-  document.getElementById("modalImg").src = src;
-  document.getElementById("modal").classList.add("show");
-}
-function closeModal() {
-  document.getElementById("modal").classList.remove("show");
+function logout() {
+  localStorage.removeItem("adminToken");
+  location.href = "admin-login.html";
 }
 
 /* =======================
@@ -295,3 +274,11 @@ document.getElementById("search").oninput = renderOrders;
 document.getElementById("statusFilter").onchange = renderOrders;
 
 loadOrders();
+loadProducts();
+/* =======================
+   LOGOUT
+======================= */
+function logout() {
+  localStorage.removeItem("adminToken");
+  location.href = "admin-login.html";
+}

@@ -430,3 +430,7 @@
 .timeline-line.done {
   background: #22c55e;
 }
+.add-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

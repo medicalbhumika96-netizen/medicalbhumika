@@ -95,14 +95,18 @@ async function loadProducts() {
 
     if (!data.success) throw new Error("Products API failed");
 
-    PRODUCTS = data.products.map((p, index) => ({
-      id: p._id,                // MongoDB ID
-      name: p.name,
-      company: p.company || "Unknown",
-      price: Number(p.mrp) || 0,
-      image: p.image || "img/logo.png",
-      imageType: p.imageType || "placeholder"
-    }));
+   PRODUCTS = data.products.map(p => ({
+  id: p._id,                     // MongoDB ID
+  name: p.name,
+  company: p.company || "Unknown",
+  price: Number(p.mrp) || 0,
+  image: p.image || "img/logo.png",
+  imageType: p.imageType || "placeholder",
+
+  // ✅ PHASE 4: STOCK
+  stock: Number(p.stock ?? 0)
+}));
+
 
   } catch (err) {
     console.warn("⚠️ Backend products failed, using fallback", err);
@@ -158,7 +162,14 @@ function renderProducts(filter = '') {
         <div class="small" style="margin-top:6px">${escapeHtml(p.company)}</div>
         <div class="price">₹${p.price.toFixed(2)}</div>
       </div>
-      <button class="btn add-to-cart" data-id="${p.id}">Add</button>
+    <button
+  class="btn add-to-cart"
+  data-id="${p.id}"
+  ${p.stock <= 0 ? "disabled" : ""}
+>
+  ${p.stock <= 0 ? "Out of Stock" : "Add"}
+</button>
+
     `;
     productList.appendChild(el);
   });
@@ -260,8 +271,11 @@ addToCart(id);
 // ===== CART =====
 function addToCart(id) {
   const prod = PRODUCTS.find(p => String(p.id) === String(id));
-  if (!prod) {
-    console.warn("Product not found for ID:", id);
+  if (!prod) return;
+
+  // 🔒 PHASE 4 SAFETY
+  if (prod.stock <= 0) {
+    alert("❌ This product is out of stock");
     return;
   }
 
@@ -272,6 +286,7 @@ function addToCart(id) {
   cart[prod.id].qty++;
   renderCart();
 }
+
 
 
 
