@@ -93,6 +93,39 @@ function updateDashboard() {
   document.getElementById("uniqueCustomers").textContent = customers.size;
 }
 
+const WHATSAPP_TEMPLATES = {
+  Approved: order => 
+    `✅ Your order ${order.orderId} has been APPROVED.\n\nWe are preparing your medicines.\n\n– Bhumika Medical`,
+
+  Packed: order =>
+    `📦 Your order ${order.orderId} is PACKED and ready for dispatch.\n\n– Bhumika Medical`,
+
+  "Out for Delivery": order =>
+    `🚚 Your order ${order.orderId} is OUT FOR DELIVERY.\n\nPlease keep your phone available.\n\n– Bhumika Medical`,
+
+  Delivered: order =>
+    `🎉 Your order ${order.orderId} has been DELIVERED.\n\nThank you for shopping with Bhumika Medical.\n\n– Bhumika Medical`,
+
+  Rejected: order =>
+    `❌ Your order ${order.orderId} was rejected.\n\nPlease contact us for details.\n\n– Bhumika Medical`
+};
+function sendWhatsAppUpdate(order, newStatus) {
+  const tpl = WHATSAPP_TEMPLATES[newStatus];
+  if (!tpl) return;
+
+  const message = tpl(order);
+  const phone = String(order.phone || "").replace(/\D/g, "");
+
+  if (!phone) return;
+
+  const url = `https://wa.me/91${phone}?text=${encodeURIComponent(message)}`;
+
+  // slight delay so admin sees confirmation first
+  setTimeout(() => {
+    window.open(url, "_blank");
+  }, 300);
+}
+
 /* =======================
    RENDER ORDERS
 ======================= */
@@ -194,8 +227,13 @@ async function updateStatus(orderId, nextStatus) {
     const data = await res.json();
     if (!data.success) throw new Error();
 
+    
     order.status = nextStatus;
-    renderOrders();
+renderOrders();
+
+// 🔔 Auto WhatsApp notification
+sendWhatsAppUpdate(order, nextStatus);
+
   } catch {
     alert("Server error while updating status");
   } finally {
@@ -238,20 +276,31 @@ function openOrderDetail(order) {
     odStatus.appendChild(opt);
   });
   // ===== ORDER STATUS TIMELINE =====
+    // ===== HORIZONTAL ORDER TIMELINE =====
   const timelineEl = document.getElementById("od-timeline");
   if (timelineEl) {
     const steps = ["Pending","Approved","Packed","Out for Delivery","Delivered"];
     const currentIndex = steps.indexOf(order.status);
 
-    timelineEl.innerHTML = steps.map((s, i) => `
-      <div style="
-        opacity:${i <= currentIndex ? 1 : 0.4};
-        margin-bottom:4px;
-      ">
-        ${i <= currentIndex ? "✔" : "○"} ${s}
+    timelineEl.innerHTML = `
+      <div class="timeline">
+        ${steps.map((step, i) => `
+          <div class="timeline-step
+            ${i < currentIndex ? "done" : ""}
+            ${i === currentIndex ? "active" : ""}
+          ">
+            <div class="timeline-dot"></div>
+            <div class="timeline-label">${step}</div>
+            <div class="timeline-time">${getStatusTime(order, step)}</div>
+          </div>
+          ${i < steps.length - 1
+            ? `<div class="timeline-line ${i < currentIndex ? "done" : ""}"></div>`
+            : ""}
+        `).join("")}
       </div>
-    `).join("");
+    `;
   }
+
 
   orderDetailModal.classList.add("show");
 }
@@ -265,6 +314,17 @@ function saveOrderStatus() {
 function closeOrderDetail() {
   orderDetailModal.classList.remove("show");
   CURRENT_MODAL_ORDER = null;
+}
+function getStatusTime(order, status) {
+  // If backend doesn't store timestamps yet,
+  // fallback to createdAt for first step only
+  if (status === "Pending") {
+    return new Date(order.createdAt).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  }
+  return ""; // will be filled in Phase 3 (audit log)
 }
 
 /* =======================
