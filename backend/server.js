@@ -33,6 +33,16 @@ mongoose.connect(process.env.MONGO_URI, {
   console.error("Mongo error:", err);
 });
 
+
+app.get("/", (req, res) => {
+  res.json({
+    success: true,
+    service: "Bhumika Medical Backend",
+    status: "Running",
+    version: "1.0.0"
+  });
+});
+
 /* =======================
    MULTER (IMAGES)
 ======================= */
