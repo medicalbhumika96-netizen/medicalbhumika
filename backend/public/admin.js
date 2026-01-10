@@ -1,6 +1,6 @@
 // =======================================
-// Bhumika Medical — Admin JS (CLEAN FINAL)
-// Orders + Products Image Upload
+// Bhumika Medical — Admin JS (PRO FINAL)
+// Orders Workflow + Products Image Upload
 // =======================================
 
 const BACKEND = "https://medicalbhumika-2.onrender.com";
@@ -17,6 +17,21 @@ let PRODUCTS = [];
 let CURRENT_MODAL_ORDER = null;
 let touchStartX = 0;
 let touchMoved = false;
+
+// 🔒 status update lock
+const STATUS_LOCK = new Set();
+
+/* =======================
+   STATUS FLOW (PRO)
+======================= */
+const STATUS_FLOW = {
+  Pending: ["Approved", "Rejected"],
+  Approved: ["Packed", "Rejected"],
+  Packed: ["Out for Delivery"],
+  "Out for Delivery": ["Delivered"],
+  Delivered: [],
+  Rejected: []
+};
 
 /* =======================
    DOM REFERENCES
@@ -94,7 +109,6 @@ function renderOrders() {
       (o.orderId.toLowerCase().includes(q) || o.phone.includes(q))
     )
     .forEach(o => {
-      // DESKTOP
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${o.orderId}</td>
@@ -103,16 +117,18 @@ function renderOrders() {
         <td>₹${o.total}</td>
         <td>
           ${o.payment?.screenshot
-            ? `<img src="${BACKEND}${o.payment.screenshot}" class="proof"
+          ? `<img src="${BACKEND}${o.payment.screenshot}" class="proof"
                  onclick="showImg('${BACKEND}${o.payment.screenshot}')">`
-            : "—"}
+          : "—"}
         </td>
         <td class="status ${o.status}" id="status-${o.orderId}">
           ${o.status}
         </td>
         <td>
-          <button onclick="updateStatus('${o.orderId}','Approved')">✓</button>
-          <button onclick="updateStatus('${o.orderId}','Rejected')">✕</button>
+          ${STATUS_FLOW[o.status]?.includes("Approved")
+          ? `<button onclick="updateStatus('${o.orderId}','Approved')">✓</button>` : ""}
+          ${STATUS_FLOW[o.status]?.includes("Rejected")
+          ? `<button onclick="updateStatus('${o.orderId}','Rejected')">✕</button>` : ""}
         </td>
       `;
       ordersTable.appendChild(tr);
@@ -123,7 +139,6 @@ function renderOrders() {
       card.ontouchstart = e => { touchStartX = e.changedTouches[0].clientX; touchMoved = false; };
       card.ontouchmove = e => { if (Math.abs(e.changedTouches[0].clientX - touchStartX) > 10) touchMoved = true; };
       card.ontouchend = e => handleSwipe(e, o.orderId);
-
       card.onclick = () => { if (!touchMoved) openOrderDetail(o); };
 
       card.innerHTML = `
@@ -144,23 +159,48 @@ function renderOrders() {
 }
 
 /* =======================
-   ORDER ACTIONS
+   SAFE ORDER STATUS UPDATE
 ======================= */
-async function updateStatus(orderId, status) {
-  const res = await fetch(`${BACKEND}/api/admin/orders/${orderId}/status`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer " + token
-    },
-    body: JSON.stringify({ status })
-  });
-  const data = await res.json();
-  if (!data.success) return alert("Update failed");
+async function updateStatus(orderId, nextStatus) {
+  const order = ORDERS.find(o => o.orderId === orderId);
+  if (!order) return;
 
-  document.getElementById("status-" + orderId).textContent = status;
-  const m = document.getElementById("m-" + orderId);
-  if (m) m.textContent = status;
+  const allowed = STATUS_FLOW[order.status] || [];
+  if (!allowed.includes(nextStatus)) {
+    alert(`Invalid status change: ${order.status} → ${nextStatus}`);
+    return;
+  }
+
+  if (STATUS_LOCK.has(orderId)) return;
+  STATUS_LOCK.add(orderId);
+
+  const ok = confirm(
+    `Confirm status change?\n\nOrder: ${order.orderId}\nFrom: ${order.status}\nTo: ${nextStatus}`
+  );
+  if (!ok) {
+    STATUS_LOCK.delete(orderId);
+    return;
+  }
+
+  try {
+    const res = await fetch(`${BACKEND}/api/admin/orders/${orderId}/status`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token
+      },
+      body: JSON.stringify({ status: nextStatus })
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error();
+
+    order.status = nextStatus;
+    renderOrders();
+  } catch {
+    alert("Server error while updating status");
+  } finally {
+    STATUS_LOCK.delete(orderId);
+  }
 }
 
 function handleSwipe(e, orderId) {
@@ -187,7 +227,32 @@ function openOrderDetail(order) {
 
   odMrp.textContent = "₹" + mrp;
   odSave.textContent = "₹" + (mrp - order.total);
-  odStatus.value = order.status;
+
+  // 🔒 Allowed status only
+  odStatus.innerHTML = "";
+  [order.status, ...(STATUS_FLOW[order.status] || [])].forEach(s => {
+    const opt = document.createElement("option");
+    opt.value = s;
+    opt.textContent = s;
+    if (s === order.status) opt.selected = true;
+    odStatus.appendChild(opt);
+  });
+  // ===== ORDER STATUS TIMELINE =====
+  const timelineEl = document.getElementById("od-timeline");
+  if (timelineEl) {
+    const steps = ["Pending","Approved","Packed","Out for Delivery","Delivered"];
+    const currentIndex = steps.indexOf(order.status);
+
+    timelineEl.innerHTML = steps.map((s, i) => `
+      <div style="
+        opacity:${i <= currentIndex ? 1 : 0.4};
+        margin-bottom:4px;
+      ">
+        ${i <= currentIndex ? "✔" : "○"} ${s}
+      </div>
+    `).join("");
+  }
+
   orderDetailModal.classList.add("show");
 }
 
@@ -214,30 +279,17 @@ function closeModal() {
 }
 
 /* =======================
-   PRODUCTS (IMAGE UPLOAD)
+   PRODUCTS IMAGE UPLOAD
 ======================= */
 async function loadProducts() {
-  try {
-    const res = await fetch(`${BACKEND}/api/admin/products`, {
-      headers: { Authorization: "Bearer " + token }
-    });
-
-    const data = await res.json();
-    console.log("🧪 PRODUCTS API RESPONSE:", data); // 👈 ADD THIS
-
-    if (!data.success) {
-      alert("Products load failed");
-      return;
-    }
-
-    PRODUCTS = data.products;
-    renderProductsAdmin(PRODUCTS);
-
-  } catch (e) {
-    console.error("❌ Product load error", e);
-  }
+  const res = await fetch(`${BACKEND}/api/admin/products`, {
+    headers: { Authorization: "Bearer " + token }
+  });
+  const data = await res.json();
+  if (!data.success) return;
+  PRODUCTS = data.products;
+  renderProductsAdmin(PRODUCTS);
 }
-
 
 function renderProductsAdmin(list) {
   productListEl.innerHTML = "";
@@ -262,7 +314,6 @@ productSearchInput?.addEventListener("input", e => {
 productListEl?.addEventListener("click", async e => {
   const btn = e.target.closest(".upload-btn");
   if (!btn) return;
-
   const row = btn.closest(".product-row");
   const file = row.querySelector(".img-input").files[0];
   if (!file) return alert("Select image first");
@@ -275,36 +326,20 @@ productListEl?.addEventListener("click", async e => {
     { method: "POST", headers: { Authorization: "Bearer " + token }, body: fd }
   );
   const data = await res.json();
-  alert(data.success ? "✅ Image uploaded" : "❌ Upload failed");
+  alert(data.success ? "Image uploaded" : "Upload failed");
 });
 
-async function importProductsFromJSON() {
-  if (!confirm("⚠️ One-time import. Continue?")) return;
-
-  try {
-    const res = await fetch(
-      `${BACKEND}/api/admin/products/import-json`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: "Bearer " + token
-        }
-      }
-    );
-
-    const data = await res.json();
-
-    if (data.success) {
-      alert(`✅ Products imported: ${data.inserted}`);
-      loadProducts(); // refresh product list
-    } else {
-      alert("❌ Import failed");
-    }
-  } catch (e) {
-    console.error(e);
-    alert("⚠️ Server error during import");
-  }
-}
+/* =======================
+   TAB CONTROLLER
+======================= */
+document.querySelectorAll(".tab-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+  });
+});
 
 /* =======================
    LOGOUT + INIT

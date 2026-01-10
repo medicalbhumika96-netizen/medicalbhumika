@@ -1,115 +1,139 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
   <title>Bhumika Medical — Admin Console</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"> <audio id="newOrderSound" src="new-order.mp3"
-    preload="auto"></audio>
-  <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#0a7cff">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="admin.css">
 </head>
 
-<body>
-  <div class="header">
-    <h2>📦 Admin Orders Console</h2> <button class="logout" onclick="logout()">Logout</button>
+<body class="admin-layout">
+
+  <!-- HEADER -->
+  <header class="admin-header">
+    <h2>Bhumika Medical — Admin</h2>
+    <button class="logout" onclick="logout()">Logout</button>
+  </header>
+
+  <div class="admin-body">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+      <button class="tab-btn" data-tab="orders">Orders</button>
+      <button class="tab-btn" data-tab="products">Products</button>
+      <button class="tab-btn danger" data-tab="import">Import</button>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+
+      <!-- DASHBOARD -->
+      <section id="tab-dashboard" class="tab active">
+        <div class="dashboard">
+          <div class="card">
+            <h4>Today Orders</h4>
+            <div class="value" id="todayOrders">0</div>
+          </div>
+          <div class="card">
+            <h4>Today Revenue</h4>
+            <div class="value" id="todayRevenue">₹0</div>
+          </div>
+          <div class="card">
+            <h4>Pending Orders</h4>
+            <div class="value" id="pendingOrders">0</div>
+          </div>
+          <div class="card">
+            <h4>Unique Customers</h4>
+            <div class="value" id="uniqueCustomers">0</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ORDERS -->
+      <section id="tab-orders" class="tab">
+        <div class="toolbar">
+          <input id="search" placeholder="Search Order / Phone">
+          <select id="statusFilter">
+            <option value="">All</option>
+            <option>Pending</option>
+            <option>Approved</option>
+            <option>Packed</option>
+            <option>Out for Delivery</option>
+            <option>Delivered</option>
+            <option>Rejected</option>
+          </select>
+          <button class="export" onclick="exportCSV()">Export CSV</button>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Order ID</th>
+              <th>Customer</th>
+              <th>Items</th>
+              <th>Total</th>
+              <th>Proof</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="orders"></tbody>
+        </table>
+
+        <div id="mobileOrders"></div>
+      </section>
+
+      <!-- PRODUCTS -->
+      <section id="tab-products" class="tab">
+        <h3>Product Image Manager</h3>
+        <input id="productSearch" placeholder="Search product...">
+        <div id="productList"></div>
+      </section>
+
+      <!-- IMPORT -->
+      <section id="tab-import" class="tab">
+        <h3 class="danger-text">Danger Zone</h3>
+        <button onclick="importProductsFromJSON()" class="danger-btn">
+          Import Products from JSON (One Time)
+        </button>
+      </section>
+
+    </main>
   </div>
-  <div class="dashboard">
-    <div class="card">
-      <h4>Today Orders</h4>
-      <div class="value" id="todayOrders">0</div>
-    </div>
-    <div class="card">
-      <h4>Today Revenue</h4>
-      <div class="value" id="todayRevenue">₹0</div>
-    </div>
-    <div class="card">
-      <h4>Pending Orders</h4>
-      <div class="value" id="pendingOrders">0</div>
-    </div>
-    <div class="card">
-      <h4>Unique Customers</h4>
-      <div class="value" id="uniqueCustomers">0</div>
-    </div>
-  </div>
-  <div class="toolbar"> <input id="search" placeholder="Search Order / Phone"> <select id="statusFilter">
-      <option value="">All</option>
-      <option>Pending</option>
-      <option>Approved</option>
-      <option>Packed</option>
-      <option>Out for Delivery</option>
-      <option>Delivered</option>
-      <option>Rejected</option>
-    </select> <button class="export" onclick="exportCSV()">⬇ Export CSV</button> </div>
-  <table>
-    <thead>
-      <tr>
-        <th>Order ID</th>
-        <th>Customer</th>
-        <th>Items</th>
-        <th>Total</th>
-        <th>Proof</th>
-        <th>Status</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody id="orders"></tbody>
-  </table>
-  <div id="mobileOrders"></div> <!-- IMAGE MODAL -->
-  <button onclick="importProductsFromJSON()" style="
-    background:#16a34a;
-    color:#fff;
-    padding:10px 14px;
-    border:none;
-    border-radius:10px;
-    margin-bottom:12px;
-    cursor:pointer;
-  ">
-    🚀 Import Products from JSON (One Time)
-  </button>
 
-  <!-- ================= PRODUCTS IMAGE UPLOAD ================= -->
-  <div class="products-admin">
-    <h3 style="margin:20px 0 10px">🖼️ Product Image Manager</h3>
-
-    <input id="productSearch" placeholder="Search product name..."
-      style="width:100%;padding:10px;border-radius:10px;margin-bottom:12px" />
-
-    <div id="productList"></div>
-  </div>
-
+  <!-- IMAGE MODAL -->
   <div class="modal" id="modal" onclick="closeModal()">
-    <div class="modal-content" onclick="event.stopPropagation()"> <img id="modalImg"> </div>
-  </div> <!-- ORDER DETAIL MODAL -->
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <img id="modalImg">
+    </div>
+  </div>
+
+  <!-- ORDER DETAIL MODAL (UNCHANGED) -->
   <div id="orderDetailModal" class="modal" onclick="closeOrderDetail()">
-    <div class="modal-content" style="background:#020617;padding:16px;border-radius:14px;width:92vw"
-      onclick="event.stopPropagation()">
+    <div class="modal-content" onclick="event.stopPropagation()">
       <h3 id="od-id"></h3>
       <div id="od-customer"></div>
-      <div id="od-items" style="margin-top:10px"></div>
-      <div style="margin-top:10px">
-        <div>MRP Total: <b id="od-mrp"></b></div>
-        <div>Payable: <b id="od-pay"></b></div>
-        <div style="color:#22c55e">Savings: <span id="od-save"></span></div>
+      <div id="od-items"></div>
+      <div>
+        MRP: <b id="od-mrp"></b><br>
+        Savings: <b id="od-save"></b>
       </div>
-      <div style="margin-top:14px"> <label style="font-size:13px">Update Order Status</label> <select id="od-status"
-          style="width:100%;margin-top:6px;padding:8px;border-radius:8px">
-          <option>Pending</option>
-          <option>Approved</option>
-          <option>Packed</option>
-          <option>Out for Delivery</option>
-          <option>Delivered</option>
-          <option>Rejected</option>
-        </select> <button onclick="saveOrderStatus()"
-          style="margin-top:8px;width:100%; background:#2563eb;border:none;color:#fff; padding:8px;border-radius:8px">
-          Save Status </button> </div> <select id="od-status" style="width:100%;margin-top:10px"></select> <button
-        onclick="saveOrderStatus()" style="width:100%;margin-top:6px">Save Status</button> <button
-        onclick="printInvoice()" style="width:100%;margin-top:8px">🧾 Print / Invoice</button> <button
-        onclick="closeOrderDetail()" style="width:100%;margin-top:6px;background:#dc2626;color:#fff">Close</button>
+      <select id="od-status">
+        <option>Pending</option>
+        <option>Approved</option>
+        <option>Packed</option>
+        <option>Out for Delivery</option>
+        <option>Delivered</option>
+        <option>Rejected</option>
+      </select>
+      <button onclick="saveOrderStatus()">Save</button>
+      <button onclick="closeOrderDetail()" class="danger-btn">Close</button>
+        
+
     </div>
   </div>
+
   <script src="admin.js"></script>
 </body>
-
 </html>
