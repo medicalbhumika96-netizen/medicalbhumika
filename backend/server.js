@@ -6,8 +6,9 @@ import path from "path";
 import dotenv from "dotenv";
 
 import Order from "./models/Order.js";
+
 import Product from "./models/Product.js";
-import adminAuth from "./middleware/adminAuth.js";
+
 
 dotenv.config();
 const app = express();
