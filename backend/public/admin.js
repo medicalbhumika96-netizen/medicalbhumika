@@ -502,17 +502,17 @@ function renderReviews() {
   REVIEWS.forEach(r => {
     const tr = document.createElement("tr");
 
-    tr.innerHTML = `
-      <td>${r.orderId}</td>
-      <td>${"⭐".repeat(r.rating)}</td>
-      <td>${r.comment || "—"}</td>
-      <td>${r.approved ? "Approved" : "Pending"}</td>
-      <td>
-        ${!r.approved
-          ? `<button onclick="approveReview('${r._id}')">Approve</button>`
-          : "—"}
-      </td>
-    `;
+  tr.innerHTML = `
+  <td data-label="Order ID">${r.orderId}</td>
+  <td data-label="Rating">${"⭐".repeat(r.rating)}</td>
+  <td data-label="Comment">${r.comment || "—"}</td>
+  <td data-label="Status">${r.approved ? "Approved" : "Pending"}</td>
+  <td data-label="Action">
+    ${!r.approved
+      ? `<button onclick="approveReview('${r._id}')">Approve</button>`
+      : "—"}
+  </td>
+`;
 
     tbody.appendChild(tr);
   });
