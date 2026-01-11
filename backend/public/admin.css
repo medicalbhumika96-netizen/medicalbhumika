@@ -690,3 +690,28 @@
   }
 
 }
+@media (max-width: 768px) {
+
+  .wa-order {
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .wa-order:active {
+    transform: scale(0.98);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+  }
+
+  /* RIGHT ARROW INDICATOR */
+  .wa-order::after {
+    content: "›";
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 28px;
+    color: #94a3b8;
+    opacity: 0.8;
+  }
+}

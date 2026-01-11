@@ -246,19 +246,22 @@ function renderOrders() {
       card.ontouchend = e => handleSwipe(e, o.orderId);
       card.onclick = () => { if (!touchMoved) openOrderDetail(o); };
 
+    
       card.innerHTML = `
-        <div class="wa-left">
-          <b>${o.name}</b>
-          <div>${o.phone}</div>
-          <div>Items: ${o.items.length}</div>
-        </div>
-        <div class="wa-right">
-          ₹${o.total}
-          <div class="status ${o.status}" id="m-${o.orderId}">
-            ${o.status}
-          </div>
-        </div>
-      `;
+  <div class="wa-left">
+    <b>${o.name}</b>
+    <div>${o.phone}</div>
+    <div>🧾 Items: ${o.items.length}</div>
+    <div class="tap-hint">Tap to view details</div>
+  </div>
+  <div class="wa-right">
+    ₹${o.total}
+    <div class="status ${o.status}">
+      ${o.status}
+    </div>
+  </div>
+`;
+
       mobileOrders.appendChild(card);
     });
 }
