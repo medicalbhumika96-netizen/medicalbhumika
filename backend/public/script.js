@@ -595,10 +595,14 @@ if (paymentMethodInput) {
       if (txnInput) txnInput.style.display = 'none';
       if (txnIdInput) txnIdInput.style.display = 'none';
       amountInput && (amountInput.style.display = 'none');
+      showPaymentHint('💵 Cash on Delivery selected. Please keep cash ready at delivery.');
+
     } else if (isOnline) {
       if (txnInput) txnInput.style.display = 'block';
       if (txnIdInput) txnIdInput.style.display = 'block';
       amountInput && (amountInput.style.display = 'block');
+      showPaymentHint('📲 Please complete online payment and enter transaction details.');
+
       updateQRForTotal(window.LAST_FINAL_TOTAL || 0);
     } else {
       qrCard && qrCard.classList.add('hidden');
@@ -607,10 +611,12 @@ if (paymentMethodInput) {
       amountInput && (amountInput.style.display = 'none');
     }
   };
+  
 
   paymentMethodInput.addEventListener('change', togglePaymentUI);
   togglePaymentUI();
 }
+
 
 // ===== VALIDATION & SEND ORDER =====
 sendOrderBtn?.addEventListener('click', () => {
@@ -731,9 +737,35 @@ const tempClientRef = `TMP-${Date.now()}`;
 // ===== RESULT SCREEN =====
 function showResult(success, message) {
   if (!resultScreen) return;
+
   resultScreen.classList.add('active');
-  resultTitle.textContent = success ? '✅ Order Placed Successfully!' : '❌ Order Failed';
-  resultMessage.textContent = (typeof message === 'number' || !isNaN(Number(message))) ? `Total: ₹${message}` : (message || (success ? 'Your order will be delivered soon.' : 'Please try again.'));
+
+  if (!success) {
+    resultTitle.textContent = '❌ Order Failed';
+    resultMessage.textContent = message || 'Please try again.';
+    return;
+  }
+
+  const orderId = window.LAST_ORDER_ID || 'Processing...';
+  const phone = document.getElementById('cust-phone')?.value || '';
+
+  resultTitle.textContent = '✅ Order Placed Successfully!';
+
+  resultMessage.innerHTML = `
+    <p><b>Order ID:</b> ${orderId}</p>
+    <p><b>Mobile:</b> ${phone}</p>
+    <p style="margin-top:8px;color:#16a34a;">
+      We have received your order.<br>
+      Our pharmacist will verify and update you shortly.
+    </p>
+
+    <button
+      style="margin-top:12px;padding:10px 14px;border:none;
+             border-radius:8px;background:#0d6efd;color:#fff;cursor:pointer;"
+      onclick="autoFillTrackOrder('${orderId}','${phone}')">
+      📦 Track This Order
+    </button>
+  `;
 }
 
 homeButton && homeButton.addEventListener('click', () => {
@@ -1238,6 +1270,31 @@ function guardDuplicateOrder() {
   localStorage.setItem("lastOrderTime", Date.now());
   return true;
 }
+
+function autoFillTrackOrder(orderId, phone) {
+  const trackInput = document.getElementById('order-phone');
+  if (!trackInput) return;
+
+  trackInput.value = `${orderId} | ${phone}`;
+  document.getElementById('orders')?.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start'
+  });
+}
+
+function showPaymentHint(text) {
+  let hint = document.getElementById('payment-hint');
+  if (!hint) {
+    hint = document.createElement('div');
+    hint.id = 'payment-hint';
+    hint.style.marginTop = '10px';
+    hint.style.fontSize = '13px';
+    hint.style.color = '#16a34a';
+    paymentMethodInput.parentElement.appendChild(hint);
+  }
+  hint.textContent = text;
+}
+
 
 document.addEventListener("DOMContentLoaded", () => {
   loadCartAuto();
