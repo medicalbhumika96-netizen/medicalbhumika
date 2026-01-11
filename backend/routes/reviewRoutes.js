@@ -50,5 +50,21 @@ router.post("/admin/:id/approve", async (req, res) => {
   res.json({ success: true });
 });
 
+// ADMIN — GET ALL REVIEWS (Pending + Approved)
+router.get("/admin/all", async (req, res) => {
+  const auth = req.headers.authorization;
+  if (!auth) return res.status(401).json({ success: false });
+
+  try {
+    jwt.verify(auth.split(" ")[1], process.env.ADMIN_JWT_SECRET);
+
+    const reviews = await Review.find()
+      .sort({ createdAt: -1 });
+
+    res.json({ success: true, reviews });
+  } catch {
+    res.status(401).json({ success: false });
+  }
+});
 
 export default router;

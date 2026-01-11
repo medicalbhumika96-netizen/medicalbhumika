@@ -479,7 +479,7 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
 
 async function loadReviews() {
   try {
-    const res = await fetch(`${BACKEND}/api/reviews/public?all=true`, {
+    const res = await fetch(`${BACKEND}/api/reviews/admin/all`, {
       headers: { Authorization: "Bearer " + token }
     });
     const data = await res.json();
@@ -487,10 +487,11 @@ async function loadReviews() {
 
     REVIEWS = data.reviews || [];
     renderReviews();
-  } catch (e) {
+  } catch {
     console.error("Failed to load reviews");
   }
 }
+
 
 function renderReviews() {
   const tbody = document.getElementById("reviewTable");
