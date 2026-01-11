@@ -22,6 +22,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+/* ================= ROUTES ================= */
+app.use("/api/reviews", reviewRoutes);
 /* ================= STATIC ================= */
 if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
 if (!fs.existsSync("uploads/products")) {
