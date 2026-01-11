@@ -5,6 +5,10 @@ import multer from "multer";
 import dotenv from "dotenv";
 import fs from "fs";
 import jwt from "jsonwebtoken";
+import reviewRoutes from "./routes/reviewRoutes.js";
+
+app.use("/api/reviews", reviewRoutes);
+
 
 import Order from "./models/Order.js";
 import Product from "./models/Product.js";

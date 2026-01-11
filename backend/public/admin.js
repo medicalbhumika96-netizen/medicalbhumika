@@ -17,6 +17,8 @@ let PRODUCTS = [];
 let CURRENT_MODAL_ORDER = null;
 let touchStartX = 0;
 let touchMoved = false;
+let REVIEWS = [];
+
 
 // 🔒 status update lock
 const STATUS_LOCK = new Set();
@@ -164,7 +166,13 @@ const WHATSAPP_TEMPLATES = {
     `🚚 Your order ${order.orderId} is OUT FOR DELIVERY.\n\nPlease keep your phone available.\n\n– Bhumika Medical`,
 
   Delivered: order =>
-    `🎉 Your order ${order.orderId} has been DELIVERED.\n\nThank you for shopping with Bhumika Medical.\n\n– Bhumika Medical`,
+`🎉 Your order ${order.orderId} has been delivered.
+
+⭐ Please rate your experience:
+https://bhumikamedical.com/review/${order.orderId}
+
+– Bhumika Medical`
+,
 
   Rejected: order =>
     `❌ Your order ${order.orderId} was rejected.\n\nPlease contact us for details.\n\n– Bhumika Medical`
@@ -458,8 +466,70 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
     document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
     btn.classList.add("active");
     document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+    if (btn.dataset.tab === "reviews") {
+  loadReviews();
+}
+
   });
 });
+
+async function loadReviews() {
+  try {
+    const res = await fetch(`${BACKEND}/api/reviews/public?all=true`, {
+      headers: { Authorization: "Bearer " + token }
+    });
+    const data = await res.json();
+    if (!data.success) return;
+
+    REVIEWS = data.reviews || [];
+    renderReviews();
+  } catch (e) {
+    console.error("Failed to load reviews");
+  }
+}
+
+function renderReviews() {
+  const tbody = document.getElementById("reviewTable");
+  if (!tbody) return;
+
+  tbody.innerHTML = "";
+
+  REVIEWS.forEach(r => {
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td>${r.orderId}</td>
+      <td>${"⭐".repeat(r.rating)}</td>
+      <td>${r.comment || "—"}</td>
+      <td>${r.approved ? "Approved" : "Pending"}</td>
+      <td>
+        ${!r.approved
+          ? `<button onclick="approveReview('${r._id}')">Approve</button>`
+          : "—"}
+      </td>
+    `;
+
+    tbody.appendChild(tr);
+  });
+}
+async function approveReview(id) {
+  const ok = confirm("Approve this review?");
+  if (!ok) return;
+
+  try {
+    const res = await fetch(`${BACKEND}/api/reviews/admin/${id}/approve`, {
+      method: "POST",
+      headers: { Authorization: "Bearer " + token }
+    });
+
+    const data = await res.json();
+    if (!data.success) throw new Error();
+
+    loadReviews();
+  } catch {
+    alert("Failed to approve review");
+  }
+}
 
 /* =======================
    LOGOUT + INIT

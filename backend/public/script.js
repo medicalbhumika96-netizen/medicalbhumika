@@ -1252,6 +1252,44 @@ if (proofBtn) {
   });
 }
 
+/* ===========================
+   CUSTOMER REVIEWS (PUBLIC)
+=========================== */
+async function loadPublicReviews() {
+  try {
+    const res = await fetch(`${BACKEND_BASE}/api/reviews/public`);
+    const data = await res.json();
+
+    const wrap = document.getElementById("reviews-list");
+    if (!wrap) return;
+
+    if (!data.success || !data.reviews.length) {
+      wrap.innerHTML = `<div class="small muted">No reviews yet</div>`;
+      return;
+    }
+
+    wrap.innerHTML = "";
+
+    data.reviews.forEach(r => {
+      const card = document.createElement("div");
+      card.className = "review-card";
+
+      card.innerHTML = `
+        <div class="review-stars">${"⭐".repeat(r.rating)}</div>
+        <div class="review-text">${r.comment || "Great service!"}</div>
+        <div class="review-meta">Order ID: ${r.orderId}</div>
+      `;
+
+      wrap.appendChild(card);
+    });
+
+  } catch (err) {
+    console.error("Failed to load reviews");
+  }
+}
+
+/* Load reviews on page load */
+document.addEventListener("DOMContentLoaded", loadPublicReviews);
 
 
 

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Rate Your Experience — Bhumika Medical</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: system-ui, Arial;
+      background: #f7faf7;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+    }
+    .card {
+      max-width: 420px;
+      width: 100%;
+      background: #fff;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.08);
+      text-align: center;
+    }
+    h2 {
+      margin-top: 0;
+      color: #166534;
+    }
+    .stars {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      font-size: 34px;
+      cursor: pointer;
+      margin: 16px 0;
+    }
+    .stars span {
+      color: #d1d5db;
+    }
+    .stars span.active {
+      color: #facc15;
+    }
+    textarea {
+      width: 100%;
+      border-radius: 10px;
+      padding: 10px;
+      border: 1px solid #d1d5db;
+      margin-top: 10px;
+      resize: none;
+    }
+    button {
+      margin-top: 16px;
+      width: 100%;
+      padding: 12px;
+      background: #22c55e;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+    }
+    .msg {
+      margin-top: 14px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h2>⭐ Rate Your Experience</h2>
+    <p id="orderText"></p>
+
+    <div class="stars" id="stars">
+      <span data-val="1">★</span>
+      <span data-val="2">★</span>
+      <span data-val="3">★</span>
+      <span data-val="4">★</span>
+      <span data-val="5">★</span>
+    </div>
+
+    <textarea id="comment" rows="3" placeholder="Optional comment"></textarea>
+
+    <button id="submitBtn" disabled>Submit Review</button>
+
+    <div class="msg" id="msg"></div>
+  </div>
+
+<script>
+  const BACKEND = "https://medicalbhumika-2.onrender.com";
+  const orderId = location.pathname.split("/").pop();
+
+  document.getElementById("orderText").textContent =
+    "Order ID: " + orderId;
+
+  let rating = 0;
+  const stars = document.querySelectorAll("#stars span");
+  const submitBtn = document.getElementById("submitBtn");
+  const msg = document.getElementById("msg");
+
+  stars.forEach(star => {
+    star.onclick = () => {
+      rating = Number(star.dataset.val);
+      stars.forEach(s =>
+        s.classList.toggle("active", Number(s.dataset.val) <= rating)
+      );
+      submitBtn.disabled = false;
+    };
+  });
+
+  submitBtn.onclick = async () => {
+    submitBtn.disabled = true;
+    msg.textContent = "Submitting review...";
+
+    const comment = document.getElementById("comment").value;
+
+    try {
+      const res = await fetch(`${BACKEND}/api/reviews/submit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId, rating, comment })
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        msg.textContent = "⚠️ Review already submitted or invalid.";
+        return;
+      }
+
+      msg.textContent =
+        "✅ Thank you! Your review will be visible after approval.";
+
+    } catch {
+      msg.textContent = "❌ Network error. Please try again.";
+    }
+  };
+</script>
+
+</body>
+</html>
