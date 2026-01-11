@@ -526,14 +526,26 @@ backToStep1Btn?.addEventListener('click', () => openModalStep(1));
 // ===== STEP 1 ➜ STEP 2 =====
 toStep2Btn?.addEventListener('click', () => {
   const name = custNameInput.value.trim();
-  const address = custAddressInput.value.trim();
+  const address = custAddressInput.value.trim();  
   const pin = custPinInput.value.trim();
   const phone = custPhoneInput.value.trim();
 
-  if (!name) return alert('Please enter full name');
-  if (!address) return alert('Please enter delivery address');
-  if (!/^\d{4,6}$/.test(pin)) return alert('Please enter valid PIN');
-  if (!/^\d{6,15}$/.test(phone)) return alert('Please enter valid phone');
+ if (!name) return alert('Please enter full name');
+if (!address) return alert('Please enter delivery address');
+if (!/^\d{4,6}$/.test(pin)) return alert('Please enter valid PIN');
+if (!/^\d{6,15}$/.test(phone)) return alert('Please enter valid phone');
+
+if (window.LAST_FINAL_TOTAL < MIN_ORDER_AMOUNT) {
+  alert(`🛒 Minimum order amount is ₹${MIN_ORDER_AMOUNT}`);
+  return;
+}
+
+if (!validatePin(pin)) {
+  alert("🚫 Sorry, delivery is not available in your area.");
+  return;
+}
+
+
   openModalStep(2);
 });
 
@@ -620,6 +632,17 @@ if (paymentMethodInput) {
 
 // ===== VALIDATION & SEND ORDER =====
 sendOrderBtn?.addEventListener('click', () => {
+  // 🔒 Final safety checks
+if (window.LAST_FINAL_TOTAL < MIN_ORDER_AMOUNT) {
+  alert(`🛒 Minimum order amount is ₹${MIN_ORDER_AMOUNT}`);
+  return;
+}
+
+if (!validatePin(custPinInput.value.trim())) {
+  alert("🚫 Delivery not available at this PIN code.");
+  return;
+}
+
   const method = paymentMethodInput ? (paymentMethodInput.value || 'N/A') : 'N/A';
   const txn = (txnInput && txnInput.value.trim()) || (txnIdInput && txnIdInput.value.trim()) || '';
   const amtRaw = amountInput ? amountInput.value.trim() : '';
