@@ -328,6 +328,7 @@ function handleSwipe(e, orderId) {
 ======================= */
 function openOrderDetail(order) {
   CURRENT_MODAL_ORDER = order;
+    document.body.style.overflow = "hidden";
   odId.textContent = order.orderId;
   odCustomer.innerHTML = `${order.name}<br>${order.phone}`;
 
@@ -388,8 +389,13 @@ function saveOrderStatus() {
 
 function closeOrderDetail() {
   orderDetailModal.classList.remove("show");
+
+  // 🔓 UNLOCK BACKGROUND SCROLL
+  document.body.style.overflow = "";
+
   CURRENT_MODAL_ORDER = null;
 }
+
 function getStatusTime(order, status) {
   // If backend doesn't store timestamps yet,
   // fallback to createdAt for first step only
