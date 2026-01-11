@@ -87,6 +87,35 @@ app.post("/api/orders", async (req, res) => {
   }
 });
 
+
+app.post("/api/orders/track-secure", async (req, res) => {
+  try {
+    const { orderId, phone } = req.body;
+
+    if (!orderId || !phone) {
+      return res.json({ success: false });
+    }
+
+    const order = await Order.findOne({
+      orderId: orderId.trim(),
+      phone: phone.trim()
+    });
+
+    if (!order) {
+      return res.json({ success: false });
+    }
+
+    res.json({
+      success: true,
+      order
+    });
+
+  } catch (err) {
+    console.error("❌ Track order error:", err);
+    res.status(500).json({ success: false });
+  }
+});
+
 /* ==================================================
    CUSTOMER — PAYMENT PROOF
 ================================================== */
