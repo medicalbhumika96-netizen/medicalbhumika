@@ -535,6 +535,17 @@ async function approveReview(id) {
     alert("Failed to approve review");
   }
 }
+const toggleBtn = document.getElementById("toggleViewBtn");
+
+toggleBtn?.addEventListener("click", () => {
+  document.body.classList.toggle("desktop-card-view");
+
+  toggleBtn.textContent =
+    document.body.classList.contains("desktop-card-view")
+      ? "Table View"
+      : "Card View";
+});
+
 
 /* =======================
    LOGOUT + INIT

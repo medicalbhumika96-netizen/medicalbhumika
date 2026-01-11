@@ -573,3 +573,12 @@
   }
 
 }
+/* Desktop card view support */
+.desktop-card-view table {
+  display: none;
+}
+
+.desktop-card-view #mobileOrders {
+  display: block;
+}
+
