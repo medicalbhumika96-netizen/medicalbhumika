@@ -222,15 +222,18 @@ function renderOrders() {
                  onclick="showImg('${BACKEND}${o.payment.screenshot}')">`
           : "—"}
         </td>
-        <td class="status ${o.status}" id="status-${o.orderId}">
-          ${o.status}
-        </td>
-        <td>
-          ${STATUS_FLOW[o.status]?.includes("Approved")
-          ? `<button onclick="updateStatus('${o.orderId}','Approved')">✓</button>` : ""}
-          ${STATUS_FLOW[o.status]?.includes("Rejected")
-          ? `<button onclick="updateStatus('${o.orderId}','Rejected')">✕</button>` : ""}
-        </td>
+     <td>
+  ${STATUS_FLOW[o.status]
+    .map(next =>
+      `<button
+        style="margin:2px;padding:4px 6px;font-size:12px"
+        onclick="updateStatus('${o.orderId}','${next}')">
+        ${next}
+      </button>`
+    ).join("")}
+</td>
+
+
       `;
       ordersTable.appendChild(tr);
 
