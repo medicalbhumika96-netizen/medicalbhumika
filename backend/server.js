@@ -5,7 +5,7 @@ import multer from "multer";
 import dotenv from "dotenv";
 import fs from "fs";
 import jwt from "jsonwebtoken";
-
+import Reminder from "./models/Reminder.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
 import Order from "./models/Order.js";
 import Product from "./models/Product.js";
@@ -191,6 +191,35 @@ app.post("/api/admin/login", (req, res) => {
 });
 
 /* ==================================================
+   ADMIN — DUE PRESCRIPTION REMINDERS
+================================================== */
+app.get("/api/admin/reminders/due", adminAuth, async (req, res) => {
+  try {
+    const today = new Date();
+
+    const reminders = await Reminder.find({
+      reminderDate: { $lte: today },
+      sent: false,
+      type: "prescription"
+    }).sort({ reminderDate: 1 });
+
+    res.json({ success: true, reminders });
+  } catch (err) {
+    res.status(500).json({ success: false });
+  }
+});
+app.post("/api/admin/reminders/:id/sent", adminAuth, async (req, res) => {
+  try {
+    await Reminder.findByIdAndUpdate(req.params.id, {
+      sent: true
+    });
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ success: false });
+  }
+});
+
+/* ==================================================
    ADMIN — FETCH ORDERS
 ================================================== */
 app.get("/api/admin/orders", adminAuth, async (req, res) => {
@@ -358,6 +387,31 @@ app.post("/api/admin/orders/:orderId/status", adminAuth, async (req, res) => {
   );
 
   if (!order) return res.status(404).json({ success: false });
+
+  /* =========================
+     PRESCRIPTION REMINDER
+  ========================= */
+  if (status === "Delivered") {
+  const alreadyExists = await Reminder.findOne({
+    orderId: order.orderId,
+    type: "prescription"
+  });
+
+  if (!alreadyExists) {
+    const reminderDate = new Date();
+    reminderDate.setDate(reminderDate.getDate() + 30);
+
+    await Reminder.create({
+      orderId: order.orderId,
+      phone: order.phone,
+      name: order.name,
+      reminderDate,
+      type: "prescription"
+    });
+  }
+}
+
+
   res.json({ success: true });
 });
 

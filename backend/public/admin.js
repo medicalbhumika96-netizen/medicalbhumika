@@ -18,6 +18,8 @@ let CURRENT_MODAL_ORDER = null;
 let touchStartX = 0;
 let touchMoved = false;
 let REVIEWS = [];
+let REMINDERS = [];
+
 
 
 // 🔒 status update lock
@@ -477,12 +479,25 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
     document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+
     btn.classList.add("active");
     document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
-    if (btn.dataset.tab === "reviews") {
-  loadReviews();
-}
 
+    if (btn.dataset.tab === "orders") {
+      loadOrders();
+    }
+
+    if (btn.dataset.tab === "products") {
+      loadProducts();
+    }
+
+    if (btn.dataset.tab === "reviews") {
+      loadReviews();
+    }
+
+    if (btn.dataset.tab === "reminders") {
+      loadReminders();
+    }
   });
 });
 
@@ -554,6 +569,68 @@ toggleBtn?.addEventListener("click", () => {
       ? "Table View"
       : "Card View";
 });
+
+async function loadReminders() {
+  try {
+    const res = await fetch(`${BACKEND}/api/admin/reminders/due`, {
+      headers: { Authorization: "Bearer " + token }
+    });
+    const data = await res.json();
+    if (!data.success) return;
+
+    REMINDERS = data.reminders || [];
+    renderReminders();
+  } catch {
+    console.error("Failed to load reminders");
+  }
+}
+function renderReminders() {
+  const tbody = document.getElementById("reminderTable");
+  if (!tbody) return;
+
+  tbody.innerHTML = "";
+
+  REMINDERS.forEach(r => {
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td>${r.name || "Customer"}</td>
+      <td>${r.phone}</td>
+      <td>${r.orderId}</td>
+      <td>${new Date(r.reminderDate).toLocaleDateString()}</td>
+      <td>
+        <button onclick="sendReminder('${r._id}','${r.phone}','${r.name || ""}')">
+          Send WhatsApp
+        </button>
+      </td>
+    `;
+
+    tbody.appendChild(tr);
+  });
+}
+async function sendReminder(id, phone, name) {
+  const msg = `Hello ${name || ""} 👋
+
+Your regular medicines from Bhumika Medical
+are likely to be finished.
+
+💊 Would you like to reorder?
+
+Reply YES or contact us.
+
+– Bhumika Medical`;
+
+  const url = `https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`;
+  window.open(url, "_blank");
+
+  // mark as sent
+  await fetch(`${BACKEND}/api/admin/reminders/${id}/sent`, {
+    method: "POST",
+    headers: { Authorization: "Bearer " + token }
+  });
+
+  loadReminders();
+}
 
 
 /* =======================
