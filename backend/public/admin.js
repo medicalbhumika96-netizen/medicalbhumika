@@ -165,13 +165,14 @@ const WHATSAPP_TEMPLATES = {
   "Out for Delivery": order =>
     `🚚 Your order ${order.orderId} is OUT FOR DELIVERY.\n\nPlease keep your phone available.\n\n– Bhumika Medical`,
 
-  Delivered: order =>
+ Delivered: order =>
 `🎉 Your order ${order.orderId} has been delivered.
 
 ⭐ Please rate your experience:
-https://bhumikamedical.com/review/${order.orderId}
+https://medicalbhumika-2.onrender.com/review/${order.orderId}
 
 – Bhumika Medical`
+
 ,
 
   Rejected: order =>
