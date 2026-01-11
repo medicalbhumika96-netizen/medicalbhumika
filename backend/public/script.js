@@ -375,6 +375,15 @@ function renderCart() {
 
   // Update item count
   cartCountEl && (cartCountEl.textContent = keys.reduce((s, k) => s + cart[k].qty, 0));
+  // 🔒 Disable checkout if cart empty (desktop)
+const checkoutBtn = document.getElementById('checkout');
+if (checkoutBtn) {
+  const isEmpty = Object.keys(cart).length === 0;
+  checkoutBtn.disabled = isEmpty;
+  checkoutBtn.style.opacity = isEmpty ? '0.6' : '1';
+  checkoutBtn.style.cursor = isEmpty ? 'not-allowed' : 'pointer';
+}
+
 }
 
 // ===== UPDATE MOBILE CART (list, total, offer) =====
