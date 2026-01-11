@@ -1263,7 +1263,7 @@ if (proofBtn) {
 const SHOP_OPEN_TIME = 8;
 const SHOP_CLOSE_TIME = 23;
 const MIN_ORDER_AMOUNT = 149;
-const ALLOWED_PINS = ["411041","411048","411058"];
+const ALLOWED_PINS = ["411041","306401","410507"];
 
 function isShopOpen() {
   const h = new Date().getHours();
