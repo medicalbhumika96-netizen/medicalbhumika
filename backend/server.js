@@ -157,6 +157,39 @@ app.post("/api/payment-proof", upload.single("screenshot"), async (req, res) => 
 });
 
 /* ==================================================
+   CUSTOMER — FETCH LAST ORDER (REPEAT)
+================================================== */
+app.post("/api/orders/last", async (req, res) => {
+  try {
+    const { phone } = req.body;
+    if (!phone) {
+      return res.status(400).json({ success: false });
+    }
+
+    const order = await Order.findOne({ phone })
+      .sort({ createdAt: -1 });
+
+    if (!order) {
+      return res.json({ success: false });
+    }
+
+    res.json({
+      success: true,
+      order: {
+        items: order.items,
+        address: order.address,
+        pin: order.pin,
+        name: order.name
+      }
+    });
+
+  } catch (err) {
+    console.error("❌ Repeat order error:", err);
+    res.status(500).json({ success: false });
+  }
+});
+
+/* ==================================================
    ADMIN AUTH (JWT)
 ================================================== */
 function adminAuth(req, res, next) {

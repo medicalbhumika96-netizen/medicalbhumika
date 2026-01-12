@@ -1993,3 +1993,12 @@ a {
   box-shadow: 0 10px 25px rgba(0,0,0,0.25);
   z-index: 999;
 }
+.repeat-btn {
+  width: 100%;
+  padding: 12px;
+  margin-top: 15px;
+  background: #1fa463;
+  color: #fff;
+  border-radius: 8px;
+  font-size: 16px;
+}

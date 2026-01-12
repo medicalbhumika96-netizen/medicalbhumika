@@ -446,6 +446,97 @@ function renderMobileCart(subtotal = 0, discount = 0, offerMsg = '') {
   }
 }
 
+const savedCart = localStorage.getItem("cartItems");
+
+if (savedCart) {
+  try {
+    const rawItems = JSON.parse(savedCart);
+    cart = {};
+
+    rawItems.forEach(it => {
+      if (!it) return;
+
+      const pid = String(it.id || it._id || it.name);
+
+      cart[pid] = {
+        id: pid,
+        name: it.name,
+        price: Number(it.price || it.mrp || 0),
+        qty: Number(it.qty || 1),
+        image: it.image || "img/logo.png"
+      };
+    });
+
+    renderCart();
+
+    // restore customer details
+    const savedName = localStorage.getItem("customerName");
+    const savedAddress = localStorage.getItem("customerAddress");
+    const savedPin = localStorage.getItem("customerPin");
+
+  if (savedName) {
+  const el = document.getElementById("cust-name");
+  if (el) el.value = savedName;
+}
+
+if (savedAddress) {
+  const el = document.getElementById("cust-address");
+  if (el) el.value = savedAddress;
+}
+
+if (savedPin) {
+  const el = document.getElementById("cust-pin");
+  if (el) el.value = savedPin;
+}
+
+    // cleanup
+    localStorage.removeItem("cartItems");
+    localStorage.removeItem("customerName");
+    localStorage.removeItem("customerAddress");
+    localStorage.removeItem("customerPin");
+
+  } catch (e) {
+    console.error("❌ Failed to restore repeat order cart", e);
+  }
+}
+
+
+/* ==============================
+   REPEAT ORDER BUTTON CLICK
+============================== */
+document.getElementById("repeatOrderBtn")?.addEventListener("click", async () => {
+  const phone = localStorage.getItem("customerPhone");
+  if (!phone) {
+    alert("Please enter phone number again");
+    return;
+  }
+
+  try {
+    const res = await fetch(`${BACKEND_BASE}/api/orders/last`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ phone })
+});
+    const data = await res.json();
+    if (!data.success) {
+      alert("No previous order found");
+      return;
+    }
+
+    // save order for repeat
+    localStorage.setItem("cartItems", JSON.stringify(data.order.items));
+    localStorage.setItem("customerName", data.order.name || "");
+    localStorage.setItem("customerAddress", data.order.address || "");
+    localStorage.setItem("customerPin", data.order.pin || "");
+
+    // redirect to order page
+    window.location.href = "/order.html";
+
+  } catch {
+    alert("Server error. Try again.");
+  }
+});
+
 // ===== SEARCH HANDLERS =====
 searchInput && searchInput.addEventListener('input', e => renderProducts(e.target.value));
 navSearchForm && navSearchForm.addEventListener('submit', (e) => {
@@ -642,6 +733,7 @@ if (paymentMethodInput) {
 // ===== VALIDATION & SEND ORDER =====
 sendOrderBtn?.addEventListener('click', () => {
   // 🔒 Final safety checks
+  
 if (window.LAST_FINAL_TOTAL < MIN_ORDER_AMOUNT) {
   alert(`🛒 Minimum order amount is ₹${MIN_ORDER_AMOUNT}`);
   return;
@@ -668,15 +760,18 @@ if (!validatePin(custPinInput.value.trim())) {
 
   const finalTotal = Math.round(subtotal - discount);
 
-  const custName = custNameInput ? custNameInput.value.trim() : '';
-  const custAddress = custAddressInput ? custAddressInput.value.trim() : '';
-  const custPin = custPinInput ? custPinInput.value.trim() : '';
-  const custPhone = custPhoneInput ? custPhoneInput.value.trim() : '';
+ const custName = custNameInput ? custNameInput.value.trim() : '';
+const custAddress = custAddressInput ? custAddressInput.value.trim() : '';
+const custPin = custPinInput ? custPinInput.value.trim() : '';
+const custPhone = custPhoneInput ? custPhoneInput.value.trim() : '';
 
-  if (!custName || !custAddress || !custPin || !custPhone) {
-    alert('Customer details missing.');
-    return;
-  }
+if (!custName || !custAddress || !custPin || !custPhone) {
+  alert('Customer details missing.');
+  return;
+}
+
+// ✅ REQUIRED FOR REPEAT ORDER FEATURE
+localStorage.setItem("customerPhone", custPhone);
 
   // Create unique EID tied to phone + timestamp
   const timestamp = Date.now();
@@ -1099,7 +1194,7 @@ checkOrderBtn?.addEventListener('click', async () => {
 
 function renderOrderTimeline(order) {
   const steps = [
-    "Placed",
+    "Pending",
     "Approved",
     "Packed",
     "Out for Delivery",
@@ -1127,6 +1222,13 @@ function renderOrderTimeline(order) {
       </p>
     </div>
   `;
+
+   // ✅ Repeat Order button visibility
+  const repeatBtn = document.getElementById("repeatOrderBtn");
+  if (repeatBtn) {
+    repeatBtn.style.display =
+      order.status === "Delivered" ? "block" : "none";
+  }
 }
 
 
@@ -1135,10 +1237,6 @@ loadProducts();
 renderCart();
 disablePaymentProofBtn(); // 🔒 disabled until order placed
 
-
-// =======================================================
-// === MANUAL PAYMENT VERIFICATION BACKEND INTEGRATION ===
-// =======================================================
 
 
 // =======================================================
