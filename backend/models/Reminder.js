@@ -21,14 +21,18 @@ const ReminderSchema = new mongoose.Schema({
     required: true
   },
 
+  type: {
+    type: String,
+    default: "prescription"
+  },
+
   sent: {
     type: Boolean,
     default: false
   },
 
-  type: {
-    type: String,
-    default: "prescription" // future use: birthday, followup, etc.
+  sentAt: {
+    type: Date
   },
 
   createdAt: {
@@ -36,5 +40,8 @@ const ReminderSchema = new mongoose.Schema({
     default: Date.now
   }
 });
+
+// Optional performance index
+ReminderSchema.index({ sent: 1, reminderDate: 1 });
 
 export default mongoose.model("Reminder", ReminderSchema);

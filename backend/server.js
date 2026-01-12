@@ -6,6 +6,7 @@ import dotenv from "dotenv";
 import fs from "fs";
 import jwt from "jsonwebtoken";
 import Reminder from "./models/Reminder.js";
+import { startReminderCron } from "./cron/reminderCron.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
 import Order from "./models/Order.js";
 import Product from "./models/Product.js";
@@ -40,7 +41,10 @@ app.use(express.static("public"));
 /* ================= DATABASE ================= */
 mongoose
   .connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ MongoDB connected"))
+  .then(() => {
+    console.log("✅ MongoDB connected");
+    startReminderCron(); // 🔔 START CRON HERE
+  })
   .catch(err => console.error("❌ MongoDB error:", err));
 
 /* ================= MULTER (ORDERS / PAYMENT) ================= */
