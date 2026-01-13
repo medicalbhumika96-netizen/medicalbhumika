@@ -17,87 +17,67 @@
 
 <body>
   <!-- NAV -->
-  <nav class="topbar" role="navigation" aria-label="Main">
-    <div class="nav-left">
-      <img src="img/logo.png" alt="logo" class="nav-logo" />
-      <div class="brand">
-        <div class="brand-name">Bhumika Medical</div>
-
-      </div>
+  <nav class="topbar">
+  <div class="nav-left">
+    <img src="img/logo.png" class="nav-logo" alt="Bhumika Medical">
+    <div class="brand">
+      <div class="brand-name">Bhumika Medical</div>
+      <div class="brand-sub">Trusted Local Pharmacy</div>
     </div>
+  </div>
 
-    <div class="nav-right">
-      <form id="nav-search-form" class="nav-search" role="search" onsubmit="return false">
-        <input id="nav-search" placeholder="Search medicines or company" aria-label="Search products">
-        <button id="nav-search-btn" title="Search">🔍</button>
-      </form>
-      <!-- Search Suggestions Dropdown -->
-      <div id="search-suggestions" class="search-suggestions" aria-live="polite"></div>
+  <div class="nav-center">
+    <input
+      id="nav-search"
+      class="nav-search-input"
+      placeholder="Search medicines or company"
+      autocomplete="off"
+    />
+    <ul class="nav-links">
+  <li><a href="#home">Home</a></li>
+  <li><a href="#products">Products</a></li>
+  <li><a href="#about-modern">About</a></li>
+  <li><a href="#contact">Contact</a></li>
+</ul>
 
+  </div>
+  
 
-      <ul class="nav-links">
-        <li><a href="#home" data-scroll>Home</a></li>
-        <li><a href="#products" data-scroll>Products</a></li>
-        <li><a href="#about-modern" data-scroll>About</a></li>
-        <li><a href="#contact" data-scroll>Contact</a></li>
-      </ul>
+  <div class="nav-right">
+    <a class="wa-btn" href="https://wa.me/918003929804" target="_blank">
+      WhatsApp
+    </a>
+    <button id="nav-toggle" class="nav-toggle">☰</button>
+  </div>
+</nav>
 
-      <a class="wa-btn" id="wa-cta" href="https://wa.me/918003929804" target="_blank" rel="noopener">Chat on
-        WhatsApp</a>
-
-      <button class="nav-toggle" id="nav-toggle" aria-label="Toggle menu">☰</button>
-    </div>
-  </nav>
 
   <main class="container">
     <!-- HERO / SLIDER -->
-    <section id="home" class="hero" aria-roledescription="carousel">
-      <div class="hero-slider" id="hero-slider">
-        <!-- Slider items use online images via Unsplash "source" queries -->
-        <div class="slide active" data-img="img/shop1.jpg">
-          <div class="slide-left">
-            <h2>Trusted Local Pharmacy</h2>
-            <p>Genuine medicines • Fast home delivery • Prescription-friendly</p>
-            <div class="hero-ctas">
-              <a href="#products" class="btn btn-ghost" data-scroll>Shop products</a>
-              <a href="https://wa.me/918003929804" class="btn" target="_blank">Order on WhatsApp</a>
-            </div>
-          </div>
-          <div class="slide-visual"></div>
-        </div>
+  <section class="hero-clean">
+  <div class="hero-content">
+    <h1>Trusted Local Medical Store</h1>
+    <p>Genuine medicines • Fast delivery • Prescription friendly</p>
 
-        <div class="slide" data-img="img/shop3.jpg">
-          <div class="slide-left">
-            <h2>Prescription Upload</h2>
-            <p>Upload your prescription and we'll process it quickly and safely.</p>
-            <div class="hero-ctas">
-              <a href="#products" class="btn btn-ghost" data-scroll>See offers</a>
-              <a href="#contact" class="btn" data-scroll>Contact us</a>
-            </div>
-          </div>
-          <div class="slide-visual"></div>
-        </div>
+    <div class="hero-actions">
+      <a href="#products" class="btn primary">Order Medicines</a>
+      <a href="#upload-card" class="btn ghost">Upload Prescription</a>
+    </div>
+  </div>
 
-        <div class="slide"
-          data-img="https://www.shutterstock.com/image-vector/white-truck-box-path-tracking-600nw-2490530993.jpg">
-          <div class="slide-left">
-            <h2>Fast & Secure Delivery</h2>
-            <p>Multiple payment options: UPI, GPay, Paytm or Cash on Delivery.</p>
-            <div class="hero-ctas">
-              <a href="#products" class="btn btn-ghost" data-scroll>Browse</a>
-              <a href="#contact" class="btn" data-scroll>Know more</a>
-            </div>
-          </div>
-          <div class="slide-visual"></div>
-        </div>
+  <div class="hero-image">
+    <img src="img/shop1.jpg" alt="Medical Store">
+  </div>
+</section>
+<div class="steps modern-steps">
+  <div class="step active" data-step="1">Customer</div>
+  <div class="step-line"></div>
+  <div class="step" data-step="2">Payment</div>
+</div>
+<p class="small muted" style="text-align:center;margin-bottom:10px">
+  Your details are used only for delivery & verification
+</p>
 
-        <div class="slider-controls">
-          <button id="prev-slide" aria-label="Previous">‹</button>
-          <div id="slider-dots" class="dots" aria-hidden="false"></div>
-          <button id="next-slide" aria-label="Next">›</button>
-        </div>
-      </div>
-    </section>
 
     <!-- GRID: PRODUCTS + CART -->
     <div class="grid">

@@ -141,25 +141,25 @@ function renderProducts(filter = '') {
   limitedResults.forEach(p => {
     const el = document.createElement('div');
     el.className = 'product';
-    el.innerHTML = `
-      <div class="product-img-wrap">
-  <img src="${p.image}"
-       alt="${escapeHtml(p.name)}"
-       loading="lazy">
+el.innerHTML = `
+  <div class="product-img">
+    <img src="${p.image}" alt="${escapeHtml(p.name)}" loading="lazy">
+    ${p.imageType === "real" ? `<span class="verified-badge">✔ Genuine</span>` : ``}
+  </div>
 
-  ${p.imageType === "real"
-    ? '<span class="badge verified"></span>'
-    : '<span class="badge muted"></span>'
-  }
-</div>
+  <div class="product-body">
+    <div class="product-name">${escapeHtml(p.name)}</div>
+    <div class="product-company">${escapeHtml(p.company)}</div>
 
-      <div style="flex:1">
-        <div style="font-weight:700">${escapeHtml(p.name)}</div>
-        <div class="small" style="margin-top:6px">${escapeHtml(p.company)}</div>
-        <div class="price">₹${p.price.toFixed(2)}</div>
-      </div>
-      <button class="btn add-to-cart" data-id="${p.id}">Add</button>
-    `;
+    <div class="product-footer">
+      <div class="product-price">₹${p.price.toFixed(2)}</div>
+      <button class="add-to-cart" data-id="${p.id}">
+        + Add
+      </button>
+    </div>
+  </div>
+`;
+    
     productList.appendChild(el);
   });
 
@@ -547,11 +547,42 @@ navSearchForm && navSearchForm.addEventListener('submit', (e) => {
 });
 
 // sync nav search with products search input
-navSearchInput && navSearchInput.addEventListener('input', e => {
-  const v = e.target.value || '';
-  if (searchInput) searchInput.value = v;
-  renderProducts(v);
-});
+function scrollToProducts() {
+  const productsSection = document.getElementById("products");
+  if (!productsSection) return;
+
+  productsSection.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
+}
+
+if (navSearchInput) {
+  navSearchInput.addEventListener("input", e => {
+    const v = e.target.value.trim();
+
+    // sync with main search input
+    if (searchInput) searchInput.value = v;
+
+    // filter products
+    renderProducts(v);
+
+    // ✅ UX FIX: auto-scroll when user searches
+    if (v.length > 0) {
+      scrollToProducts();
+    }
+  });
+}
+// ===== MOBILE MENU TOGGLE (FIXED) =====
+const navToggleBtn = document.getElementById("nav-toggle");
+const navLinksEl = document.querySelector(".nav-links");
+
+if (navToggleBtn && navLinksEl) {
+  navToggleBtn.addEventListener("click", () => {
+    navLinksEl.classList.toggle("show");
+  });
+}
+
 
 const prescInput = document.getElementById("prescription-input");
 const sendBtn = document.getElementById("send-prescription-btn");
@@ -1467,6 +1498,33 @@ function showPaymentHint(text) {
 document.addEventListener("DOMContentLoaded", () => {
   loadCartAuto();
   if (typeof renderCart === "function") renderCart();
+});
+// ===============================
+// MOBILE NAV TOGGLE (FINAL FIX)
+// ===============================
+document.addEventListener("DOMContentLoaded", () => {
+  const navToggle = document.getElementById("nav-toggle");
+  const navLinks = document.querySelector(".nav-links");
+
+  if (!navToggle || !navLinks) return;
+
+  navToggle.addEventListener("click", () => {
+    navLinks.classList.toggle("show");
+  });
+
+  // auto close menu on link click (UX polish)
+  navLinks.querySelectorAll("a").forEach(link => {
+    link.addEventListener("click", () => {
+      navLinks.classList.remove("show");
+    });
+  });
+
+  // close menu when clicking outside
+  document.addEventListener("click", e => {
+    if (!navToggle.contains(e.target) && !navLinks.contains(e.target)) {
+      navLinks.classList.remove("show");
+    }
+  });
 });
 
 let lastCheck = new Date().toISOString();
